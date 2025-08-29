@@ -205,8 +205,44 @@ function ScannerClientPage({ events, isLoggedIn }: { events: EventWithAttendees[
 }
 
 
-export default async function ScannerPage() {
-    const { data: events, error, isLoggedIn } = await getScannableEvents();
+export default function ScannerPage() {
+    const [events, setEvents] = useState<EventWithAttendees[]>([]);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchEvents() {
+            try {
+                const { data, error, isLoggedIn } = await getScannableEvents();
+                if (error) {
+                    setError(error);
+                } else {
+                    setEvents(data || []);
+                }
+                setIsLoggedIn(!!isLoggedIn);
+            } catch (e) {
+                setError('An unexpected error occurred.');
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchEvents();
+    }, []);
+
+
+    if (isLoading) {
+      return (
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
+              Scanner
+            </h1>
+            <p className="text-muted-foreground">Loading scannable events...</p>
+          </div>
+        </div>
+      );
+    }
 
     if (error) {
         return (
@@ -221,5 +257,5 @@ export default async function ScannerPage() {
         )
     }
   
-    return <ScannerClientPage events={events || []} isLoggedIn={!!isLoggedIn} />;
+    return <ScannerClientPage events={events} isLoggedIn={isLoggedIn} />;
   }
