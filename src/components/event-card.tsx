@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useActionState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye } from 'lucide-react';
+import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye, Eye } from 'lucide-react';
 import type { EventWithAttendees } from '@/lib/types';
 import { registerForEventAction } from '@/lib/actions/tickets';
 import { useToast } from '@/hooks/use-toast';
@@ -30,7 +30,7 @@ function RegisterButton({ eventId, isLoggedIn }: { eventId: number; isLoggedIn: 
     }
 
     return (
-        <Button type="submit" size="sm" disabled={pending} onClick={handleClick}>
+        <Button type="submit" size="sm" className="flex-1" disabled={pending} onClick={handleClick}>
             {pending ? 'Registering...' : 'Register'}
         </Button>
     )
@@ -60,7 +60,7 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false }: EventCar
   return (
     <Card className="h-full flex flex-col overflow-hidden transition-transform transform-gpu hover:-translate-y-1 hover:shadow-xl">
       <CardHeader className="p-0">
-        <Link href={isScannerMode ? '#' : `/dashboard/events/${event.id}/manage`} className="block relative aspect-[16/10] w-full">
+        <Link href={isScannerMode ? '#' : `/events/${event.id}`} className="block relative aspect-[16/10] w-full">
           <Image
             src={event.cover_image || 'https://picsum.photos/600/400'}
             alt={event.title}
@@ -84,29 +84,40 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false }: EventCar
           </div>
         </div>
       </CardContent>
-      <CardFooter className="p-4 pt-0 flex justify-between items-center">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <span>{event.attendees.toLocaleString()}</span>
-            <span className="text-muted-foreground">/{event.capacity || '∞'}</span>
+      <CardFooter className="p-4 pt-0 flex-col items-stretch gap-2">
+          <div className="flex justify-between items-center text-sm font-medium">
+            <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <span>{event.attendees.toLocaleString()}</span>
+                <span className="text-muted-foreground">/{event.capacity || '∞'}</span>
+            </div>
+            {isLoggedIn && event.ticket_id && (
+                <Button variant="outline" size="sm" asChild>
+                    <Link href={`/dashboard/tickets/${event.ticket_id}`}>
+                        <TicketIcon className="mr-2"/>
+                        View Ticket
+                    </Link>
+                </Button>
+            )}
           </div>
           {isScannerMode ? (
-            <Button size="sm">
+            <Button size="sm" className="w-full">
               <ScanEye className="mr-2" />
               Start Scanning
             </Button>
-          ) : isLoggedIn && event.ticket_id ? (
-             <Button variant="outline" size="sm" asChild>
-                <Link href={`/dashboard/tickets/${event.ticket_id}`}>
-                    <TicketIcon className="mr-2"/>
-                    View Ticket
-                </Link>
-             </Button>
-          ) : (
-            <form action={formAction}>
-                <input type="hidden" name="eventId" value={event.id} />
-                <RegisterButton eventId={event.id} isLoggedIn={isLoggedIn} />
-            </form>
+          ) : !event.ticket_id && (
+            <div className="flex gap-2">
+                <Button asChild size="sm" variant="outline" className="flex-1">
+                    <Link href={`/events/${event.id}`}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Details
+                    </Link>
+                </Button>
+                <form action={formAction} className="flex-1">
+                    <input type="hidden" name="eventId" value={event.id} />
+                    <RegisterButton eventId={event.id} isLoggedIn={isLoggedIn} />
+                </form>
+            </div>
           )}
       </CardFooter>
     </Card>
