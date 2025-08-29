@@ -1,24 +1,55 @@
-
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { z } from 'zod';
+
+const QrTokenSchema = z.object({
+    ticketId: z.number(),
+    userId: z.string(),
+    eventId: z.number(),
+});
+
+
+// Helper function to create a QR code token
+function createQrCodeToken(ticketId: number, userId: string, eventId: number): string {
+    const payload = { ticketId, userId, eventId };
+    return Buffer.from(JSON.stringify(payload)).toString('base64');
+}
+
+
+async function assignQrCodeToTicket(ticketId: number, userId: string, eventId: number) {
+    const supabase = createClient();
+    const qrCodeToken = createQrCodeToken(ticketId, userId, eventId);
+
+    const { error } = await supabase
+        .from('tickets')
+        .update({ qr_code_token: qrCodeToken })
+        .eq('id', ticketId);
+
+    if (error) {
+        console.error('Error assigning QR code to ticket:', error);
+        // This is a critical error, but we'll let the calling function handle the user-facing message
+        throw new Error('Could not assign QR code to the ticket.');
+    }
+}
+
 
 export async function registerForEventAction(
   prevState: { error: string | undefined } | undefined,
   formData: FormData
 ) {
   const supabase = createClient();
+  const eventIdStr = formData.get('eventId') as string;
+  const eventId = parseInt(eventIdStr, 10);
 
-  const eventId = formData.get('eventId') as string;
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    // This will be handled by the client-side redirect for non-logged-in users
      const eventRedirectPath = eventId ? `/events/${eventId}/register` : '/signup';
      redirect(eventRedirectPath);
   }
@@ -44,7 +75,7 @@ export async function registerForEventAction(
 
 
   const { data: ticket, error } = await supabase.from('tickets').insert({
-    event_id: parseInt(eventId),
+    event_id: eventId,
     user_id: user.id,
   }).select('id').single();
 
@@ -52,6 +83,13 @@ export async function registerForEventAction(
     console.error('Error registering for event:', error);
     return { error: 'Could not register for the event.' };
   }
+
+  try {
+    await assignQrCodeToTicket(ticket.id, user.id, eventId);
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+
 
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/events');
@@ -66,7 +104,8 @@ export async function registerAndCreateTicket(
     formData: FormData
 ) {
     const supabase = createClient();
-    const eventId = formData.get('eventId') as string;
+    const eventIdStr = formData.get('eventId') as string;
+    const eventId = parseInt(eventIdStr, 10);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const confirmPassword = formData.get('confirmPassword') as string;
@@ -93,12 +132,20 @@ export async function registerAndCreateTicket(
     }
     
     const { data: ticketData, error: ticketError } = await supabase.from('tickets').insert({
-        event_id: parseInt(eventId),
+        event_id: eventId,
         user_id: signUpData.user.id,
     }).select('id').single();
 
     if (ticketError || !ticketData) {
         return { error: ticketError?.message || "You are registered as a user, but we failed to create your ticket. Please contact support." };
+    }
+
+    try {
+        await assignQrCodeToTicket(ticketData.id, signUpData.user.id, eventId);
+    } catch (e) {
+        // At this point, user is created but ticket is incomplete.
+        // For simplicity, we'll show an error. In a real app, might need a cleanup process.
+        return { error: `User created, but failed to finalize ticket: ${(e as Error).message}` };
     }
     
     redirect(`/events/${eventId}/register/success?ticketId=${ticketData.id}`);
@@ -133,30 +180,50 @@ export async function verifyTicket(qrToken: string, eventId: number) {
     const { data: { user } } = await supabase.auth.getUser();
     if(!user) return { error: 'Not authenticated' };
 
-    const { data: ticket, error: ticketError } = await supabase.from('tickets').select('id, event_id, checked_in, events(organizer_id)').eq('qr_code_token', qrToken).single();
+    let qrData;
+    try {
+        const decodedString = Buffer.from(qrToken, 'base64').toString('utf-8');
+        const parsedJson = JSON.parse(decodedString);
+        const validationResult = QrTokenSchema.safeParse(parsedJson);
+        if (!validationResult.success) {
+            throw new Error('Invalid QR code data structure.');
+        }
+        qrData = validationResult.data;
+    } catch (error) {
+        console.error("QR Code parsing error:", error);
+        return { success: false, error: 'Invalid or malformed QR Code.' };
+    }
+    
+
+    const { data: ticket, error: ticketError } = await supabase
+        .from('tickets')
+        .select('id, event_id, checked_in, events(organizer_id), profiles(first_name)')
+        .eq('id', qrData.ticketId)
+        .eq('user_id', qrData.userId)
+        .single();
 
     if(ticketError || !ticket) {
-        return { error: 'Invalid Ticket QR Code.' };
+        return { success: false, error: 'Invalid Ticket QR Code.' };
     }
     
     if(ticket.event_id !== eventId) {
-        return { error: 'This ticket is for a different event.' };
+        return { success: false, error: 'This ticket is for a different event.' };
     }
 
     const { data: scannerAssignment } = await supabase.from('event_scanners').select('id').eq('event_id', ticket.event_id).eq('user_id', user.id).single();
 
     if(ticket.events?.organizer_id !== user.id && !scannerAssignment) {
-        return { error: 'You are not authorized to check in tickets for this event.' };
+        return { success: false, error: 'You are not authorized to check in tickets for this event.' };
     }
 
     if(ticket.checked_in) {
-        return { error: 'This ticket has already been checked in.' };
+        return { success: false, error: `This ticket has already been checked in for ${ticket.profiles?.first_name || 'attendee'}.` };
     }
 
     const { data, error } = await supabase.from('tickets').update({ checked_in: true, checked_in_at: new Date().toISOString() }).eq('id', ticket.id).select('profiles(first_name, last_name)').single();
     
     if(error || !data) {
-        return { error: 'Failed to check in ticket.' };
+        return { success: false, error: 'Failed to check in ticket.' };
     }
     
     revalidatePath(`/dashboard/events/${ticket.event_id}/manage`);

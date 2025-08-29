@@ -84,6 +84,63 @@ export async function createEventAction(formData: unknown) {
   return { success: true };
 }
 
+
+export async function updateEventAction(eventId: number, formData: unknown) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { error: 'You must be logged in to update an event.' };
+    }
+
+    // First, verify ownership
+    const { data: existingEvent, error: ownerError } = await supabase
+        .from('events')
+        .select('organizer_id')
+        .eq('id', eventId)
+        .single();
+
+    if (ownerError || !existingEvent) {
+        return { error: 'Event not found.' };
+    }
+
+    if (existingEvent.organizer_id !== user.id) {
+        return { error: 'You are not authorized to update this event.' };
+    }
+
+    const parsed = eventSchema.safeParse(formData);
+
+    if (!parsed.success) {
+        return { error: parsed.error.errors.map(e => e.message).join(', ') };
+    }
+
+    const { title, description, date, end_date, location, cover_image, capacity } = parsed.data;
+
+    const { error } = await supabase
+        .from('events')
+        .update({
+            title,
+            description,
+            date: date.toISOString(),
+            end_date: end_date?.toISOString(),
+            location,
+            cover_image: cover_image || `https://picsum.photos/seed/${Math.random()}/600/400`,
+            capacity,
+        })
+        .eq('id', eventId);
+
+    if (error) {
+        console.error('Error updating event:', error);
+        return { error: 'Could not update event.' };
+    }
+
+    revalidatePath('/dashboard/events');
+    revalidatePath(`/events/${eventId}`);
+    revalidatePath(`/dashboard/events/${eventId}/edit`);
+    return { success: true };
+}
+
+
 export async function getEventDetails(eventId: string) {
     const supabase = createClient();
     const { data: event, error } = await supabase

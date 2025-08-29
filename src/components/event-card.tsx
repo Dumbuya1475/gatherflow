@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useActionState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye, Eye } from 'lucide-react';
+import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye, Eye, Pencil } from 'lucide-react';
 import type { EventWithAttendees } from '@/lib/types';
 import { registerForEventAction } from '@/lib/actions/tickets';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +16,7 @@ interface EventCardProps {
   event: EventWithAttendees;
   isLoggedIn: boolean;
   isScannerMode?: boolean;
+  isMyEvent?: boolean;
 }
 
 function RegisterButton({ eventId, isLoggedIn }: { eventId: number; isLoggedIn: boolean }) {
@@ -36,7 +37,7 @@ function RegisterButton({ eventId, isLoggedIn }: { eventId: number; isLoggedIn: 
     )
 }
 
-export function EventCard({ event, isLoggedIn, isScannerMode = false }: EventCardProps) {
+export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent = false }: EventCardProps) {
     const { toast } = useToast();
     const [state, formAction] = useActionState(registerForEventAction, undefined);
 
@@ -91,32 +92,49 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false }: EventCar
                 <span>{event.attendees.toLocaleString()}</span>
                 <span className="text-muted-foreground">/{event.capacity || '∞'}</span>
             </div>
-            {isLoggedIn && event.ticket_id && (
-                <Button variant="outline" size="sm" asChild>
-                    <Link href={`/dashboard/tickets/${event.ticket_id}`}>
-                        <TicketIcon className="mr-2"/>
-                        View Ticket
-                    </Link>
-                </Button>
-            )}
           </div>
           {isScannerMode ? (
             <Button size="sm" className="w-full">
               <ScanEye className="mr-2" />
               Start Scanning
             </Button>
-          ) : !event.ticket_id && (
-            <div className="flex gap-2">
+          ) : isMyEvent ? (
+             <div className="flex gap-2">
                 <Button asChild size="sm" variant="outline" className="flex-1">
+                    <Link href={`/events/${event.id}`}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View
+                    </Link>
+                </Button>
+                 <Button asChild size="sm" className="flex-1">
+                    <Link href={`/dashboard/events/${event.id}/edit`}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit
+                    </Link>
+                </Button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+                 <Button asChild size="sm" variant="outline" className="flex-1">
                     <Link href={`/events/${event.id}`}>
                         <Eye className="mr-2 h-4 w-4" />
                         Details
                     </Link>
                 </Button>
-                <form action={formAction} className="flex-1">
-                    <input type="hidden" name="eventId" value={event.id} />
-                    <RegisterButton eventId={event.id} isLoggedIn={isLoggedIn} />
-                </form>
+                {!event.ticket_id && (
+                    <form action={formAction} className="flex-1">
+                        <input type="hidden" name="eventId" value={event.id} />
+                        <RegisterButton eventId={event.id} isLoggedIn={isLoggedIn} />
+                    </form>
+                )}
+                 {event.ticket_id && (
+                    <Button asChild size="sm" className="flex-1">
+                        <Link href={`/dashboard/tickets/${event.ticket_id}`}>
+                            <TicketIcon className="mr-2 h-4 w-4" />
+                           View Ticket
+                        </Link>
+                    </Button>
+                 )}
             </div>
           )}
       </CardFooter>

@@ -137,7 +137,7 @@ export default async function EventsPage() {
           {myEvents.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-6">
               {myEvents.map(event => (
-                <EventCard key={event.id} event={event} isLoggedIn={!!user}/>
+                <EventCard key={event.id} event={event} isLoggedIn={!!user} isMyEvent={true}/>
               ))}
             </div>
           ) : (

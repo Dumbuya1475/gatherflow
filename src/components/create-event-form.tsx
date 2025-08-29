@@ -24,8 +24,9 @@ import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { generatePromotionAction } from '@/lib/actions/ai';
 import { useToast } from '@/hooks/use-toast';
-import { createEventAction } from '@/lib/actions/events';
+import { createEventAction, updateEventAction } from '@/lib/actions/events';
 import { useRouter } from 'next/navigation';
+import { Event } from '@/lib/types';
 
 const eventFormSchema = z.object({
   title: z.string().min(2, {
@@ -53,7 +54,12 @@ const eventFormSchema = z.object({
 
 type EventFormValues = z.infer<typeof eventFormSchema>;
 
-export function CreateEventForm() {
+interface CreateEventFormProps {
+    event?: Event;
+    defaultValues?: Partial<EventFormValues>;
+}
+
+export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -61,7 +67,7 @@ export function CreateEventForm() {
 
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
-    defaultValues: {
+    defaultValues: defaultValues || {
       title: '',
       description: '',
       location: '',
@@ -112,18 +118,20 @@ export function CreateEventForm() {
 
   async function onSubmit(data: EventFormValues) {
     setIsSubmitting(true);
-    const result = await createEventAction(data);
+
+    const action = event ? updateEventAction.bind(null, event.id) : createEventAction;
+    const result = await action(data);
     
     if (result.success) {
       toast({
-        title: "Event Created!",
-        description: "Your new event has been saved.",
+        title: event ? "Event Updated!" : "Event Created!",
+        description: `Your event has been ${event ? 'updated' : 'saved'}.`,
       });
-      router.push('/dashboard');
+      router.push('/dashboard/events');
     } else {
       toast({
         variant: 'destructive',
-        title: 'Event Creation Failed',
+        title: event ? 'Update Failed' : 'Creation Failed',
         description: result.error,
       });
     }
@@ -341,7 +349,7 @@ export function CreateEventForm() {
             
             <div className="flex justify-end">
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Creating...' : 'Create Event'}
+                {isSubmitting ? (event ? 'Updating...' : 'Creating...') : (event ? 'Update Event' : 'Create Event')}
               </Button>
             </div>
           </form>
