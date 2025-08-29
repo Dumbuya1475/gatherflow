@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -17,7 +18,9 @@ export async function registerForEventAction(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'You must be logged in to register for an event.' };
+    // This will be handled by the client-side redirect for non-logged-in users
+     const eventRedirectPath = eventId ? `/events/${eventId}/register` : '/signup';
+     redirect(eventRedirectPath);
   }
 
   const { data: existingTicket } = await supabase
@@ -40,12 +43,12 @@ export async function registerForEventAction(
   }
 
 
-  const { error } = await supabase.from('tickets').insert({
+  const { data: ticket, error } = await supabase.from('tickets').insert({
     event_id: parseInt(eventId),
     user_id: user.id,
-  });
+  }).select('id').single();
 
-  if (error) {
+  if (error || !ticket) {
     console.error('Error registering for event:', error);
     return { error: 'Could not register for the event.' };
   }
@@ -53,8 +56,8 @@ export async function registerForEventAction(
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/events');
   revalidatePath(`/dashboard/events/${eventId}/manage`);
-  revalidatePath(`/events/${eventId}/register`);
-  return { success: true };
+  revalidatePath(`/events/${eventId}`);
+  return { success: true, ticketId: ticket.id };
 }
 
 
@@ -157,6 +160,8 @@ export async function verifyTicket(qrToken: string, eventId: number) {
     }
     
     revalidatePath(`/dashboard/events/${ticket.event_id}/manage`);
+    revalidatePath(`/dashboard/analytics`);
+
 
     return { success: true, message: `Successfully checked in ${data.profiles?.first_name || 'attendee'}.` };
 }
@@ -169,7 +174,7 @@ export async function getScannableEvents() {
         return { data: [], error: 'You must be logged in to view scannable events.', isLoggedIn: false };
     }
     
-    // Fetch events where user is an assigned scanner OR the organizer
+    // Fetch events where user is an assigned scanner
     const { data: scannerAssignments, error: scannerError } = await supabase
         .from('event_scanners')
         .select('events(*, tickets(count))')
@@ -180,12 +185,12 @@ export async function getScannableEvents() {
         return { data: [], error: 'Could not fetch assigned events.', isLoggedIn: true };
     }
     
-    const assignedEvents = scannerAssignments
+    const assignedEvents = (scannerAssignments || [])
         .map(assignment => assignment.events)
-        .filter(event => event !== null)
+        .filter((event): event is NonNullable<typeof event> => event !== null)
         .map(event => ({
-            ...event!,
-            attendees: event!.tickets[0]?.count || 0,
+            ...event,
+            attendees: event.tickets[0]?.count || 0,
         }));
 
 
@@ -197,10 +202,10 @@ export async function getScannableEvents() {
 
     if (organizedEventsError) {
         console.error('Error fetching organized events:', organizedEventsError);
-        return { data: [], error: 'Could not fetch organized events.', isLoggedIn: true };
+        // We don't want to fail if this one errors, maybe they only have scanner perms
     }
 
-    const organizedEvents = organizedEventsData.map(event => ({
+    const organizedEvents = (organizedEventsData || []).map(event => ({
         ...event,
         attendees: event.tickets[0]?.count || 0,
     }));
