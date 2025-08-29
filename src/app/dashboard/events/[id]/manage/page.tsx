@@ -1,0 +1,89 @@
+import { getEventAttendees, getEventDetails } from "@/lib/actions/events";
+import { Attendee } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { CheckCircle, XCircle } from "lucide-react";
+
+export default async function ManageEventPage({ params }: { params: { id: string } }) {
+  const eventId = params.id;
+  const { data: event, error: eventError } = await getEventDetails(eventId);
+  const { data: attendees, error: attendeesError } = await getEventAttendees(eventId);
+
+  if (eventError || !event) {
+    return (
+      <div className="text-center text-red-500">
+        <p>Error: {eventError || 'Event not found.'}</p>
+      </div>
+    );
+  }
+
+  if (attendeesError) {
+    return (
+      <div className="text-center text-red-500">
+        <p>Error: {attendeesError}</p>
+      </div>
+    );
+  }
+
+  const typedAttendees = attendees as unknown as Attendee[];
+
+  return (
+    <div className="space-y-6">
+       <div>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
+          Manage: {event.title}
+        </h1>
+        <p className="text-muted-foreground">
+          View and manage your event attendees.
+        </p>
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Attendees ({typedAttendees.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+            {typedAttendees.length > 0 ? (
+                 <Table>
+                 <TableHeader>
+                   <TableRow>
+                     <TableHead>Name</TableHead>
+                     <TableHead>Email</TableHead>
+                     <TableHead className="text-center">Checked In</TableHead>
+                   </TableRow>
+                 </TableHeader>
+                 <TableBody>
+                   {typedAttendees.map((attendee) => (
+                     <TableRow key={attendee.ticket_id}>
+                       <TableCell>{attendee.profiles?.first_name} {attendee.profiles?.last_name}</TableCell>
+                       <TableCell>{attendee.profiles?.email}</TableCell>
+                       <TableCell className="text-center">
+                         {attendee.checked_in ? (
+                           <Badge variant="default" className="bg-green-500 hover:bg-green-600">
+                             <CheckCircle className="mr-2 h-4 w-4" />
+                             Yes
+                           </Badge>
+                         ) : (
+                           <Badge variant="secondary">
+                            <XCircle className="mr-2 h-4 w-4" />
+                            No
+                           </Badge>
+                         )}
+                       </TableCell>
+                     </TableRow>
+                   ))}
+                 </TableBody>
+               </Table>
+            ) : (
+                <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
+                    <h3 className="text-xl font-semibold tracking-tight">No attendees yet</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                        Share your event to get people to register.
+                    </p>
+                </div>
+            )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

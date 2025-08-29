@@ -22,6 +22,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'uniguide-b996d.web.app',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };
