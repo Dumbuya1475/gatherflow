@@ -22,7 +22,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
-import { generatePromotionAction } from '@/lib/actions/ai';
+import { generatePromotionAction } from '@/lib/actions/server/ai';
 import { useToast } from '@/hooks/use-toast';
 import { createEventAction, updateEventAction } from '@/lib/actions/events';
 import { useRouter } from 'next/navigation';
