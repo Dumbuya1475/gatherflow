@@ -5,23 +5,18 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
-const QrTokenSchema = z.object({
-    ticketId: z.number(),
-    userId: z.string(),
-    eventId: z.number(),
-});
-
-
-// Helper function to create a QR code token
-function createQrCodeToken(ticketId: number, userId: string, eventId: number): string {
-    const payload = { ticketId, userId, eventId };
-    return Buffer.from(JSON.stringify(payload)).toString('base64');
+// This function is no longer complex, it just returns the ticketId as a string.
+function createQrCodeToken(ticketId: number): string {
+    return ticketId.toString();
 }
 
+// The schema is now simpler as we only expect a numeric string.
+const QrTokenSchema = z.string().regex(/^\d+$/).transform(Number);
 
-async function assignQrCodeToTicket(ticketId: number, userId: string, eventId: number) {
+
+async function assignQrCodeToTicket(ticketId: number) {
     const supabase = createClient();
-    const qrCodeToken = createQrCodeToken(ticketId, userId, eventId);
+    const qrCodeToken = createQrCodeToken(ticketId);
 
     const { error } = await supabase
         .from('tickets')
@@ -30,7 +25,6 @@ async function assignQrCodeToTicket(ticketId: number, userId: string, eventId: n
 
     if (error) {
         console.error('Error assigning QR code to ticket:', error);
-        // This is a critical error, but we'll let the calling function handle the user-facing message
         throw new Error('Could not assign QR code to the ticket.');
     }
 }
@@ -85,7 +79,7 @@ export async function registerForEventAction(
   }
 
   try {
-    await assignQrCodeToTicket(ticket.id, user.id, eventId);
+    await assignQrCodeToTicket(ticket.id);
   } catch (e) {
     return { error: (e as Error).message };
   }
@@ -141,7 +135,7 @@ export async function registerAndCreateTicket(
     }
 
     try {
-        await assignQrCodeToTicket(ticketData.id, signUpData.user.id, eventId);
+        await assignQrCodeToTicket(ticketData.id);
     } catch (e) {
         // At this point, user is created but ticket is incomplete.
         // For simplicity, we'll show an error. In a real app, might need a cleanup process.
@@ -174,39 +168,35 @@ export async function getTicketDetails(ticketId: string) {
     return { data: ticket };
 }
 
-export async function verifyTicket(qrToken: string, eventId: number) {
+export async function verifyTicket(qrToken: string, scannerEventId: number) {
     const supabase = createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if(!user) return { error: 'Not authenticated' };
 
-    let qrData;
+    let ticketId;
     try {
-        const decodedString = Buffer.from(qrToken, 'base64').toString('utf-8');
-        const parsedJson = JSON.parse(decodedString);
-        const validationResult = QrTokenSchema.safeParse(parsedJson);
+        const validationResult = QrTokenSchema.safeParse(qrToken);
         if (!validationResult.success) {
             throw new Error('Invalid QR code data structure.');
         }
-        qrData = validationResult.data;
+        ticketId = validationResult.data;
     } catch (error) {
         console.error("QR Code parsing error:", error);
         return { success: false, error: 'Invalid or malformed QR Code.' };
     }
     
-
     const { data: ticket, error: ticketError } = await supabase
         .from('tickets')
-        .select('id, event_id, checked_in, events(organizer_id), profiles(first_name)')
-        .eq('id', qrData.ticketId)
-        .eq('user_id', qrData.userId)
+        .select('id, event_id, checked_in, user_id, events(organizer_id), profiles(first_name, last_name)')
+        .eq('id', ticketId)
         .single();
 
     if(ticketError || !ticket) {
         return { success: false, error: 'Invalid Ticket QR Code.' };
     }
     
-    if(ticket.event_id !== eventId) {
+    if(ticket.event_id !== scannerEventId) {
         return { success: false, error: 'This ticket is for a different event.' };
     }
 
@@ -217,20 +207,26 @@ export async function verifyTicket(qrToken: string, eventId: number) {
     }
 
     if(ticket.checked_in) {
-        return { success: false, error: `This ticket has already been checked in for ${ticket.profiles?.first_name || 'attendee'}.` };
+        const attendeeName = ticket.profiles ? `${ticket.profiles.first_name} ${ticket.profiles.last_name}` : 'attendee';
+        return { success: false, error: `This ticket has already been checked in for ${attendeeName}.` };
     }
 
-    const { data, error } = await supabase.from('tickets').update({ checked_in: true, checked_in_at: new Date().toISOString() }).eq('id', ticket.id).select('profiles(first_name, last_name)').single();
+    const { data: updateData, error } = await supabase
+      .from('tickets')
+      .update({ checked_in: true, checked_in_at: new Date().toISOString() })
+      .eq('id', ticket.id)
+      .select('profiles(first_name, last_name)')
+      .single();
     
-    if(error || !data) {
+    if(error || !updateData) {
         return { success: false, error: 'Failed to check in ticket.' };
     }
     
     revalidatePath(`/dashboard/events/${ticket.event_id}/manage`);
     revalidatePath(`/dashboard/analytics`);
 
-
-    return { success: true, message: `Successfully checked in ${data.profiles?.first_name || 'attendee'}.` };
+    const attendeeName = updateData.profiles ? `${updateData.profiles.first_name} ${updateData.profiles.last_name}`.trim() : 'attendee';
+    return { success: true, message: `Successfully checked in ${attendeeName}.` };
 }
 
 export async function getScannableEvents() {
@@ -254,7 +250,7 @@ export async function getScannableEvents() {
     
     const assignedEvents = (scannerAssignments || [])
         .map(assignment => assignment.events)
-        .filter((event): event is NonNullable<typeof event> => event !== null)
+        .filter((event): event is NonNullable<typeof event> => event !== null && new Date(event.date) > new Date())
         .map(event => ({
             ...event,
             attendees: event.tickets[0]?.count || 0,
@@ -265,7 +261,9 @@ export async function getScannableEvents() {
     const { data: organizedEventsData, error: organizedEventsError } = await supabase
         .from('events')
         .select('*, tickets(count)')
-        .eq('organizer_id', user.id);
+        .eq('organizer_id', user.id)
+        .gt('date', new Date().toISOString());
+
 
     if (organizedEventsError) {
         console.error('Error fetching organized events:', organizedEventsError);
