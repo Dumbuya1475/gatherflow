@@ -31,6 +31,18 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+   webpack: (
+    config,
+    { isServer },
+  ) => {
+    if (isServer) {
+        config.externals.push({
+            'handlebars': 'handlebars',
+            'dotprompt': 'dotprompt'
+        });
+    }
+    return config
+  },
 };
 
 export default nextConfig;
