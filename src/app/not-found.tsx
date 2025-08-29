@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { AppLogo } from '@/components/app-logo';
 import { Rocket } from 'lucide-react';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 
 export default function NotFound() {
   return (
@@ -31,9 +32,3 @@ export default function NotFound() {
     </div>
   );
 }
-
-// Dummy components to satisfy the linter until they can be properly imported.
-const Card = ({ className, children }: { className?: string, children: React.ReactNode }) => <div className={className}>{children}</div>;
-const CardHeader = ({ className, children }: { className?: string, children: React.ReactNode }) => <div className={className}>{children}</div>;
-const CardContent = ({ className, children }: { className?: string, children: React.ReactNode }) => <div className={className}>{children}</div>;
-const CardFooter = ({ className, children }: { className?: string, children: React.ReactNode }) => <div className={className}>{children}</div>;
