@@ -20,7 +20,7 @@ const eventDbSchema = z.object({
 
 
 export async function createEventAction(formData: FormData) {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     const {
         data: { user },
@@ -29,8 +29,6 @@ export async function createEventAction(formData: FormData) {
     if (!user) {
         return { success: false, error: 'You must be logged in to create an event.' };
     }
-
-    const coverImageFile = formData.get('cover_image_file') as File | null;
 
     const rawData = {
         title: formData.get('title'),
@@ -53,17 +51,9 @@ export async function createEventAction(formData: FormData) {
   
     let finalCoverImage = cover_image;
 
-    if (coverImageFile && coverImageFile.size > 0) {
-        try {
-            const uploadedUrl = await uploadFile(coverImageFile, 'event-covers');
-            finalCoverImage = uploadedUrl;
-        } catch (uploadError) {
-            return { success: false, error: (uploadError as Error).message };
-        }
-    } else if (!finalCoverImage) {
+    if (!finalCoverImage) {
         finalCoverImage = `https://picsum.photos/seed/${Math.random()}/600/400`
     }
-
 
     const { data: eventData, error } = await supabase.from('events').insert({
         title,
@@ -111,7 +101,7 @@ export async function createEventAction(formData: FormData) {
 
 
 export async function updateEventAction(eventId: number, formData: FormData) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -131,8 +121,6 @@ export async function updateEventAction(eventId: number, formData: FormData) {
     if (existingEvent.organizer_id !== user.id) {
         return { success: false, error: 'You are not authorized to update this event.' };
     }
-
-    const coverImageFile = formData.get('cover_image_file') as File | null;
 
     const rawData = {
         title: formData.get('title'),
@@ -154,17 +142,9 @@ export async function updateEventAction(eventId: number, formData: FormData) {
     
     let finalCoverImage = cover_image;
 
-    if (coverImageFile && coverImageFile.size > 0) {
-         try {
-            const uploadedUrl = await uploadFile(coverImageFile, 'event-covers');
-            finalCoverImage = uploadedUrl;
-        } catch (uploadError) {
-            return { success: false, error: (uploadError as Error).message };
-        }
-    } else if (!finalCoverImage) {
+    if (!finalCoverImage) {
         finalCoverImage = existingEvent.cover_image
     }
-
 
     const { error } = await supabase
         .from('events')
@@ -192,7 +172,7 @@ export async function updateEventAction(eventId: number, formData: FormData) {
 
 
 export async function getEventDetails(eventId: string) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: event, error } = await supabase
       .from('events')
       .select('*, tickets(count)')
@@ -212,7 +192,7 @@ export async function getEventDetails(eventId: string) {
 }
 
 export async function getEventAttendees(eventId: string) {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if(!user) return { data: null, error: 'Not authenticated' };

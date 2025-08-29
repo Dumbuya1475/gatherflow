@@ -47,7 +47,6 @@ const eventFormSchema = z.object({
   targetAudience: z.string().min(2, {
     message: 'Target audience must be at least 2 characters.',
   }),
-  cover_image_file: z.any().optional(),
   cover_image: z.string().url({ message: 'Please enter a valid image URL.'}).optional().or(z.literal('')),
 });
 
@@ -74,7 +73,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
       targetAudience: defaultValues?.targetAudience || '',
       cover_image: defaultValues?.cover_image || '',
       scanners: defaultValues?.scanners || [],
-      capacity: defaultValues?.capacity || '',
+      capacity: defaultValues?.capacity || undefined,
     },
   });
 
@@ -126,9 +125,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
     
     const formDataToSubmit = new FormData();
     Object.entries(data).forEach(([key, value]) => {
-        if (key === 'cover_image_file' && value instanceof File) {
-            formDataToSubmit.append(key, value);
-        } else if (key === 'scanners' && Array.isArray(value)) {
+        if (key === 'scanners' && Array.isArray(value)) {
             formDataToSubmit.append(key, JSON.stringify(value.map(s => s.email)));
         } else if (value !== undefined && value !== null && value !== '') {
             if (value instanceof Date) {
@@ -312,37 +309,20 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                   <FormItem>
                     <FormLabel>Max Attendees (Capacity)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="e.g., 500" {...field} onChange={e => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))} />
+                      <Input type="number" placeholder="e.g., 500" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value, 10))} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-            
-            <FormField
-              control={form.control}
-              name="cover_image_file"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cover Image</FormLabel>
-                  <FormControl>
-                    <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files ? e.target.files[0] : null)} />
-                  </FormControl>
-                  <FormDescription>
-                    Upload an image from your device. If you provide a URL below, it will be used instead.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <FormField
               control={form.control}
               name="cover_image"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Or enter Image URL</FormLabel>
+                  <FormLabel>Image URL</FormLabel>
                   <FormControl>
                     <Input placeholder="https://example.com/image.png" {...field} />
                   </FormControl>
