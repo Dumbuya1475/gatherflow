@@ -12,8 +12,9 @@ const eventSchema = z.object({
   location: z.string().min(2, 'Location must be at least 2 characters.'),
   cover_image: z.string().url().optional().or(z.literal('')),
   capacity: z.coerce.number().int().positive().optional(),
-  scanners: z.string().optional(),
+  scanners: z.array(z.object({ email: z.string().email() })).optional(),
   targetAudience: z.string().min(2, 'Target audience must be at least 2 characters.'),
+  cover_image_file: z.any().optional(),
 });
 
 export async function createEventAction(formData: unknown) {
@@ -24,16 +25,20 @@ export async function createEventAction(formData: unknown) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'You must be logged in to create an event.' };
+    return { success: false, error: 'You must be logged in to create an event.' };
   }
 
   const parsed = eventSchema.safeParse(formData);
 
   if (!parsed.success) {
-    return { error: parsed.error.errors.map(e => e.message).join(', ') };
+    return { success: false, error: parsed.error.errors.map(e => e.message).join(', ') };
   }
   
   const { title, description, date, end_date, location, cover_image, capacity, scanners } = parsed.data;
+  
+  // Note: File upload logic to Supabase storage would go here.
+  // For now, we'll just use the cover_image URL or a placeholder.
+  const finalCoverImage = cover_image || `https://picsum.photos/seed/${Math.random()}/600/400`;
 
   const { data: eventData, error } = await supabase.from('events').insert({
     title,
@@ -41,45 +46,41 @@ export async function createEventAction(formData: unknown) {
     date: date.toISOString(),
     end_date: end_date?.toISOString(),
     location,
-    cover_image: cover_image || `https://picsum.photos/seed/${Math.random()}/600/400`,
+    cover_image: finalCoverImage,
     organizer_id: user.id,
     capacity
   }).select('id').single();
 
   if (error || !eventData) {
     console.error('Error creating event:', error);
-    return { error: 'Could not create event.' };
+    return { success: false, error: 'Could not create event.' };
   }
 
-  if (scanners) {
-    const scannerEmails = scanners.split(',').map(email => email.trim().toLowerCase()).filter(email => z.string().email().safeParse(email).success);
+  const scannerEmails = scanners?.map(s => s.email).filter(Boolean);
+  if (scannerEmails && scannerEmails.length > 0) {
+    // This part remains the same, assuming we get emails correctly.
+    const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .in('raw_user_meta_data->>email', scannerEmails);
 
-    if (scannerEmails.length > 0) {
-        const { data: profiles, error: profileError } = await supabase
-            .from('profiles')
-            .select('id, raw_user_meta_data')
-            .in('raw_user_meta_data->>email', scannerEmails);
+    if(profileError) {
+         console.error('Error fetching profiles for scanners:', profileError);
+    }
 
-        if(profileError) {
-             console.error('Error fetching profiles for scanners:', profileError);
-             // Non-fatal, we can proceed without assigning
-        }
-
-        if (profiles && profiles.length > 0) {
-            const scannerRecords = profiles.map(profile => ({
-                event_id: eventData.id,
-                user_id: profile.id,
-              }));
-            const { error: scannerError } = await supabase.from('event_scanners').insert(scannerRecords);
-            if (scannerError) {
-                console.error('Error assigning scanners:', scannerError);
-                // Non-fatal
-            }
+    if (profiles && profiles.length > 0) {
+        const scannerRecords = profiles.map(profile => ({
+            event_id: eventData.id,
+            user_id: profile.id,
+          }));
+        const { error: scannerError } = await supabase.from('event_scanners').insert(scannerRecords);
+        if (scannerError) {
+            console.error('Error assigning scanners:', scannerError);
         }
     }
   }
 
-  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/events');
   revalidatePath('/');
   return { success: true };
 }
@@ -90,10 +91,9 @@ export async function updateEventAction(eventId: number, formData: unknown) {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-        return { error: 'You must be logged in to update an event.' };
+        return { success: false, error: 'You must be logged in to update an event.' };
     }
 
-    // First, verify ownership
     const { data: existingEvent, error: ownerError } = await supabase
         .from('events')
         .select('organizer_id')
@@ -101,20 +101,22 @@ export async function updateEventAction(eventId: number, formData: unknown) {
         .single();
 
     if (ownerError || !existingEvent) {
-        return { error: 'Event not found.' };
+        return { success: false, error: 'Event not found.' };
     }
 
     if (existingEvent.organizer_id !== user.id) {
-        return { error: 'You are not authorized to update this event.' };
+        return { success: false, error: 'You are not authorized to update this event.' };
     }
 
     const parsed = eventSchema.safeParse(formData);
 
     if (!parsed.success) {
-        return { error: parsed.error.errors.map(e => e.message).join(', ') };
+        return { success: false, error: parsed.error.errors.map(e => e.message).join(', ') };
     }
 
     const { title, description, date, end_date, location, cover_image, capacity } = parsed.data;
+    
+    const finalCoverImage = cover_image || `https://picsum.photos/seed/${Math.random()}/600/400`;
 
     const { error } = await supabase
         .from('events')
@@ -124,14 +126,14 @@ export async function updateEventAction(eventId: number, formData: unknown) {
             date: date.toISOString(),
             end_date: end_date?.toISOString(),
             location,
-            cover_image: cover_image || `https://picsum.photos/seed/${Math.random()}/600/400`,
+            cover_image: finalCoverImage,
             capacity,
         })
         .eq('id', eventId);
 
     if (error) {
         console.error('Error updating event:', error);
-        return { error: 'Could not update event.' };
+        return { success: false, error: 'Could not update event.' };
     }
 
     revalidatePath('/dashboard/events');
@@ -151,30 +153,30 @@ export async function getEventDetails(eventId: string) {
   
     if (error || !event) {
       console.error('Error fetching event details', error);
-      return { error: 'Event not found' };
+      return { data: null, error: 'Event not found' };
     }
     const eventWithAttendeeCount = {
         ...event,
         attendees: event.tickets[0]?.count || 0,
     }
   
-    return { data: eventWithAttendeeCount };
+    return { data: eventWithAttendeeCount, error: null };
 }
 
 export async function getEventAttendees(eventId: string) {
     const supabase = createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
-    if(!user) return { error: 'Not authenticated' };
+    if(!user) return { data: null, error: 'Not authenticated' };
 
     const { data: eventData, error: eventError } = await supabase.from('events').select('organizer_id').eq('id', eventId).single();
 
     if(eventError || !eventData) {
-        return { error: 'Could not verify event ownership.' };
+        return { data: null, error: 'Could not verify event ownership.' };
     }
     
     if(eventData.organizer_id !== user.id) {
-        return { error: 'You are not authorized to view these attendees.' };
+        return { data: null, error: 'You are not authorized to view these attendees.' };
     }
 
     const { data, error } = await supabase
@@ -193,7 +195,7 @@ export async function getEventAttendees(eventId: string) {
 
     if (error) {
         console.error('Error fetching attendees:', error);
-        return { error: 'Could not fetch attendees.' };
+        return { data: null, error: 'Could not fetch attendees.' };
     }
 
     const attendeesWithEmail = data.map(item => {
@@ -207,5 +209,5 @@ export async function getEventAttendees(eventId: string) {
         }
     })
 
-    return { data: attendeesWithEmail };
+    return { data: attendeesWithEmail, error: null };
 }

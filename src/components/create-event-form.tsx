@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Sparkles } from 'lucide-react';
+import { CalendarIcon, Sparkles, PlusCircle, X } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -43,13 +43,12 @@ const eventFormSchema = z.object({
     message: 'Location must be at least 2 characters.',
   }),
   capacity: z.coerce.number().int().positive({ message: "Capacity must be a positive number." }).optional(),
-  scanners: z.string().optional(),
+  scanners: z.array(z.object({ email: z.string().email({ message: "Please enter a valid email."}) })).optional(),
   targetAudience: z.string().min(2, {
     message: 'Target audience must be at least 2 characters.',
   }),
-  cover_image: z.string().url({
-    message: 'Please enter a valid image URL.'
-  }).optional().or(z.literal('')),
+  cover_image_file: z.any().optional(),
+  cover_image: z.string().url({ message: 'Please enter a valid image URL.'}).optional().or(z.literal('')),
 });
 
 type EventFormValues = z.infer<typeof eventFormSchema>;
@@ -73,9 +72,14 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
       location: '',
       targetAudience: '',
       cover_image: '',
-      scanners: '',
+      scanners: [],
       capacity: undefined,
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "scanners",
   });
 
   async function handleGenerateContent() {
@@ -118,8 +122,26 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
 
   async function onSubmit(data: EventFormValues) {
     setIsSubmitting(true);
+    
+    const formDataToSubmit = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+        if (key === 'cover_image_file' && value instanceof File) {
+            formDataToSubmit.append(key, value);
+        } else if (key === 'scanners' && Array.isArray(value)) {
+            formDataToSubmit.append(key, JSON.stringify(value.map(s => s.email)));
+        } else if (value !== undefined && value !== null) {
+            if (value instanceof Date) {
+                formDataToSubmit.append(key, value.toISOString());
+            } else {
+                formDataToSubmit.append(key, String(value));
+            }
+        }
+    });
 
     const action = event ? updateEventAction.bind(null, event.id) : createEventAction;
+    
+    // Note: Server action handling for direct file upload needs to be implemented.
+    // For now, it will pass the file object, but the backend needs to process it.
     const result = await action(data);
     
     if (result.success) {
@@ -291,7 +313,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                   <FormItem>
                     <FormLabel>Max Attendees (Capacity)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="e.g., 500" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10))} />
+                      <Input type="number" placeholder="e.g., 500" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value, 10))} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -301,15 +323,15 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
             
             <FormField
               control={form.control}
-              name="cover_image"
+              name="cover_image_file"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Cover Image URL</FormLabel>
+                  <FormLabel>Cover Image</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://example.com/image.png" {...field} />
+                    <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files ? e.target.files[0] : null)} />
                   </FormControl>
-                   <FormDescription>
-                    Use a service like <a href="https://picsum.photos/" target="_blank" rel="noopener noreferrer" className="underline">picsum.photos</a> for placeholder images. E.g., https://picsum.photos/600/400
+                  <FormDescription>
+                    Upload an image from your device. If you provide a URL below, it will be used instead.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -318,20 +340,57 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
 
             <FormField
               control={form.control}
-              name="scanners"
+              name="cover_image"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Invite Scanners</FormLabel>
+                  <FormLabel>Or enter Image URL</FormLabel>
                   <FormControl>
-                    <Input placeholder="scanner1@example.com, scanner2@example.com" {...field} />
+                    <Input placeholder="https://example.com/image.png" {...field} />
                   </FormControl>
                   <FormDescription>
-                    Enter comma-separated emails. Invited users will be able to scan tickets for this event.
+                    Use a service like <a href="https://picsum.photos/" target="_blank" rel="noopener noreferrer" className="underline">picsum.photos</a> for placeholder images. E.g., https://picsum.photos/600/400
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            <div>
+              <FormLabel>Invite Scanners</FormLabel>
+              <FormDescription>Invited users will be able to scan tickets for this event.</FormDescription>
+              <div className="space-y-2 mt-2">
+                {fields.map((field, index) => (
+                  <FormField
+                    control={form.control}
+                    key={field.id}
+                    name={`scanners.${index}.email`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center gap-2">
+                          <FormControl>
+                            <Input {...field} placeholder="scanner@example.com" />
+                          </FormControl>
+                          <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ))}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => append({ email: "" })}
+              >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Scanner
+              </Button>
+            </div>
             
             <FormField
               control={form.control}
