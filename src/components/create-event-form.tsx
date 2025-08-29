@@ -17,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Sparkles, PlusCircle, X } from 'lucide-react';
+import { CalendarIcon, Sparkles, PlusCircle, X, Upload } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -27,6 +27,9 @@ import { useToast } from '@/hooks/use-toast';
 import { createEventAction, updateEventAction } from '@/lib/actions/events';
 import { useRouter } from 'next/navigation';
 import { Event } from '@/lib/types';
+import Image from 'next/image';
+
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 const eventFormSchema = z.object({
   title: z.string().min(2, {
@@ -47,7 +50,11 @@ const eventFormSchema = z.object({
   targetAudience: z.string().min(2, {
     message: 'Target audience must be at least 2 characters.',
   }),
-  cover_image: z.string().url({ message: 'Please enter a valid image URL.'}).optional().or(z.literal('')),
+  cover_image_file: z
+    .any()
+    .refine((file) => file instanceof File ? ACCEPTED_IMAGE_TYPES.includes(file.type) : true, "Only .jpg, .jpeg, .png and .webp formats are supported.")
+    .optional(),
+  current_cover_image: z.string().url().optional(),
 });
 
 type EventFormValues = z.infer<typeof eventFormSchema>;
@@ -60,6 +67,7 @@ interface CreateEventFormProps {
 export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [preview, setPreview] = useState<string | null>(defaultValues?.current_cover_image || null);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -71,7 +79,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
       description: defaultValues?.description || '',
       location: defaultValues?.location || '',
       targetAudience: defaultValues?.targetAudience || '',
-      cover_image: defaultValues?.cover_image || '',
+      current_cover_image: defaultValues?.current_cover_image || '',
       scanners: defaultValues?.scanners || [],
       capacity: defaultValues?.capacity || undefined,
     },
@@ -123,22 +131,26 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
   async function onSubmit(data: EventFormValues) {
     setIsSubmitting(true);
     
-    const formDataToSubmit = new FormData();
+    const formData = new FormData();
+    
+    // Append all form data
     Object.entries(data).forEach(([key, value]) => {
-        if (key === 'scanners' && Array.isArray(value)) {
-            formDataToSubmit.append(key, JSON.stringify(value.map(s => s.email)));
-        } else if (value !== undefined && value !== null && value !== '') {
-            if (value instanceof Date) {
-                formDataToSubmit.append(key, value.toISOString());
-            } else {
-                formDataToSubmit.append(key, String(value));
+        if (value) {
+             if (key === 'cover_image_file' && value instanceof File) {
+                formData.append(key, value);
+            } else if (key === 'scanners' && Array.isArray(value)) {
+                formData.append(key, JSON.stringify(value.map(s => s.email)));
+            } else if (value instanceof Date) {
+                formData.append(key, value.toISOString());
+            } else if (typeof value === 'string' || typeof value === 'number') {
+                formData.append(key, String(value));
             }
         }
     });
 
     const action = event ? updateEventAction.bind(null, event.id) : createEventAction;
     
-    const result = await action(formDataToSubmit);
+    const result = await action(formData);
     
     if (result.success) {
       toast({
@@ -205,6 +217,44 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                     You can use AI to generate a compelling description.
                   </FormDescription>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="cover_image_file"
+              render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Cover Image</FormLabel>
+                    <FormControl>
+                        <div className="flex items-center gap-4">
+                            <div className="w-32 h-20 rounded-md bg-muted flex items-center justify-center overflow-hidden">
+                                {preview ? (
+                                    <Image src={preview} alt="Cover image preview" width={128} height={80} className="object-cover w-full h-full" />
+                                ) : (
+                                    <Upload className="w-8 h-8 text-muted-foreground" />
+                                )}
+                            </div>
+                            <Input
+                                type="file"
+                                accept={ACCEPTED_IMAGE_TYPES.join(",")}
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        field.onChange(file);
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                            setPreview(reader.result as string);
+                                        };
+                                        reader.readAsDataURL(file);
+                                    }
+                                }}
+                                className="flex-1"
+                            />
+                        </div>
+                    </FormControl>
+                    <FormMessage />
                 </FormItem>
               )}
             />
@@ -309,31 +359,14 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                   <FormItem>
                     <FormLabel>Max Attendees (Capacity)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="e.g., 500" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value, 10))} />
+                      <Input type="number" placeholder="e.g., 500" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value, 10))} value={field.value ?? ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-
-            <FormField
-              control={form.control}
-              name="cover_image"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Image URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://example.com/image.png" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Use a service like <a href="https://picsum.photos/" target="_blank" rel="noopener noreferrer" className="underline">picsum.photos</a> for placeholder images. E.g., https://picsum.photos/600/400
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
+            
             <div>
               <FormLabel>Invite Scanners</FormLabel>
               <FormDescription>Invited users will be able to scan tickets for this event.</FormDescription>

@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
 export default async function EditEventPage({ params }: { params: { id: string } }) {
-  const { data: { user } } = await createClient().auth.getUser();
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   const { data: event, error } = await getEventDetails(params.id);
 
   if (error || !event || !user || user.id !== event.organizer_id) {
@@ -18,6 +19,7 @@ export default async function EditEventPage({ params }: { params: { id: string }
     date: new Date(event.date),
     end_date: event.end_date ? new Date(event.end_date) : undefined,
     targetAudience: 'Users', // This field is not in the db, providing a default
+    current_cover_image: event.cover_image || undefined,
   }
 
   return (

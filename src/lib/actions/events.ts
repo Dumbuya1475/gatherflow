@@ -6,21 +6,21 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { uploadFile } from '../supabase/storage';
 
-// This schema is for server-side validation after the form data is processed
-const eventDbSchema = z.object({
+const eventFormSchema = z.object({
   title: z.string().min(2, 'Event title must be at least 2 characters.'),
   description: z.string().min(10, 'Description must be at least 10 characters.'),
   date: z.string(), // ISO string
   end_date: z.string().optional().nullable(),
   location: z.string().min(2, 'Location must be at least 2 characters.'),
-  cover_image: z.string().url().optional().or(z.literal('')),
   capacity: z.coerce.number().int().positive().optional(),
   scanners: z.array(z.string().email()).optional(),
+  cover_image_file: z.instanceof(File).optional(),
+  current_cover_image: z.string().url().optional(),
 });
 
 
 export async function createEventAction(formData: FormData) {
-    const supabase = await createClient();
+    const supabase = createClient();
 
     const {
         data: { user },
@@ -36,23 +36,29 @@ export async function createEventAction(formData: FormData) {
         date: formData.get('date'),
         end_date: formData.get('end_date') || null,
         location: formData.get('location'),
-        cover_image: formData.get('cover_image'),
         capacity: formData.get('capacity') ? Number(formData.get('capacity')) : undefined,
         scanners: JSON.parse(formData.get('scanners') as string || '[]'),
+        cover_image_file: formData.get('cover_image_file'),
     };
     
-    const parsed = eventDbSchema.safeParse(rawData);
+    const parsed = eventFormSchema.omit({ current_cover_image: true }).safeParse(rawData);
 
     if (!parsed.success) {
         return { success: false, error: parsed.error.errors.map(e => e.message).join(', ') };
     }
   
-    const { title, description, date, end_date, location, cover_image, capacity, scanners } = parsed.data;
+    const { title, description, date, end_date, location, capacity, scanners, cover_image_file } = parsed.data;
   
-    let finalCoverImage = cover_image;
+    let finalCoverImage: string | undefined;
 
-    if (!finalCoverImage) {
-        finalCoverImage = `https://picsum.photos/seed/${Math.random()}/600/400`
+    if (cover_image_file && cover_image_file.size > 0) {
+        try {
+            finalCoverImage = await uploadFile(cover_image_file, 'event-images');
+        } catch (uploadError) {
+            return { success: false, error: 'Failed to upload cover image.' };
+        }
+    } else {
+        finalCoverImage = `https://picsum.photos/seed/${Math.random()}/600/400`;
     }
 
     const { data: eventData, error } = await supabase.from('events').insert({
@@ -75,8 +81,8 @@ export async function createEventAction(formData: FormData) {
     if (scannerEmails && scannerEmails.length > 0) {
         const { data: profiles, error: profileError } = await supabase
             .from('profiles')
-            .select('id, raw_user_meta_data')
-            .in('raw_user_meta_data->>email', scannerEmails);
+            .select('id')
+            .in('email', scannerEmails);
 
         if(profileError) {
              console.error('Error fetching profiles for scanners:', profileError);
@@ -101,7 +107,7 @@ export async function createEventAction(formData: FormData) {
 
 
 export async function updateEventAction(eventId: number, formData: FormData) {
-    const supabase = await createClient();
+    const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -122,28 +128,34 @@ export async function updateEventAction(eventId: number, formData: FormData) {
         return { success: false, error: 'You are not authorized to update this event.' };
     }
 
-    const rawData = {
+     const rawData = {
         title: formData.get('title'),
         description: formData.get('description'),
         date: formData.get('date'),
         end_date: formData.get('end_date') || null,
         location: formData.get('location'),
-        cover_image: formData.get('cover_image'),
         capacity: formData.get('capacity') ? Number(formData.get('capacity')) : undefined,
+        scanners: JSON.parse(formData.get('scanners') as string || '[]'),
+        cover_image_file: formData.get('cover_image_file'),
+        current_cover_image: formData.get('current_cover_image'),
     };
 
-    const parsed = eventDbSchema.partial().safeParse(rawData);
+    const parsed = eventFormSchema.partial().safeParse(rawData);
 
     if (!parsed.success) {
         return { success: false, error: parsed.error.errors.map(e => e.message).join(', ') };
     }
 
-    const { title, description, date, end_date, location, cover_image, capacity } = parsed.data;
+    const { title, description, date, end_date, location, capacity, cover_image_file } = parsed.data;
     
-    let finalCoverImage = cover_image;
+    let finalCoverImage = existingEvent.cover_image;
 
-    if (!finalCoverImage) {
-        finalCoverImage = existingEvent.cover_image
+    if (cover_image_file && cover_image_file.size > 0) {
+       try {
+            finalCoverImage = await uploadFile(cover_image_file, 'event-images');
+        } catch (uploadError) {
+            return { success: false, error: 'Failed to upload new cover image.' };
+        }
     }
 
     const { error } = await supabase
@@ -216,7 +228,7 @@ export async function getEventAttendees(eventId: string) {
                 id,
                 first_name,
                 last_name,
-                raw_user_meta_data
+                email:raw_user_meta_data->>email
             )
         `)
         .eq('event_id', eventId);
@@ -226,16 +238,5 @@ export async function getEventAttendees(eventId: string) {
         return { data: null, error: 'Could not fetch attendees.' };
     }
 
-    const attendeesWithEmail = data.map(item => {
-        const profile = item.profiles as any;
-        return {
-            ...item,
-            profiles: {
-                ...profile,
-                email: profile?.raw_user_meta_data?.email
-            }
-        }
-    })
-
-    return { data: attendeesWithEmail, error: null };
+    return { data, error: null };
 }
