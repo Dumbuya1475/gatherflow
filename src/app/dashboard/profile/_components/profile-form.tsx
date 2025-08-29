@@ -14,6 +14,7 @@ import type { Profile } from '@/lib/types';
 import { updateProfile } from '@/lib/actions/user';
 import { useFormStatus } from 'react-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 const profileFormSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
