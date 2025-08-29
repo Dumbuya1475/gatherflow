@@ -1,3 +1,4 @@
+
 'use server';
 
 import Link from 'next/link';
@@ -11,60 +12,77 @@ import { Badge } from '@/components/ui/badge';
 
 
 async function getDashboardStats(user: any) {
-
-  const supabase = createClient();
-  if (!user) return { isOrganizer: false, totalEvents: 0, activeEvents: 0, totalAttendees: 0, checkInsToday: 0, recentEvents: [] };
-
-  const { count: totalEvents } = await supabase
-    .from('events')
-    .select('*', { count: 'exact', head: true })
-    .eq('organizer_id', user.id);
-
-  const { count: activeEvents } = await supabase
-    .from('events')
-    .select('*', { count: 'exact', head: true })
-    .eq('organizer_id', user.id)
-    .gt('date', new Date().toISOString());
-
-  const { data: eventIds, error: eventIdsError } = await supabase
-    .from('events')
-    .select('id')
-    .eq('organizer_id', user.id);
-
-  let totalAttendees = 0;
-  if (eventIds && eventIds.length > 0) {
-    const { count } = await supabase
-      .from('tickets')
-      .select('*', { count: 'exact', head: true })
-      .in('event_id', eventIds.map(e => e.id));
-    totalAttendees = count || 0;
+  if (!user) {
+    return { isOrganizer: false, totalEvents: 0, activeEvents: 0, totalAttendees: 0, checkInsToday: 0, recentEvents: [] };
   }
-  
-  // Placeholder for check-ins today
-  const checkInsToday = 0;
 
-  const { data: recentEventsData, error: recentEventsError } = await supabase
-    .from('events')
-    .select('*, tickets(count)')
-    .eq('organizer_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(5);
+  try {
+    const supabase = createClient();
 
-  const recentEvents = (recentEventsData || []).map(event => ({
-    ...event,
-    attendees: event.tickets[0]?.count || 0,
-  }));
-  
-  const isOrganizer = totalEvents !== null && totalEvents > 0;
+    const { count: totalEvents, error: totalEventsError } = await supabase
+      .from('events')
+      .select('*', { count: 'exact', head: true })
+      .eq('organizer_id', user.id);
 
-  return {
-    isOrganizer,
-    totalEvents: totalEvents || 0,
-    activeEvents: activeEvents || 0,
-    totalAttendees: totalAttendees || 0,
-    checkInsToday,
-    recentEvents
-  };
+    if (totalEventsError) throw totalEventsError;
+
+    const { count: activeEvents, error: activeEventsError } = await supabase
+      .from('events')
+      .select('*', { count: 'exact', head: true })
+      .eq('organizer_id', user.id)
+      .gt('date', new Date().toISOString());
+
+    if (activeEventsError) throw activeEventsError;
+
+    const { data: eventIds, error: eventIdsError } = await supabase
+      .from('events')
+      .select('id')
+      .eq('organizer_id', user.id);
+
+    if (eventIdsError) throw eventIdsError;
+
+    let totalAttendees = 0;
+    if (eventIds && eventIds.length > 0) {
+      const { count, error: ticketsCountError } = await supabase
+        .from('tickets')
+        .select('*', { count: 'exact', head: true })
+        .in('event_id', eventIds.map(e => e.id));
+      if (ticketsCountError) throw ticketsCountError;
+      totalAttendees = count || 0;
+    }
+    
+    // Placeholder for check-ins today
+    const checkInsToday = 0;
+
+    const { data: recentEventsData, error: recentEventsError } = await supabase
+      .from('events')
+      .select('*, tickets(count)')
+      .eq('organizer_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (recentEventsError) throw recentEventsError;
+
+    const recentEvents = (recentEventsData || []).map(event => ({
+      ...event,
+      attendees: event.tickets[0]?.count || 0,
+    }));
+    
+    const isOrganizer = totalEvents !== null && totalEvents > 0;
+
+    return {
+      isOrganizer,
+      totalEvents: totalEvents || 0,
+      activeEvents: activeEvents || 0,
+      totalAttendees: totalAttendees || 0,
+      checkInsToday,
+      recentEvents
+    };
+  } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      // Return a default state in case of any error
+      return { isOrganizer: false, totalEvents: 0, activeEvents: 0, totalAttendees: 0, checkInsToday: 0, recentEvents: [] };
+  }
 }
 
 async function getAttendeeDashboardStats(user: any) {
