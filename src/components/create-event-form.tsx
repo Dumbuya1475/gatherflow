@@ -66,14 +66,15 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
 
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
-    defaultValues: defaultValues || {
-      title: '',
-      description: '',
-      location: '',
-      targetAudience: '',
-      cover_image: '',
-      scanners: [],
-      capacity: undefined,
+    defaultValues: {
+      ...defaultValues,
+      title: defaultValues?.title || '',
+      description: defaultValues?.description || '',
+      location: defaultValues?.location || '',
+      targetAudience: defaultValues?.targetAudience || '',
+      cover_image: defaultValues?.cover_image || '',
+      scanners: defaultValues?.scanners || [],
+      capacity: defaultValues?.capacity || '',
     },
   });
 
@@ -311,7 +312,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                   <FormItem>
                     <FormLabel>Max Attendees (Capacity)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="e.g., 500" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value, 10))} />
+                      <Input type="number" placeholder="e.g., 500" {...field} onChange={e => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
