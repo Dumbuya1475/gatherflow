@@ -5,14 +5,16 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
-const QrCodePayloadSchema = z.object({
-    ticketId: z.string(),
+const QrTokenSchema = z.object({
+    ticketId: z.number(),
+    eventId: z.number(),
+    userId: z.string(),
 });
 
 
-async function assignQrCodeToTicket(ticketId: string) {
+async function assignQrCodeToTicket(ticketId: number, eventId: number, userId: string) {
     const supabase = createClient();
-    const qrCodeToken = JSON.stringify({ ticketId });
+    const qrCodeToken = JSON.stringify({ ticketId, eventId, userId });
 
     const { error } = await supabase
         .from('tickets')
@@ -75,7 +77,7 @@ export async function registerForEventAction(
   }
 
   try {
-    await assignQrCodeToTicket(ticket.id.toString());
+    await assignQrCodeToTicket(ticket.id, eventId, user.id);
   } catch (e) {
     return { error: (e as Error).message };
   }
@@ -131,7 +133,7 @@ export async function registerAndCreateTicket(
     }
 
     try {
-        await assignQrCodeToTicket(ticketData.id.toString());
+        await assignQrCodeToTicket(ticketData.id, eventId, signUpData.user.id);
     } catch (e) {
         return { error: `User created, but failed to finalize ticket: ${(e as Error).message}` };
     }
@@ -163,7 +165,7 @@ export async function getTicketDetails(ticketId: string) {
 }
 
 export async function verifyTicket(qrToken: string, scannerEventId: number) {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if(!user) return { success: false, error: 'Not authenticated' };
@@ -171,7 +173,7 @@ export async function verifyTicket(qrToken: string, scannerEventId: number) {
     let payload;
     try {
         const parsedJson = JSON.parse(qrToken);
-        const validationResult = QrCodePayloadSchema.safeParse(parsedJson);
+        const validationResult = QrTokenSchema.safeParse(parsedJson);
         if (!validationResult.success) {
             console.error("QR Code validation error:", validationResult.error.flatten());
             return { success: false, error: 'Invalid QR code data structure.' };
@@ -182,7 +184,11 @@ export async function verifyTicket(qrToken: string, scannerEventId: number) {
         return { success: false, error: 'Invalid or malformed QR Code.' };
     }
     
-    const { ticketId } = payload;
+    const { ticketId, eventId } = payload;
+
+    if (eventId !== scannerEventId) {
+      return { success: false, error: 'This ticket is for a different event.' };
+    }
 
     const { data: ticket, error: ticketError } = await supabase
         .from('tickets')
@@ -192,10 +198,6 @@ export async function verifyTicket(qrToken: string, scannerEventId: number) {
 
     if(ticketError || !ticket) {
         return { success: false, error: 'Invalid Ticket ID found in QR Code.' };
-    }
-
-    if (ticket.event_id !== scannerEventId) {
-      return { success: false, error: 'This ticket is for a different event.' };
     }
     
     const { data: scannerAssignment } = await supabase

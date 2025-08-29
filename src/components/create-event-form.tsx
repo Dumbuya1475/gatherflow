@@ -129,7 +129,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
             formDataToSubmit.append(key, value);
         } else if (key === 'scanners' && Array.isArray(value)) {
             formDataToSubmit.append(key, JSON.stringify(value.map(s => s.email)));
-        } else if (value !== undefined && value !== null) {
+        } else if (value !== undefined && value !== null && value !== '') {
             if (value instanceof Date) {
                 formDataToSubmit.append(key, value.toISOString());
             } else {
@@ -140,9 +140,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
 
     const action = event ? updateEventAction.bind(null, event.id) : createEventAction;
     
-    // Note: Server action handling for direct file upload needs to be implemented.
-    // For now, it will pass the file object, but the backend needs to process it.
-    const result = await action(data);
+    const result = await action(formDataToSubmit);
     
     if (result.success) {
       toast({
