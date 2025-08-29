@@ -1,8 +1,10 @@
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { uploadFile } from '../supabase/storage';
 
 // This schema is for server-side validation after the form data is processed
 const eventDbSchema = z.object({
@@ -28,6 +30,8 @@ export async function createEventAction(formData: FormData) {
         return { success: false, error: 'You must be logged in to create an event.' };
     }
 
+    const coverImageFile = formData.get('cover_image_file') as File | null;
+
     const rawData = {
         title: formData.get('title'),
         description: formData.get('description'),
@@ -47,9 +51,19 @@ export async function createEventAction(formData: FormData) {
   
     const { title, description, date, end_date, location, cover_image, capacity, scanners } = parsed.data;
   
-    // Note: File upload logic to Supabase storage would go here.
-    // For now, we'll just use the cover_image URL or a placeholder.
-    const finalCoverImage = cover_image || `https://picsum.photos/seed/${Math.random()}/600/400`;
+    let finalCoverImage = cover_image;
+
+    if (coverImageFile && coverImageFile.size > 0) {
+        try {
+            const uploadedUrl = await uploadFile(coverImageFile, 'event-covers');
+            finalCoverImage = uploadedUrl;
+        } catch (uploadError) {
+            return { success: false, error: (uploadError as Error).message };
+        }
+    } else if (!finalCoverImage) {
+        finalCoverImage = `https://picsum.photos/seed/${Math.random()}/600/400`
+    }
+
 
     const { data: eventData, error } = await supabase.from('events').insert({
         title,
@@ -106,7 +120,7 @@ export async function updateEventAction(eventId: number, formData: FormData) {
 
     const { data: existingEvent, error: ownerError } = await supabase
         .from('events')
-        .select('organizer_id')
+        .select('organizer_id, cover_image')
         .eq('id', eventId)
         .single();
 
@@ -117,6 +131,8 @@ export async function updateEventAction(eventId: number, formData: FormData) {
     if (existingEvent.organizer_id !== user.id) {
         return { success: false, error: 'You are not authorized to update this event.' };
     }
+
+    const coverImageFile = formData.get('cover_image_file') as File | null;
 
     const rawData = {
         title: formData.get('title'),
@@ -136,8 +152,19 @@ export async function updateEventAction(eventId: number, formData: FormData) {
 
     const { title, description, date, end_date, location, cover_image, capacity } = parsed.data;
     
-    // Use existing cover image if a new one isn't provided
-    const finalCoverImage = cover_image;
+    let finalCoverImage = cover_image;
+
+    if (coverImageFile && coverImageFile.size > 0) {
+         try {
+            const uploadedUrl = await uploadFile(coverImageFile, 'event-covers');
+            finalCoverImage = uploadedUrl;
+        } catch (uploadError) {
+            return { success: false, error: (uploadError as Error).message };
+        }
+    } else if (!finalCoverImage) {
+        finalCoverImage = existingEvent.cover_image
+    }
+
 
     const { error } = await supabase
         .from('events')
