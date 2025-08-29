@@ -11,7 +11,7 @@ export async function getProfile() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'You are not authenticated.' };
+    return { data: null, error: 'You are not authenticated.' };
   }
 
   const { data, error } = await supabase
@@ -20,12 +20,14 @@ export async function getProfile() {
     .eq('id', user.id)
     .single();
 
-  if (error) {
+  if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows found"
     console.error('Error fetching profile:', error);
-    return { error: 'Could not fetch profile.' };
+    return { data: null, error: 'Could not fetch profile.' };
   }
 
-  return { data: { ...data, email: user.email } };
+  const profileData = data || { id: user.id, first_name: '', last_name: ''};
+
+  return { data: { ...profileData, email: user.email }, error: null };
 }
 
 export async function updateProfile(prevState: { error: string | undefined, success?: boolean } | undefined, formData: FormData) {
@@ -59,7 +61,7 @@ export async function getProfileStats() {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-        return { error: 'Not authenticated' };
+        return { data: null, error: 'Not authenticated' };
     }
 
     const { count: userEventCount } = await supabase
@@ -85,21 +87,22 @@ export async function getProfileStats() {
             activeEventCount,
             totalEventCount,
             totalUserCount: userCountData || 0,
-        }
-    }
+        },
+        error: null
+    };
 }
 
 export async function getScanners() {
     const supabase = createClient();
     const { data, error } = await supabase
       .from('profiles')
-      .select("*, email:raw_user_meta_data->>'email'")
+      .select("id, first_name, last_name, email:raw_user_meta_data->>'email'")
       .eq('role', 'scanner');
   
     if (error) {
       console.error('Error fetching scanners:', error);
-      return { error: 'Could not fetch scanners.' };
+      return { data: null, error: 'Could not fetch scanners.' };
     }
   
-    return { data };
+    return { data, error: null };
 }

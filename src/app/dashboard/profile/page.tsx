@@ -20,11 +20,13 @@ function InfoCard({ title, value }: { title: string, value: string | number }) {
 
 export default async function ProfilePage() {
   const { data: profile, error } = await getProfile();
-  const { data: stats, error: statsError } = await getProfileStats();
-
+  
   if (error || !profile) {
     redirect('/login');
   }
+  
+  const { data: stats, error: statsError } = await getProfileStats();
+
 
   const fallback = (profile?.first_name?.[0] || 'U') + (profile?.last_name?.[0] || '');
 
