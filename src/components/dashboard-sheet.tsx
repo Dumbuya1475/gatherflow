@@ -46,7 +46,7 @@ export function DashboardSheet() {
           <Link href="/dashboard" className="flex items-center gap-2">
             <AppLogo />
             <span className="text-lg font-semibold text-foreground">
-              Eventide
+              GatherFlow
             </span>
           </Link>
           <SheetTitle className="sr-only">Menu</SheetTitle>

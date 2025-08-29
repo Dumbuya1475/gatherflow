@@ -46,7 +46,7 @@ export default function DashboardLayout({
             <Link href="/dashboard" className="flex items-center gap-2">
               <AppLogo />
               <span className="text-lg font-semibold text-sidebar-foreground">
-                Eventide
+                GatherFlow
               </span>
             </Link>
           </SidebarHeader>

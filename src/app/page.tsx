@@ -109,7 +109,7 @@ export default async function LandingPage() {
                     Organize Events That Inspire
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Eventide is the all-in-one platform to manage, promote, and execute your events flawlessly. From ticketing to check-in, we provide the tools you need to create memorable experiences.
+                    GatherFlow is the all-in-one platform to manage, promote, and execute your events flawlessly. From ticketing to check-in, we provide the tools you need to create memorable experiences.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -237,7 +237,7 @@ export default async function LandingPage() {
                 Ready to Create Amazing Events?
               </h2>
               <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Join thousands of event organizers who trust Eventide. Sign up today and experience the difference.
+                Join thousands of event organizers who trust GatherFlow. Sign up today and experience the difference.
               </p>
             </div>
             <div className="mx-auto w-full max-w-sm space-y-2">
