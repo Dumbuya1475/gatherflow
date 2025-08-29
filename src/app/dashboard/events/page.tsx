@@ -88,7 +88,8 @@ async function getAllEvents(user: any) {
 }
 
 export default async function EventsPage() {
-  const { data: { user } } = await createClient().auth.getUser();
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const myEvents: EventWithAttendees[] = user ? await getMyEvents(user.id) : [];
   const allEvents: EventWithAttendees[] = await getAllEvents(user);

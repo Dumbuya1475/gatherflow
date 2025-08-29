@@ -108,9 +108,10 @@ async function getAttendeeDashboardStats(user: any) {
 }
 
 export default async function DashboardPage() {
+  const supabase = createClient();
     const {
         data: { user },
-      } = await createClient().auth.getUser();
+      } = await supabase.auth.getUser();
 
   const { isOrganizer, totalEvents, activeEvents, totalAttendees, checkInsToday, recentEvents } = await getDashboardStats(user);
   const { registeredEventsCount, upcomingEvents, attendedEventsCount } = user ? await getAttendeeDashboardStats(user) : { registeredEventsCount: 0, upcomingEvents: [], attendedEventsCount: 0 };

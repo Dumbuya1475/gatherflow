@@ -167,7 +167,7 @@ export async function getTicketDetails(ticketId: string) {
 }
 
 export async function verifyTicket(qrToken: string, scannerEventId: number) {
-    const supabase = await createClient();
+    const supabase = createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if(!user) return { success: false, error: 'Not authenticated. Please log in.' };
@@ -296,4 +296,3 @@ export async function getScannableEvents() {
 
     return { data: uniqueEvents, isLoggedIn: true, error: null };
 }
-
