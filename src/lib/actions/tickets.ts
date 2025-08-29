@@ -166,10 +166,10 @@ export async function getScannableEvents() {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-        return { error: 'You must be logged in to view scannable events.', isLoggedIn: false };
+        return { data: [], error: 'You must be logged in to view scannable events.', isLoggedIn: false };
     }
     
-    // Fetch events where user is an assigned scanner
+    // Fetch events where user is an assigned scanner OR the organizer
     const { data: scannerAssignments, error: scannerError } = await supabase
         .from('event_scanners')
         .select('events(*, tickets(count))')
@@ -177,13 +177,38 @@ export async function getScannableEvents() {
 
     if (scannerError) {
         console.error('Error fetching scannable events:', scannerError);
-        return { error: 'Could not fetch assigned events.', isLoggedIn: true };
+        return { data: [], error: 'Could not fetch assigned events.', isLoggedIn: true };
     }
     
-    const assignedEvents = scannerAssignments.map(assignment => ({
-        ...assignment.events!,
-        attendees: assignment.events!.tickets[0]?.count || 0,
+    const assignedEvents = scannerAssignments
+        .map(assignment => assignment.events)
+        .filter(event => event !== null)
+        .map(event => ({
+            ...event!,
+            attendees: event!.tickets[0]?.count || 0,
+        }));
+
+
+    // Fetch events where the user is the organizer
+    const { data: organizedEventsData, error: organizedEventsError } = await supabase
+        .from('events')
+        .select('*, tickets(count)')
+        .eq('organizer_id', user.id);
+
+    if (organizedEventsError) {
+        console.error('Error fetching organized events:', organizedEventsError);
+        return { data: [], error: 'Could not fetch organized events.', isLoggedIn: true };
+    }
+
+    const organizedEvents = organizedEventsData.map(event => ({
+        ...event,
+        attendees: event.tickets[0]?.count || 0,
     }));
 
-    return { data: assignedEvents, isLoggedIn: true };
+    // Combine and remove duplicates
+    const allScannableEvents = [...assignedEvents, ...organizedEvents];
+    const uniqueEvents = Array.from(new Map(allScannableEvents.map(event => [event.id, event])).values());
+
+
+    return { data: uniqueEvents, isLoggedIn: true, error: null };
 }

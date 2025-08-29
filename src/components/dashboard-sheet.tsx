@@ -12,12 +12,11 @@ import {
   FileDown,
   Calendar,
 } from 'lucide-react';
-
 import {
   Sheet,
   SheetContent,
-  SheetTitle,
   SheetTrigger,
+  SheetTitle,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { logout } from '@/lib/actions/auth';
@@ -28,6 +27,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarGroup,
+  SidebarGroupLabel,
 } from './ui/sidebar';
 import { AppLogo } from './app-logo';
 
@@ -44,7 +45,9 @@ export function DashboardSheet() {
         <SidebarHeader className="mb-4">
           <Link href="/dashboard" className="flex items-center gap-2">
             <AppLogo />
-            <span className="text-lg font-semibold text-foreground">Eventide</span>
+            <span className="text-lg font-semibold text-foreground">
+              Eventide
+            </span>
           </Link>
           <SheetTitle className="sr-only">Menu</SheetTitle>
         </SidebarHeader>
@@ -59,46 +62,62 @@ export function DashboardSheet() {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link href="/dashboard/events">
-                  <Calendar />
-                  <span>All Events</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link href="/dashboard/events/create">
-                  <CalendarPlus />
-                  <span>Create Event</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link href="/dashboard/analytics">
-                  <BarChart />
-                  <span>Analytics</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link href="/dashboard/reports">
-                  <FileDown />
-                  <span>Reports</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link href="/dashboard/scanner">
-                  <ScanLine />
-                  <span>Scanner</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            <SidebarGroup>
+              <SidebarGroupLabel>Events</SidebarGroupLabel>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/events">
+                    <Calendar />
+                    <span>All Events</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/events/create">
+                    <CalendarPlus />
+                    <span>Create Event</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarGroup>
+
+            <SidebarGroup>
+              <SidebarGroupLabel>Operations</SidebarGroupLabel>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/scanner">
+                    <ScanLine />
+                    <span>Scanner</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarGroup>
+
+            <SidebarGroup>
+              <SidebarGroupLabel>Analytics</SidebarGroupLabel>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/analytics">
+                    <BarChart />
+                    <span>Analytics</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard/reports">
+                    <FileDown />
+                    <span>Reports</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarGroup>
+          </SidebarMenu>
+        </SidebarContent>
+
+        <SidebarFooter className="mt-auto">
+          <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
                 <Link href="/dashboard/profile">
@@ -116,20 +135,11 @@ export function DashboardSheet() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
-        </SidebarContent>
-
-        <SidebarFooter>
-          <form action={logout}>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Button type="submit" className="w-full justify-start">
-                    <LogOut />
-                    <span>Logout</span>
-                  </Button>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
+          <form action={logout} className="pt-2">
+              <Button type="submit" variant="ghost" className="w-full justify-start gap-2 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent">
+                <LogOut />
+                <span>Logout</span>
+              </Button>
           </form>
         </SidebarFooter>
       </SheetContent>
