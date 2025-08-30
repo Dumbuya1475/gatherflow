@@ -8,6 +8,7 @@ export type Ticket = Database['public']['Tables']['tickets']['Row'];
 export type EventWithAttendees = Event & {
   attendees: number;
   ticket_id?: number;
+  type?: 'attended' | 'organized';
 };
 
 export type Attendee = {

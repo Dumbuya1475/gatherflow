@@ -52,6 +52,7 @@ export type Database = {
           end_date: string | null
           id: number
           is_paid: boolean | null
+          is_public: boolean
           location: string | null
           organizer_id: string
           price: number | null
@@ -66,6 +67,7 @@ export type Database = {
           end_date?: string | null
           id?: number
           is_paid?: boolean | null
+          is_public?: boolean
           location?: string | null
           organizer_id: string
           price?: number | null
@@ -80,6 +82,7 @@ export type Database = {
           end_date?: string | null
           id?: number
           is_paid?: boolean | null
+          is_public?: boolean
           location?: string | null
           organizer_id?: string
           price?: number | null
@@ -177,6 +180,13 @@ export type Database = {
       count_users: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      delete_ticket: {
+        Args: {
+          p_ticket_id: number
+          p_user_id: string
+        }
+        Returns: undefined
       }
       handle_new_user: {
         Args: Record<PropertyKey, never>

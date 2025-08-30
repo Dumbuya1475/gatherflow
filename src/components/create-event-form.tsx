@@ -31,6 +31,7 @@ import type { Event } from '@/lib/types';
 import { generatePromotionAction } from '@/lib/actions/server/ai';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
+import { Switch } from './ui/switch';
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
@@ -62,6 +63,7 @@ const eventFormSchema = z.object({
   current_cover_image: z.string().url().optional(),
   is_paid: z.boolean().default(false),
   price: z.coerce.number().nonnegative().optional(),
+  is_public: z.boolean().default(true),
 }).refine(data => {
     if (data.is_paid) {
         return data.price !== undefined && data.price > 0;
@@ -99,6 +101,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
       capacity: defaultValues?.capacity || undefined,
       is_paid: defaultValues?.is_paid || false,
       price: defaultValues?.price || undefined,
+      is_public: defaultValues?.is_public ?? true,
     },
   });
 
@@ -159,7 +162,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                 formData.append(key, value);
             } else if (key === 'scanners' && Array.isArray(value)) {
                 formData.append(key, JSON.stringify(value.map(s => s.email)));
-            } else if (key === 'is_paid') {
+            } else if (key === 'is_paid' || key === 'is_public') {
                 formData.append(key, value.toString());
             }
             else if (value instanceof Date) {
@@ -393,52 +396,75 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
               />
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <FormField
+                control={form.control}
+                name="is_paid"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>Ticket Price</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={(value) => field.onChange(value === 'paid')}
+                        defaultValue={field.value ? 'paid' : 'free'}
+                        className="flex space-x-4"
+                      >
+                        <FormItem className="flex items-center space-x-2">
+                          <FormControl>
+                            <RadioGroupItem value="free" id="free" />
+                          </FormControl>
+                          <Label htmlFor="free">Free Event</Label>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-2">
+                          <FormControl>
+                            <RadioGroupItem value="paid" id="paid" />
+                          </FormControl>
+                          <Label htmlFor="paid">Paid Event</Label>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {isPaid && (
+                  <FormField
+                  control={form.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Price (SLE)</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g., 500000" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} value={field.value ?? ''} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
             <FormField
               control={form.control}
-              name="is_paid"
+              name="is_public"
               render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Ticket Price</FormLabel>
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">Event Visibility</FormLabel>
+                    <FormDescription>
+                      {field.value ? 'Public: Discoverable by everyone.' : 'Private: Only visible to people with the link.'}
+                    </FormDescription>
+                  </div>
                   <FormControl>
-                    <RadioGroup
-                      onValueChange={(value) => field.onChange(value === 'paid')}
-                      defaultValue={field.value ? 'paid' : 'free'}
-                      className="flex space-x-4"
-                    >
-                      <FormItem className="flex items-center space-x-2">
-                        <FormControl>
-                          <RadioGroupItem value="free" id="free" />
-                        </FormControl>
-                        <Label htmlFor="free">Free Event</Label>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2">
-                        <FormControl>
-                          <RadioGroupItem value="paid" id="paid" />
-                        </FormControl>
-                        <Label htmlFor="paid">Paid Event</Label>
-                      </FormItem>
-                    </RadioGroup>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
                   </FormControl>
-                  <FormMessage />
                 </FormItem>
               )}
             />
-
-            {isPaid && (
-                 <FormField
-                 control={form.control}
-                 name="price"
-                 render={({ field }) => (
-                   <FormItem>
-                     <FormLabel>Price (SLE)</FormLabel>
-                     <FormControl>
-                       <Input type="number" placeholder="e.g., 500000" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} value={field.value ?? ''} />
-                     </FormControl>
-                     <FormMessage />
-                   </FormItem>
-                 )}
-               />
-            )}
             
             <div>
               <FormLabel>Invite Scanners</FormLabel>

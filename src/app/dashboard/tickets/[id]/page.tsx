@@ -7,7 +7,8 @@ import Link from "next/link";
 
 
 export default async function TicketPage({ params }: { params: { id: string } }) {
-    const { data: ticket, error } = await getTicketDetails(params.id);
+    const { id } = params;
+    const { data: ticket, error } = await getTicketDetails(id);
 
     if (error || !ticket || !ticket.events) {
         return <div className="text-center text-red-500">Error: {error || 'Ticket not found'}</div>

@@ -26,6 +26,7 @@ export async function createEventAction(formData: FormData) {
     const cover_image_file = formData.get('cover_image_file') as File | null;
     const is_paid = formData.get('is_paid') === 'true';
     const price = formData.get('price') ? Number(formData.get('price')) : null;
+    const is_public = formData.get('is_public') === 'true';
   
     if (!title || !description || !date || !location) {
         return { success: false, error: 'Please fill in all required fields.' };
@@ -54,6 +55,7 @@ export async function createEventAction(formData: FormData) {
         capacity,
         is_paid,
         price,
+        is_public,
     }).select('id').single();
 
     if (error || !eventData) {
@@ -121,6 +123,7 @@ export async function updateEventAction(eventId: number, formData: FormData) {
     const cover_image_file = formData.get('cover_image_file') as File | null;
     const is_paid = formData.get('is_paid') === 'true';
     const price = formData.get('price') ? Number(formData.get('price')) : null;
+    const is_public = formData.get('is_public') === 'true';
     
     let finalCoverImage = existingEvent.cover_image;
 
@@ -143,7 +146,8 @@ export async function updateEventAction(eventId: number, formData: FormData) {
             cover_image: finalCoverImage,
             capacity,
             is_paid,
-            price
+            price,
+            is_public
         })
         .eq('id', eventId);
 

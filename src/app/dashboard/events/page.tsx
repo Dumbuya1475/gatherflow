@@ -12,6 +12,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
+import { TimelineEventCard } from '@/components/timeline-event-card';
 
 async function getMyEvents(userId: string) {
   const supabase = createClient();
@@ -56,10 +57,14 @@ async function getRegisteredEvents(userId: string) {
 async function getAllEvents(user: any) {
   const supabase = createClient();
 
-  const { data: events, error } = await supabase
+  const query = supabase
     .from('events')
     .select('*, tickets(count)')
+    .eq('is_public', true)
     .order('date', { ascending: false });
+
+  const { data: events, error } = await query;
+
 
   if (error) {
     console.error('Error fetching all events:', error);
@@ -87,6 +92,45 @@ async function getAllEvents(user: any) {
   }));
 }
 
+async function getPastEvents(userId: string) {
+    const supabase = createClient();
+    
+    const { data: attendedTickets, error: attendedError } = await supabase
+        .from('tickets')
+        .select('events(*, tickets(count))')
+        .eq('user_id', userId)
+        .lt('events.date', new Date().toISOString())
+        .order('events(date)', { ascending: false });
+
+    if(attendedError) {
+        console.error('Error fetching past attended events:', attendedError);
+    }
+    const attendedEvents = (attendedTickets || []).map(t => ({...t.events!, type: 'attended' as const, attendees: t.events!.tickets[0]?.count || 0 }));
+
+
+    const { data: organizedEvents, error: organizedError } = await supabase
+        .from('events')
+        .select('*, tickets(count)')
+        .eq('organizer_id', userId)
+        .lt('date', new Date().toISOString())
+        .order('date', { ascending: false });
+
+    if(organizedError) {
+        console.error('Error fetching past organized events:', organizedError);
+    }
+
+    const pastOrganizedEvents = (organizedEvents || []).map(e => ({...e, type: 'organized' as const, attendees: e.tickets[0]?.count || 0 }));
+
+    const allPastEvents = [...attendedEvents, ...pastOrganizedEvents];
+    allPastEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    // Simple deduplication in case user attended their own event
+    const uniquePastEvents = Array.from(new Map(allPastEvents.map(e => [e.id, e])).values());
+
+    return uniquePastEvents;
+}
+
+
 export default async function EventsPage() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -94,6 +138,7 @@ export default async function EventsPage() {
   const myEvents: EventWithAttendees[] = user ? await getMyEvents(user.id) : [];
   const allEvents: EventWithAttendees[] = await getAllEvents(user);
   const registeredEvents = user ? await getRegisteredEvents(user.id) : [];
+  const pastEvents = user ? await getPastEvents(user.id) : [];
 
 
   return (
@@ -111,10 +156,11 @@ export default async function EventsPage() {
       </div>
 
       <Tabs defaultValue="all-events">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="all-events">All Events</TabsTrigger>
           <TabsTrigger value="my-events">My Events</TabsTrigger>
           <TabsTrigger value="registered">My Tickets</TabsTrigger>
+           <TabsTrigger value="timeline">Timeline</TabsTrigger>
         </TabsList>
         <TabsContent value="all-events">
           {allEvents.length > 0 ? (
@@ -173,6 +219,25 @@ export default async function EventsPage() {
               </p>
             </div>
           )}
+        </TabsContent>
+        <TabsContent value="timeline">
+             {pastEvents.length > 0 ? (
+                <div className="relative mt-12 pl-6">
+                    <div className="absolute left-[30px] top-0 h-full w-0.5 bg-border -translate-x-1/2"></div>
+                    <div className="space-y-12">
+                        {pastEvents.map((event) => (
+                           <TimelineEventCard key={event.id} event={event} />
+                        ))}
+                    </div>
+                </div>
+            ) : (
+                 <div className="mt-6 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
+                    <h3 className="text-xl font-semibold tracking-tight">No past events</h3>
+                    <p className="text-sm text-muted-foreground">
+                        Your past created and attended events will appear here.
+                    </p>
+                 </div>
+            )}
         </TabsContent>
       </Tabs>
     </div>
