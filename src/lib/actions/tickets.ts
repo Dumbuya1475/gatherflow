@@ -5,39 +5,25 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import crypto from 'crypto';
 
 const QrTokenSchema = z.object({
-    ticketId: z.number(),
-    eventId: z.number(),
+    ticketId: z.string(),
+    eventId: z.string(),
     userId: z.string(),
 });
 
 
-async function assignQrCodeToTicket(ticketId: number, eventId: number, userId: string) {
-    const supabase = createClient();
-    // Ensure the QR code is a clean JSON string every time
-    const qrCodeToken = JSON.stringify({ ticketId, eventId, userId });
-
-    const { error } = await supabase
-        .from('tickets')
-        .update({ qr_code_token: qrCodeToken })
-        .eq('id', ticketId);
-
-    if (error) {
-        console.error('Error assigning QR code to ticket:', error);
-        throw new Error('Could not assign QR code to the ticket.');
-    }
+function generateShortSecret(): string {
+    return crypto.randomBytes(4).toString('hex');
 }
 
-
 export async function registerForEventAction(
-  prevState: { error?: string; success?: boolean; ticketId?: number; } | undefined,
+  prevState: { error?: string; success?: boolean; ticketId?: string; } | undefined,
   formData: FormData
 ) {
   const supabase = createClient();
-  const eventIdStr = formData.get('eventId') as string;
-  const eventId = parseInt(eventIdStr, 10);
-
+  const eventId = formData.get('eventId') as string;
 
   const {
     data: { user },
@@ -53,7 +39,7 @@ export async function registerForEventAction(
     .select('id')
     .eq('event_id', eventId)
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (existingTicket) {
     return redirect(`/events/${eventId}/register/success?ticketId=${existingTicket.id}`);
@@ -67,23 +53,31 @@ export async function registerForEventAction(
     return { error: 'This event has reached its maximum capacity.' };
   }
 
-
+  const qrSecret = generateShortSecret();
+  
   const { data: ticket, error } = await supabase.from('tickets').insert({
     event_id: eventId,
     user_id: user.id,
+    qr_code_secret: qrSecret,
   }).select('id').single();
 
   if (error || !ticket) {
     console.error('Error registering for event:', error);
     return { error: 'Could not register for the event.' };
   }
+  
+  const qrCodeToken = `GF:${eventId}:${ticket.id}:${qrSecret}`;
 
-  try {
-    await assignQrCodeToTicket(ticket.id, eventId, user.id);
-  } catch (e) {
-    return { error: (e as Error).message };
+  const { error: updateError } = await supabase
+    .from('tickets')
+    .update({ qr_code_token: qrCodeToken })
+    .eq('id', ticket.id);
+
+  if (updateError) {
+      console.error('Error setting QR code token:', updateError);
+      // Even if this fails, the user is registered. They can regenerate QR from dashboard.
+      // For a critical app, you might want to roll back the ticket creation.
   }
-
 
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/events');
@@ -100,7 +94,6 @@ export async function unregisterFromEventAction(
 ) {
   const supabase = createClient();
   const ticketIdStr = formData.get('ticketId') as string;
-  const ticketId = parseInt(ticketIdStr, 10);
 
   const {
     data: { user },
@@ -110,8 +103,8 @@ export async function unregisterFromEventAction(
     return { error: 'You must be logged in to unregister.' };
   }
 
-  // Use RPC to delete the ticket, which enforces ownership.
-  const { error } = await supabase.rpc('delete_ticket', { p_ticket_id: ticketId, p_user_id: user.id });
+  // Use RLS to enforce ownership.
+  const { error } = await supabase.from('tickets').delete().eq('id', ticketIdStr);
 
   if (error) {
     console.error('Error unregistering from event:', error);
@@ -129,8 +122,7 @@ export async function registerAndCreateTicket(
     formData: FormData
 ) {
     const supabase = createClient();
-    const eventIdStr = formData.get('eventId') as string;
-    const eventId = parseInt(eventIdStr, 10);
+    const eventId = formData.get('eventId') as string;
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const confirmPassword = formData.get('confirmPassword') as string;
@@ -156,21 +148,28 @@ export async function registerAndCreateTicket(
         return { error: signUpError?.message || "Could not sign up user." };
     }
     
+    const qrSecret = generateShortSecret();
+
     // Create ticket first to get the ID
     const { data: ticketData, error: ticketError } = await supabase.from('tickets').insert({
         event_id: eventId,
         user_id: signUpData.user.id,
+        qr_code_secret: qrSecret,
     }).select('id').single();
 
     if (ticketError || !ticketData) {
         return { error: ticketError?.message || "You are registered as a user, but we failed to create your ticket. Please contact support." };
     }
     
-    // Now update the ticket with the final token including the new ticket ID
-    try {
-        await assignQrCodeToTicket(ticketData.id, eventId, signUpData.user.id);
-    } catch(e) {
-        return { error: (e as Error).message };
+    const qrCodeToken = `GF:${eventId}:${ticketData.id}:${qrSecret}`;
+
+    const { error: updateError } = await supabase
+      .from('tickets')
+      .update({ qr_code_token: qrCodeToken })
+      .eq('id', ticketData.id);
+
+    if (updateError) {
+        console.error('Error setting QR code token:', updateError);
     }
     
     redirect(`/events/${eventId}/register/success?ticketId=${ticketData.id}`);
@@ -199,36 +198,25 @@ export async function getTicketDetails(ticketId: string) {
     return { data: ticket, error: null };
 }
 
-export async function verifyTicket(qrToken: string, scannerEventId: number) {
+export async function verifyTicket(qrToken: string, scannerEventId: string) {
     const supabase = createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if(!user) return { success: false, error: 'Not authenticated. Please log in.' };
 
-    let payload;
-    try {
-        // The QR token is a JSON string, so we parse it first.
-        const parsedJson = JSON.parse(qrToken);
-        const validationResult = QrTokenSchema.safeParse(parsedJson);
-        if (!validationResult.success) {
-            console.error("QR Code validation error:", validationResult.error.flatten());
-            return { success: false, error: 'Invalid QR code data structure.' };
-        }
-        payload = validationResult.data;
-    } catch (error) {
-        console.error("QR Code parsing error:", error);
-        return { success: false, error: 'Invalid or malformed QR Code.' };
+    const parts = qrToken.split(':');
+    if (parts.length !== 4 || parts[0] !== 'GF') {
+        return { success: false, error: 'Invalid QR Code format.' };
     }
+    const [_, eventId, ticketId, qrSecret] = parts;
     
-    const { ticketId, eventId } = payload;
-
     if (eventId !== scannerEventId) {
       return { success: false, error: 'This ticket is for a different event.' };
     }
 
     const { data: ticket, error: ticketError } = await supabase
         .from('tickets')
-        .select('id, event_id, checked_in, user_id, events(organizer_id), profiles(first_name, last_name)')
+        .select('id, event_id, checked_in, qr_code_secret, user_id, events(organizer_id), profiles(first_name, last_name)')
         .eq('id', ticketId)
         .single();
 
@@ -236,11 +224,15 @@ export async function verifyTicket(qrToken: string, scannerEventId: number) {
         return { success: false, error: 'Invalid Ticket ID found in QR Code.' };
     }
     
+    if(ticket.qr_code_secret !== qrSecret) {
+        return { success: false, error: 'Invalid QR secret. Token may be compromised.'};
+    }
+    
     const { data: scannerAssignment, error: scannerError } = await supabase
-        .from('event_scanners')
+        .from('scanner_assignments')
         .select('id', { count: 'exact', head: true })
         .eq('event_id', ticket.event_id)
-        .eq('user_id', user.id);
+        .eq('scanner_id', user.id);
     
     if (scannerError) {
         console.error("Error checking scanner assignment:", scannerError);
@@ -256,7 +248,7 @@ export async function verifyTicket(qrToken: string, scannerEventId: number) {
 
     if(ticket.checked_in) {
         const attendeeName = ticket.profiles ? `${ticket.profiles.first_name} ${ticket.profiles.last_name}` : 'attendee';
-        return { success: false, error: `This ticket has already been checked in for ${attendeeName}.` };
+        return { success: false, error: `This ticket has already been checked in for ${attendeeName}.`, status: 'already_in' };
     }
 
     const { data: updateData, error: updateError } = await supabase
@@ -288,9 +280,9 @@ export async function getScannableEvents() {
     
     // Fetch events where the user is an assigned scanner
     const { data: scannerAssignments, error: scannerError } = await supabase
-        .from('event_scanners')
+        .from('scanner_assignments')
         .select('events(*, tickets(count))')
-        .eq('user_id', user.id);
+        .eq('scanner_id', user.id);
 
     if (scannerError) {
         console.error('Error fetching scannable events:', scannerError);

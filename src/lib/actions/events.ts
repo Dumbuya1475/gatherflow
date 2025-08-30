@@ -93,7 +93,7 @@ export async function createEventAction(formData: FormData) {
 }
 
 
-export async function updateEventAction(eventId: number, formData: FormData) {
+export async function updateEventAction(eventId: string, formData: FormData) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -202,7 +202,16 @@ export async function getEventAttendees(eventId: string) {
 
     const { data, error } = await supabase
         .from('tickets')
-        .select('*, profiles ( id, first_name, last_name, email:raw_user_meta_data->>email )')
+        .select(`
+            ticket_id: id,
+            checked_in,
+            profiles:user_id (
+                id,
+                first_name,
+                last_name,
+                email
+            )
+        `)
         .eq('event_id', eventId);
 
     if (error) {
@@ -224,8 +233,6 @@ export async function deleteEventAction(formData: FormData) {
       throw new Error('You must be logged in to delete an event.');
     }
   
-    // Note: RLS policies should ensure the user is the organizer.
-    // The policy for `events` table should allow delete for organizers.
     const { error } = await supabase.from('events').delete().eq('id', eventId);
   
     if (error) {
@@ -235,4 +242,102 @@ export async function deleteEventAction(formData: FormData) {
   
     revalidatePath('/dashboard/events');
     redirect('/dashboard/events');
+}
+
+
+export async function createSessionAction(formData: FormData) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    const eventId = formData.get('eventId') as string;
+    const name = formData.get('name') as string;
+    const description = formData.get('description') as string;
+    const location = formData.get('location') as string;
+    const start_at = formData.get('start_at') as string;
+    const end_at = formData.get('end_at') as string;
+    const capacity = formData.get('capacity') ? Number(formData.get('capacity')) : null;
+
+    if (!eventId || !name || !start_at || !end_at) {
+        return { success: false, error: 'Missing required fields' };
+    }
+
+    const { error } = await supabase.from('sessions').insert({
+        event_id: eventId,
+        name,
+        description,
+        location,
+        start_at,
+        end_at,
+        capacity
+    });
+
+    if (error) {
+        console.error("Error creating session", error);
+        return { success: false, error: error.message };
+    }
+
+    revalidatePath(`/dashboard/events/${eventId}/manage`);
+    return { success: true };
+}
+
+export async function getEventSessions(eventId: string) {
+    const supabase = createClient();
+    const { data, error } = await supabase.from('sessions').select('*').eq('event_id', eventId);
+    if(error) return { data: [], error: 'Could not fetch sessions' };
+    return { data, error: null };
+}
+
+
+export async function createScanPointAction(formData: FormData) {
+    const supabase = createClient();
+    const eventId = formData.get('eventId') as string;
+    const name = formData.get('name') as string;
+
+    const { error } = await supabase.from('scan_points').insert({ event_id: eventId, name });
+    if (error) return { success: false, error: error.message };
+
+    revalidatePath(`/dashboard/events/${eventId}/manage`);
+    return { success: true };
+}
+
+
+export async function getEventScanPoints(eventId: string) {
+    const supabase = createClient();
+    const { data, error } = await supabase.from('scan_points').select('*').eq('event_id', eventId);
+    if(error) return { data: [], error: 'Could not fetch scan points' };
+    return { data, error: null };
+}
+
+export async function getEventScanners(eventId: string) {
+    const supabase = createClient();
+    const { data, error } = await supabase.from('scanner_assignments').select(`
+        profiles (id, first_name, last_name, email),
+        scan_points (name)
+    `).eq('event_id', eventId);
+
+    if (error) return { data: [], error: "Could not fetch scanners" };
+    return { data, error: null };
+}
+
+export async function assignScannerAction(formData: FormData) {
+    const supabase = createClient();
+    const eventId = formData.get('eventId') as string;
+    const scannerId = formData.get('scannerId') as string;
+    const scanPointId = formData.get('scanPointId') as string;
+
+    if(!scannerId || !scanPointId) return { success: false, error: "Missing scanner or scan point" };
+
+    const { error } = await supabase.from('scanner_assignments').upsert({
+        event_id: eventId,
+        scan_point_id: scanPointId,
+        scanner_id: scannerId,
+    }, { onConflict: 'scan_point_id, scanner_id' });
+
+    if (error) {
+        console.error("Error assigning scanner:", error);
+        return { success: false, error: error.message };
+    }
+    revalidatePath(`/dashboard/events/${eventId}/manage`);
+    return { success: true };
 }
