@@ -56,7 +56,7 @@ export async function registerForEventAction(
     .single();
 
   if (existingTicket) {
-    return redirect(`/dashboard/tickets/${existingTicket.id}`);
+    return redirect(`/events/${eventId}/register/success?ticketId=${existingTicket.id}`);
   }
   
   const { data: eventData } = await supabase.from('events').select('capacity, tickets(count)').eq('id', eventId).single();
@@ -91,7 +91,7 @@ export async function registerForEventAction(
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/events`);
   
-  return redirect(`/dashboard/tickets/${ticket.id}`);
+  return redirect(`/events/${eventId}/register/success?ticketId=${ticket.id}`);
 }
 
 export async function unregisterFromEventAction(
