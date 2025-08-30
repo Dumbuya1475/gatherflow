@@ -69,3 +69,5 @@ export function TicketView({ ticket }: { ticket: TicketWithEvent }) {
         </div>
     )
 }
+
+    

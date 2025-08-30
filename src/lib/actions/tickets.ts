@@ -243,3 +243,5 @@ export async function getScannableEvents() {
 
     return { data: uniqueEvents, isLoggedIn: true, error: null };
 }
+
+    

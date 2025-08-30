@@ -57,7 +57,7 @@ export default async function RegistrationSuccessPage({
                             <CardDescription>Save this QR code or take a screenshot. You'll need it for event check-in.</CardDescription>
                         </CardHeader>
                         <CardContent className="p-4 flex-1 flex items-center justify-center">
-                            <QrCodeGenerator qrToken={ticket.qr_code_token} />
+                            <QrCodeGenerator qrToken={ticket.qr_token} />
                         </CardContent>
                         <CardContent className="p-0">
                              <p className="text-xs text-muted-foreground">Ticket ID: {ticket.id}</p>
@@ -84,3 +84,5 @@ export default async function RegistrationSuccessPage({
         </div>
     )
 }
+
+    
