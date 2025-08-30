@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster"
 export const metadata: Metadata = {
   title: 'GatherFlow',
   description: 'The future of event management.',
-  manifest: '/manifest.json',
 };
 
 export default function RootLayout({

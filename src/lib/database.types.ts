@@ -52,7 +52,7 @@ export type Database = {
           end_date: string | null
           id: number
           location: string | null
-          organizer_id: string | null
+          organizer_id: string
           title: string
         }
         Insert: {
@@ -64,7 +64,7 @@ export type Database = {
           end_date?: string | null
           id?: number
           location?: string | null
-          organizer_id?: string | null
+          organizer_id: string
           title: string
         }
         Update: {
@@ -76,7 +76,7 @@ export type Database = {
           end_date?: string | null
           id?: number
           location?: string | null
-          organizer_id?: string | null
+          organizer_id?: string
           title?: string
         }
         Relationships: [
@@ -95,21 +95,18 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
-          role: string
         }
         Insert: {
           avatar_url?: string | null
           first_name?: string | null
           id: string
           last_name?: string | null
-          role?: string
         }
         Update: {
           avatar_url?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
-          role?: string
         }
         Relationships: [
           {
@@ -128,7 +125,7 @@ export type Database = {
           created_at: string
           event_id: number
           id: number
-          qr_code_token: string
+          qr_code_token: string | null
           user_id: string
         }
         Insert: {
@@ -137,7 +134,7 @@ export type Database = {
           created_at?: string
           event_id: number
           id?: number
-          qr_code_token?: string
+          qr_code_token?: string | null
           user_id: string
         }
         Update: {
@@ -146,7 +143,7 @@ export type Database = {
           created_at?: string
           event_id?: number
           id?: number
-          qr_code_token?: string
+          qr_code_token?: string | null
           user_id?: string
         }
         Relationships: [
@@ -198,6 +195,22 @@ export type Tables<
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
         Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
+        PublicSchema["Views"])
+    ? (PublicSchema["Tables"] &
+        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R

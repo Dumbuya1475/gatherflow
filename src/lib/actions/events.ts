@@ -3,20 +3,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
 import { uploadFile } from '../supabase/storage';
-
-const eventFormSchema = z.object({
-  title: z.string().min(2, 'Event title must be at least 2 characters.'),
-  description: z.string().min(10, 'Description must be at least 10 characters.'),
-  date: z.string(), // ISO string
-  end_date: z.string().optional().nullable(),
-  location: z.string().min(2, 'Location must be at least 2 characters.'),
-  capacity: z.coerce.number().int().positive().optional(),
-  scanners: z.array(z.string().email()).optional(),
-  cover_image_file: z.instanceof(File).optional(),
-});
-
 
 export async function createEventAction(formData: FormData) {
     const supabase = createClient();
@@ -29,24 +16,18 @@ export async function createEventAction(formData: FormData) {
         return { success: false, error: 'You must be logged in to create an event.' };
     }
 
-    const rawData = {
-        title: formData.get('title'),
-        description: formData.get('description'),
-        date: formData.get('date'),
-        end_date: formData.get('end_date') || null,
-        location: formData.get('location'),
-        capacity: formData.get('capacity') ? Number(formData.get('capacity')) : undefined,
-        scanners: JSON.parse(formData.get('scanners') as string || '[]'),
-        cover_image_file: formData.get('cover_image_file'),
-    };
-    
-    const parsed = eventFormSchema.safeParse(rawData);
-
-    if (!parsed.success) {
-        return { success: false, error: parsed.error.errors.map(e => e.message).join(', ') };
-    }
+    const title = formData.get('title') as string;
+    const description = formData.get('description') as string;
+    const date = formData.get('date') as string;
+    const end_date = formData.get('end_date') as string | null;
+    const location = formData.get('location') as string;
+    const capacity = formData.get('capacity') ? Number(formData.get('capacity')) : null;
+    const scanners = JSON.parse(formData.get('scanners') as string || '[]') as string[];
+    const cover_image_file = formData.get('cover_image_file') as File | null;
   
-    const { title, description, date, end_date, location, capacity, scanners, cover_image_file } = parsed.data;
+    if (!title || !description || !date || !location) {
+        return { success: false, error: 'Please fill in all required fields.' };
+    }
   
     let finalCoverImage: string | undefined;
 
@@ -126,26 +107,14 @@ export async function updateEventAction(eventId: number, formData: FormData) {
     if (existingEvent.organizer_id !== user.id) {
         return { success: false, error: 'You are not authorized to update this event.' };
     }
-
-     const rawData = {
-        title: formData.get('title'),
-        description: formData.get('description'),
-        date: formData.get('date'),
-        end_date: formData.get('end_date') || null,
-        location: formData.get('location'),
-        capacity: formData.get('capacity') ? Number(formData.get('capacity')) : undefined,
-        scanners: JSON.parse(formData.get('scanners') as string || '[]'),
-        cover_image_file: formData.get('cover_image_file'),
-        current_cover_image: formData.get('current_cover_image'),
-    };
-
-    const parsed = eventFormSchema.partial().safeParse(rawData);
-
-    if (!parsed.success) {
-        return { success: false, error: parsed.error.errors.map(e => e.message).join(', ') };
-    }
-
-    const { title, description, date, end_date, location, capacity, cover_image_file } = parsed.data;
+    
+    const title = formData.get('title') as string;
+    const description = formData.get('description') as string;
+    const date = formData.get('date') as string;
+    const end_date = formData.get('end_date') as string | null;
+    const location = formData.get('location') as string;
+    const capacity = formData.get('capacity') ? Number(formData.get('capacity')) : null;
+    const cover_image_file = formData.get('cover_image_file') as File | null;
     
     let finalCoverImage = existingEvent.cover_image;
 
@@ -220,16 +189,7 @@ export async function getEventAttendees(eventId: string) {
 
     const { data, error } = await supabase
         .from('tickets')
-        .select(`
-            ticket_id: id,
-            checked_in,
-            profiles (
-                id,
-                first_name,
-                last_name,
-                email:raw_user_meta_data->>email
-            )
-        `)
+        .select('*, profiles ( id, first_name, last_name, email:raw_user_meta_data->>email )')
         .eq('event_id', eventId);
 
     if (error) {

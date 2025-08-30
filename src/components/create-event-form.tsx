@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -45,14 +45,16 @@ const eventFormSchema = z.object({
   location: z.string().min(2, {
     message: 'Location must be at least 2 characters.',
   }),
-  capacity: z.coerce.number().int().positive({ message: "Capacity must be a positive number." }).optional(),
+  capacity: z.coerce.number().int().positive().optional(),
   scanners: z.array(z.object({ email: z.string().email({ message: "Please enter a valid email."}) })).optional(),
   targetAudience: z.string().min(2, {
     message: 'Target audience must be at least 2 characters.',
   }),
   cover_image_file: z
     .any()
-    .refine((file) => file instanceof File ? ACCEPTED_IMAGE_TYPES.includes(file.type) : true, "Only .jpg, .jpeg, .png and .webp formats are supported.")
+    .refine((file) => file === undefined || file === null || file.length === 0 || (file instanceof File && ACCEPTED_IMAGE_TYPES.includes(file.type)), {
+        message: "Only .jpg, .jpeg, .png and .webp formats are supported.",
+    })
     .optional(),
   current_cover_image: z.string().url().optional(),
 });
