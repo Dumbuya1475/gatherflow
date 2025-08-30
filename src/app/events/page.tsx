@@ -1,12 +1,17 @@
 
-'use server';
+'use client';
 
+import { useEffect, useState, useMemo } from 'react';
 import type { EventWithAttendees } from '@/lib/types';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/client';
 import { EventCard } from '@/components/event-card';
 import { Footer } from '@/components/footer';
 import { PublicHeader } from '@/components/public-header';
-import Link from 'next/link';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 
 async function getAllPublicEvents() {
   const supabase = createClient();
@@ -50,9 +55,71 @@ async function getAllPublicEvents() {
   }));
 }
 
-export default async function AllEventsPage() {
-  const allEvents: EventWithAttendees[] = await getAllPublicEvents();
-  const { data: { user } } = await createClient().auth.getUser();
+function EventsLoadingSkeleton() {
+  return (
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-6">
+      {[...Array(8)].map((_, i) => (
+        <Card key={i}>
+          <Skeleton className="aspect-[16/10] w-full" />
+          <CardContent className="p-4">
+            <Skeleton className="h-6 w-3/4 mb-2" />
+            <Skeleton className="h-4 w-1/2 mb-2" />
+            <Skeleton className="h-4 w-1/2" />
+          </CardContent>
+          <CardFooter className="p-4 pt-0">
+             <Skeleton className="h-9 w-full" />
+          </CardFooter>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+export default function AllEventsPage() {
+  const [allEvents, setAllEvents] = useState<EventWithAttendees[]>([]);
+  const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+
+  useEffect(() => {
+    const fetchInitialData = async () => {
+        const supabase = createClient();
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        setUser(currentUser);
+
+        const eventsData = await getAllPublicEvents();
+        setAllEvents(eventsData);
+        setIsLoading(false);
+    }
+    fetchInitialData();
+  }, []);
+
+  const filteredEvents = useMemo(() => {
+    return allEvents
+      .filter(event => {
+        if (searchTerm && !event.title.toLowerCase().includes(searchTerm.toLowerCase())) {
+          return false;
+        }
+        const eventDate = new Date(event.date);
+        if (dateFilter === 'upcoming' && eventDate < new Date()) {
+          return false;
+        }
+        if (dateFilter === 'past' && eventDate >= new Date()) {
+          return false;
+        }
+        if (typeFilter === 'free' && event.is_paid) {
+          return false;
+        }
+        if (typeFilter === 'paid' && !event.is_paid) {
+          return false;
+        }
+        return true;
+      });
+  }, [allEvents, searchTerm, dateFilter, typeFilter]);
+
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -68,16 +135,55 @@ export default async function AllEventsPage() {
                 </p>
               </div>
             </div>
-            {allEvents.length > 0 ? (
+
+            <div className="mt-12 max-w-5xl mx-auto">
+                <div className="flex flex-col md:flex-row gap-4">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            placeholder="Search events by title..." 
+                            className="pl-10" 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex gap-4">
+                    <Select value={dateFilter} onValueChange={setDateFilter}>
+                        <SelectTrigger className="w-full md:w-[180px]">
+                        <SelectValue placeholder="Filter by date" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="all">All Dates</SelectItem>
+                        <SelectItem value="upcoming">Upcoming</SelectItem>
+                        <SelectItem value="past">Past</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select value={typeFilter} onValueChange={setTypeFilter}>
+                        <SelectTrigger className="w-full md:w-[180px]">
+                        <SelectValue placeholder="Filter by type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="free">Free</SelectItem>
+                        <SelectItem value="paid">Paid</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    </div>
+                </div>
+            </div>
+
+            {isLoading ? (
+                <div className="mt-12"><EventsLoadingSkeleton /></div>
+            ) : filteredEvents.length > 0 ? (
               <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-4 mt-12">
-                {allEvents.map((event) => (
+                {filteredEvents.map((event) => (
                   <EventCard key={event.id} event={event} isLoggedIn={!!user} isMyEvent={user ? event.organizer_id === user.id : false}/>
                 ))}
               </div>
             ) : (
               <div className="mt-12 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
                 <h3 className="text-xl font-semibold tracking-tight">No public events found</h3>
-                <p className="text-sm text-muted-foreground">Please check back later.</p>
+                <p className="text-sm text-muted-foreground">Try adjusting your search or filters.</p>
               </div>
             )}
           </div>
