@@ -92,6 +92,35 @@ export async function registerForEventAction(
   return { success: true, ticketId: ticket.id };
 }
 
+export async function unregisterFromEventAction(
+  prevState: { error: string | undefined } | undefined,
+  formData: FormData
+) {
+  const supabase = createClient();
+  const ticketIdStr = formData.get('ticketId') as string;
+  const ticketId = parseInt(ticketIdStr, 10);
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be logged in to unregister.' };
+  }
+
+  // Use RPC to delete the ticket, which enforces ownership.
+  const { error } = await supabase.rpc('delete_ticket', { p_ticket_id: ticketId, p_user_id: user.id });
+
+  if (error) {
+    console.error('Error unregistering from event:', error);
+    return { error: `Could not unregister. ${error.message}` };
+  }
+
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/events');
+  return { success: true };
+}
+
 
 export async function registerAndCreateTicket(
     prevState: { error: string | undefined } | undefined,
