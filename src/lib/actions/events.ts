@@ -168,7 +168,7 @@ export async function getEventDetails(eventId: number) {
     const supabase = createClient();
     const { data: event, error } = await supabase
       .from('events')
-      .select('*, tickets(count)')
+      .select('*, tickets(count), organizer:profiles(first_name, last_name)')
       .eq('id', eventId)
       .single();
   
@@ -208,7 +208,7 @@ export async function getEventAttendees(eventId: number) {
     // If authorized, fetch the tickets associated with the event.
     const { data: tickets, error: ticketsError } = await supabase
         .from('tickets')
-        .select('id, checked_in, user_id')
+        .select('id, checked_in, user_id, profiles(id, first_name, last_name, email:raw_user_meta_data->>\'email\')')
         .eq('event_id', eventId);
 
     if (ticketsError) {
@@ -219,47 +219,12 @@ export async function getEventAttendees(eventId: number) {
     if (!tickets || tickets.length === 0) {
         return { data: [], error: null };
     }
-
-    // Get all user IDs from the tickets.
-    const userIds = tickets.map(ticket => ticket.user_id).filter((id): id is string => id !== null);
-
-    // Fetch the profile information for all attendees in a single query.
-    const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name')
-        .in('id', userIds);
     
-    if (profilesError) {
-        console.error('Error fetching profiles for attendees:', profilesError);
-        return { data: null, error: 'Could not fetch profiles for attendees.' };
-    }
-    
-    const { data: authUsers, error: authUsersError } = await supabase.auth.admin.listUsers({
-        page: 1, perPage: 1000
-    });
-
-    if (authUsersError) {
-        console.error('Error fetching auth users for emails:', authUsersError);
-        return { data: null, error: 'Could not fetch user emails.'};
-    }
-
-    // Create maps for efficient lookups.
-    const profilesMap = new Map(profiles.map(p => [p.id, p]));
-    const emailsMap = new Map(authUsers.users.map(u => [u.id, u.email]));
-
-    // Combine the information.
     const attendees = tickets.map(ticket => {
-        const profile = ticket.user_id ? profilesMap.get(ticket.user_id) : null;
-        const email = ticket.user_id ? emailsMap.get(ticket.user_id) : null;
         return {
             ticket_id: ticket.id,
             checked_in: ticket.checked_in,
-            profiles: {
-                id: ticket.user_id || '',
-                first_name: profile?.first_name || '',
-                last_name: profile?.last_name || '',
-                email: email || 'Email not available',
-            }
+            profiles: ticket.profiles
         };
     });
 

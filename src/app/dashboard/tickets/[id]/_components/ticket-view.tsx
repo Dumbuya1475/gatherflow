@@ -9,7 +9,7 @@ import Link from "next/link";
 import type { Ticket, Event } from "@/lib/types";
 
 interface TicketWithEvent extends Ticket {
-    events: Event | null;
+    events: Event & { organizer?: { first_name: string | null, last_name: string | null } | null } | null;
 }
 
 export function TicketView({ ticket }: { ticket: TicketWithEvent }) {

@@ -74,13 +74,6 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
 
     const organizerName = useMemo(() => {
         if (!event.organizer) return 'Anonymous';
-        // Check if organizer is an array (which it shouldn't be, but good for type safety)
-        if (Array.isArray(event.organizer)) {
-             if (event.organizer.length === 0) return 'Anonymous';
-             const org = event.organizer[0];
-             return `${org.first_name || ''} ${org.last_name || ''}`.trim();
-        }
-        // Check if organizer is an object
         return `${event.organizer.first_name || ''} ${event.organizer.last_name || ''}`.trim() || 'Anonymous';
     }, [event.organizer]);
 

@@ -115,7 +115,7 @@ export async function getTicketDetails(ticketId: number) {
 
     const { data: ticket, error } = await supabase
         .from('tickets')
-        .select('*, events(*)')
+        .select('*, events(*, organizer:profiles(first_name, last_name))')
         .eq('id', ticketId)
         .single();
     
