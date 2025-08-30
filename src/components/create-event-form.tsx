@@ -78,7 +78,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
       title: defaultValues?.title || '',
       description: defaultValues?.description || '',
       location: defaultValues?.location || '',
-      targetAudience: defaultValues?.targetAudience || '',
+      targetAudience: defaultValues?.targetAudience || 'General Audience',
       current_cover_image: defaultValues?.current_cover_image || '',
       scanners: defaultValues?.scanners || [],
       capacity: defaultValues?.capacity || undefined,
@@ -135,7 +135,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
     
     // Append all form data
     Object.entries(data).forEach(([key, value]) => {
-        if (value) {
+        if (value !== undefined && value !== null) {
              if (key === 'cover_image_file' && value instanceof File) {
                 formData.append(key, value);
             } else if (key === 'scanners' && Array.isArray(value)) {
@@ -226,7 +226,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
               name="cover_image_file"
               render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Cover Image</FormLabel>
+                    <FormLabel>Cover Image (Optional)</FormLabel>
                     <FormControl>
                         <div className="flex items-center gap-4">
                             <div className="w-32 h-20 rounded-md bg-muted flex items-center justify-center overflow-hidden">

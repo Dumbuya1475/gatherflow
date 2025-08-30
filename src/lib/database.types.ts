@@ -37,7 +37,7 @@ export type Database = {
             foreignKeyName: "event_scanners_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]

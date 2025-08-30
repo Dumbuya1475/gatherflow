@@ -38,17 +38,18 @@ async function getDashboardStats(user: any) {
       .from('events')
       .select('id')
       .eq('organizer_id', user.id);
-
+      
     if (eventIdsError) throw eventIdsError;
-
+    
     let totalAttendees = 0;
     if (eventIds && eventIds.length > 0) {
-      const { count, error: ticketsCountError } = await supabase
+        const { count, error: ticketsCountError } = await supabase
         .from('tickets')
         .select('*', { count: 'exact', head: true })
         .in('event_id', eventIds.map(e => e.id));
-      if (ticketsCountError) throw ticketsCountError;
-      totalAttendees = count || 0;
+        
+        if (ticketsCountError) throw ticketsCountError;
+        totalAttendees = count || 0;
     }
     
     // Placeholder for check-ins today

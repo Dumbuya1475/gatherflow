@@ -15,7 +15,6 @@ const eventFormSchema = z.object({
   capacity: z.coerce.number().int().positive().optional(),
   scanners: z.array(z.string().email()).optional(),
   cover_image_file: z.instanceof(File).optional(),
-  current_cover_image: z.string().url().optional(),
 });
 
 
@@ -41,7 +40,7 @@ export async function createEventAction(formData: FormData) {
         cover_image_file: formData.get('cover_image_file'),
     };
     
-    const parsed = eventFormSchema.omit({ current_cover_image: true }).safeParse(rawData);
+    const parsed = eventFormSchema.safeParse(rawData);
 
     if (!parsed.success) {
         return { success: false, error: parsed.error.errors.map(e => e.message).join(', ') };
@@ -184,7 +183,7 @@ export async function updateEventAction(eventId: number, formData: FormData) {
 
 
 export async function getEventDetails(eventId: string) {
-    const supabase = await createClient();
+    const supabase = createClient();
     const { data: event, error } = await supabase
       .from('events')
       .select('*, tickets(count)')
@@ -204,7 +203,7 @@ export async function getEventDetails(eventId: string) {
 }
 
 export async function getEventAttendees(eventId: string) {
-    const supabase = await createClient();
+    const supabase = createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if(!user) return { data: null, error: 'Not authenticated' };
