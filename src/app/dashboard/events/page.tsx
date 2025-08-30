@@ -1,3 +1,4 @@
+
 'use server';
 
 import Link from 'next/link';
@@ -46,7 +47,9 @@ async function getRegisteredEvents(userId: string) {
         return [];
     }
 
-    return tickets.map(ticket => ({
+    return tickets
+      .filter(ticket => ticket.events) // Ensure event data is not null
+      .map(ticket => ({
         ...ticket.events!,
         attendees: ticket.events!.tickets[0]?.count || 0,
         ticket_id: ticket.id,
@@ -57,17 +60,14 @@ async function getRegisteredEvents(userId: string) {
 async function getAllEvents(user: any) {
   const supabase = createClient();
 
-  const query = supabase
+  const { data: events, error } = await supabase
     .from('events')
     .select('*, tickets(count)')
     .eq('is_public', true)
     .order('date', { ascending: false });
 
-  const { data: events, error } = await query;
-
-
   if (error) {
-    console.error('Error fetching all events:', error);
+    console.error('Error fetching all events:', error.message);
     return [];
   }
   
@@ -81,7 +81,13 @@ async function getAllEvents(user: any) {
   const { data: userTickets, error: ticketError } = await supabase
     .from('tickets')
     .select('event_id, id')
+    .in('event_id', events.map(e => e.id))
     .eq('user_id', user.id);
+  
+  if (ticketError) {
+      console.error('Error fetching user tickets for all events:', ticketError);
+      // Proceed without ticket info if this fails
+  }
   
   const userTicketMap = new Map(userTickets?.map(t => [t.event_id, t.id]));
 
@@ -95,19 +101,22 @@ async function getAllEvents(user: any) {
 async function getPastEvents(userId: string) {
     const supabase = createClient();
     
+    // Fetch events the user attended
     const { data: attendedTickets, error: attendedError } = await supabase
         .from('tickets')
         .select('events(*, tickets(count))')
-        .eq('user_id', userId)
-        .lt('events.date', new Date().toISOString())
-        .order('events(date)', { ascending: false });
+        .eq('user_id', userId);
 
     if(attendedError) {
         console.error('Error fetching past attended events:', attendedError);
     }
-    const attendedEvents = (attendedTickets || []).map(t => ({...t.events!, type: 'attended' as const, attendees: t.events!.tickets[0]?.count || 0 }));
+    
+    const attendedEvents = (attendedTickets || [])
+      .filter(t => t.events && new Date(t.events.date) < new Date())
+      .map(t => ({...t.events!, type: 'attended' as const, attendees: t.events!.tickets[0]?.count || 0 }));
 
 
+    // Fetch events the user organized
     const { data: organizedEvents, error: organizedError } = await supabase
         .from('events')
         .select('*, tickets(count)')
@@ -122,10 +131,11 @@ async function getPastEvents(userId: string) {
     const pastOrganizedEvents = (organizedEvents || []).map(e => ({...e, type: 'organized' as const, attendees: e.tickets[0]?.count || 0 }));
 
     const allPastEvents = [...attendedEvents, ...pastOrganizedEvents];
-    allPastEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
     // Simple deduplication in case user attended their own event
     const uniquePastEvents = Array.from(new Map(allPastEvents.map(e => [e.id, e])).values());
+    
+    uniquePastEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     return uniquePastEvents;
 }
@@ -172,7 +182,7 @@ export default async function EventsPage() {
           ) : (
             <div className="mt-6 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
               <h3 className="text-xl font-semibold tracking-tight">
-                No events found
+                No public events found
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Check back later for new events!
@@ -226,7 +236,7 @@ export default async function EventsPage() {
                     <div className="absolute left-[30px] top-0 h-full w-0.5 bg-border -translate-x-1/2"></div>
                     <div className="space-y-12">
                         {pastEvents.map((event) => (
-                           <TimelineEventCard key={event.id} event={event} />
+                           <TimelineEventCard key={`${event.id}-${event.type}`} event={event} />
                         ))}
                     </div>
                 </div>
