@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import Link from 'next/link';
@@ -63,7 +64,6 @@ async function getAllEvents(user: any) {
   const { data: events, error } = await supabase
     .from('events')
     .select('*, tickets(count)')
-    // .eq('is_public', true) // Temporarily removed to fix crash
     .order('date', { ascending: false });
 
   if (error) {
@@ -176,7 +176,7 @@ export default async function EventsPage() {
           {allEvents.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-6">
               {allEvents.map(event => (
-                <EventCard key={event.id} event={event} isLoggedIn={!!user} />
+                <EventCard key={event.id} event={event} isLoggedIn={!!user} isMyEvent={user ? event.organizer_id === user.id : false} />
               ))}
             </div>
           ) : (
@@ -218,7 +218,7 @@ export default async function EventsPage() {
           {registeredEvents.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-6">
               {registeredEvents.map(event => (
-                <EventCard key={event.id} event={event} isLoggedIn={!!user} />
+                <EventCard key={event.id} event={event} isLoggedIn={!!user} isMyEvent={user ? event.organizer_id === user.id : false} />
               ))}
             </div>
           ) : (

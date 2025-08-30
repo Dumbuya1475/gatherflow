@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -83,7 +84,6 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
     const { toast } = useToast();
     
     const [registerState, registerAction] = useActionState(registerForEventAction, undefined);
-    const [unregisterState, unregisterAction] = useActionState(unregisterFromEventAction, undefined);
 
     useEffect(() => {
         if(registerState?.error) {
@@ -100,22 +100,6 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
             });
         }
     }, [registerState, toast])
-
-     useEffect(() => {
-        if(unregisterState?.error) {
-            toast({
-                variant: 'destructive',
-                title: 'Failed to Unregister',
-                description: unregisterState.error,
-            });
-        }
-        if(unregisterState?.success) {
-            toast({
-                title: 'Unregistered Successfully',
-                description: "You are no longer registered for this event.",
-            });
-        }
-    }, [unregisterState, toast])
 
 
   return (
@@ -171,9 +155,9 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
           ) : isMyEvent ? (
              <div className="flex gap-2">
                 <Button asChild size="sm" variant="outline" className="flex-1">
-                    <Link href={`/events/${event.id}`}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        View
+                    <Link href={`/dashboard/events/${event.id}/manage`}>
+                        <Users className="mr-2 h-4 w-4" />
+                        Manage
                     </Link>
                 </Button>
                  <Button asChild size="sm" className="flex-1">
@@ -191,18 +175,19 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
                         Details
                     </Link>
                 </Button>
-                {!event.ticket_id && (
+                {event.ticket_id ? (
+                     <Button asChild size="sm" className="flex-1">
+                        <Link href={`/dashboard/tickets/${event.ticket_id}`}>
+                            <TicketIcon className="mr-2 h-4 w-4" />
+                            View Ticket
+                        </Link>
+                    </Button>
+                ) : (
                     <form action={registerAction} className="flex-1">
                         <input type="hidden" name="eventId" value={event.id} />
                         <RegisterButton eventId={event.id} isLoggedIn={isLoggedIn} />
                     </form>
                 )}
-                 {event.ticket_id && (
-                    <form action={unregisterAction} id="unregister-form" className="flex-1">
-                      <input type="hidden" name="ticketId" value={event.ticket_id} />
-                      <UnregisterButton eventId={event.id} />
-                    </form>
-                 )}
             </div>
           )}
       </CardFooter>
