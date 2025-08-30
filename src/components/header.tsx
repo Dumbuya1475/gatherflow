@@ -1,21 +1,17 @@
-'use client';
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { AppLogo } from './app-logo';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
 import { Menu } from 'lucide-react';
-import { useState } from 'react';
+import type { navLinks } from './public-header';
 
-const navLinks = [
-    { href: "/#events", label: "Events" },
-    { href: "/#features", label: "Features" },
-    { href: "/#pricing", label: "Pricing" },
-]
+interface HeaderProps {
+    navLinks: typeof navLinks;
+    onMobileLinkClick: () => void;
+}
 
-export function Header() {
-  const [isOpen, setIsOpen] = useState(false);
-
+export function Header({ navLinks, onMobileLinkClick }: HeaderProps) {
   return (
     <header className="px-4 lg:px-6 h-16 flex items-center bg-background fixed top-0 left-0 right-0 z-50 border-b">
       <Link href="/" className="flex items-center justify-center" prefetch={false}>
@@ -36,7 +32,7 @@ export function Header() {
         </Button>
       </nav>
       <div className="ml-auto md:hidden">
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <Sheet>
             <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
                     <Menu className="h-6 w-6" />
@@ -46,13 +42,13 @@ export function Header() {
             <SheetContent side="right">
                 <nav className="grid gap-6 text-lg font-medium mt-6">
                     {navLinks.map(link => (
-                        <Link key={link.href} href={link.href} className="hover:text-primary transition-colors" onClick={() => setIsOpen(false)}>{link.label}</Link>
+                        <Link key={link.href} href={link.href} className="hover:text-primary transition-colors" onClick={onMobileLinkClick}>{link.label}</Link>
                     ))}
                      <div className="flex flex-col gap-4 pt-6">
-                        <Button asChild variant="ghost" onClick={() => setIsOpen(false)}>
+                        <Button asChild variant="ghost" onClick={onMobileLinkClick}>
                             <Link href="/login">Login</Link>
                         </Button>
-                        <Button asChild onClick={() => setIsOpen(false)}>
+                        <Button asChild onClick={onMobileLinkClick}>
                             <Link href="/signup">Sign Up</Link>
                         </Button>
                     </div>

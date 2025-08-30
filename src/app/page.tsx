@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Header } from '@/components/header';
+import { PublicHeader } from '@/components/public-header';
 import { Footer } from '@/components/footer';
 import { CalendarDays, QrCode, Sparkles, Zap, Check, ArrowRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
@@ -100,7 +100,7 @@ export default async function LandingPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Header />
+      <PublicHeader />
       <main className="flex-1">
         <section className="w-full pt-28 pb-20 md:pt-36 md:pb-32 lg:pt-48 lg:pb-40">
           <div className="container mx-auto px-4 md:px-6">
