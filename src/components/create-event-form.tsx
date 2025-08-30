@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -217,7 +218,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
               name="description"
               render={({ field }) => (
                 <FormItem>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                         <FormLabel>Event Description</FormLabel>
                         <Button
                             type="button"
@@ -225,6 +226,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                             size="sm"
                             onClick={handleGenerateContent}
                             disabled={isGenerating}
+                            className="self-start sm:self-center"
                         >
                             <Sparkles className="mr-2 h-4 w-4" />
                             {isGenerating ? 'Generating...' : 'Generate with AI'}

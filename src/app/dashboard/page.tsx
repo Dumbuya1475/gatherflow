@@ -90,7 +90,7 @@ async function getAttendeeDashboardStats(user: any) {
   const supabase = createClient();
   const { data: tickets, error } = await supabase
     .from('tickets')
-    .select('events(*, tickets(count))')
+    .select('events(*, tickets(count)), id')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
@@ -184,42 +184,44 @@ export default async function DashboardPage() {
                 <CardDescription>Your latest events and their status.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                <Table>
-                    <TableHeader>
-                    <TableRow>
-                        <TableHead>Event</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Attendees</TableHead>
-                        <TableHead className="text-right">Date</TableHead>
-                    </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {recentEvents.length > 0 ? (
-                        recentEvents.map(event => (
-                        <TableRow key={event.id}>
-                            <TableCell>
-                            <Link href={`/dashboard/events/${event.id}/manage`} className="font-medium hover:underline">
-                                {event.title}
-                            </Link>
-                            </TableCell>
-                            <TableCell>
-                            <Badge variant={new Date(event.date) > new Date() ? 'default' : 'secondary'} className={new Date(event.date) > new Date() ? 'bg-green-500' : ''}>
-                                {new Date(event.date) > new Date() ? 'Upcoming' : 'Past'}
-                            </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">{event.attendees}</TableCell>
-                            <TableCell className="text-right">{new Date(event.date).toLocaleDateString()}</TableCell>
-                        </TableRow>
-                        ))
-                    ) : (
-                        <TableRow>
-                        <TableCell colSpan={4} className="h-24 text-center">
-                            No recent events.
-                        </TableCell>
-                        </TableRow>
-                    )}
-                    </TableBody>
-                </Table>
+                <div className="overflow-x-auto">
+                  <Table>
+                      <TableHeader>
+                      <TableRow>
+                          <TableHead>Event</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Attendees</TableHead>
+                          <TableHead className="text-right">Date</TableHead>
+                      </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                      {recentEvents.length > 0 ? (
+                          recentEvents.map(event => (
+                          <TableRow key={event.id}>
+                              <TableCell>
+                              <Link href={`/dashboard/events/${event.id}/manage`} className="font-medium hover:underline">
+                                  {event.title}
+                              </Link>
+                              </TableCell>
+                              <TableCell>
+                              <Badge variant={new Date(event.date) > new Date() ? 'default' : 'secondary'} className={new Date(event.date) > new Date() ? 'bg-green-500' : ''}>
+                                  {new Date(event.date) > new Date() ? 'Upcoming' : 'Past'}
+                              </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">{event.attendees}</TableCell>
+                              <TableCell className="text-right">{new Date(event.date).toLocaleDateString()}</TableCell>
+                          </TableRow>
+                          ))
+                      ) : (
+                          <TableRow>
+                          <TableCell colSpan={4} className="h-24 text-center">
+                              No recent events.
+                          </TableCell>
+                          </TableRow>
+                      )}
+                      </TableBody>
+                  </Table>
+                </div>
                 </CardContent>
                 <CardFooter className="flex justify-end">
                     <Button asChild variant="outline" size="sm">
@@ -270,39 +272,41 @@ export default async function DashboardPage() {
                 <CardDescription>Events you are registered for.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                <Table>
-                    <TableHeader>
-                    <TableRow>
-                        <TableHead>Event</TableHead>
-                        <TableHead className="text-right">Date</TableHead>
-                        <TableHead></TableHead>
-                    </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {upcomingEvents.length > 0 ? (
-                        upcomingEvents.map(event => (
-                        <TableRow key={event.id}>
-                            <TableCell>
-                                <div className="font-medium">{event.title}</div>
-                                <div className="text-sm text-muted-foreground">{event.location}</div>
-                            </TableCell>
-                            <TableCell className="text-right">{new Date(event.date).toLocaleDateString()}</TableCell>
-                            <TableCell className="text-right">
-                                <Button asChild variant="outline" size="sm">
-                                    <Link href={`/dashboard/tickets/${event.ticket_id}`}>View Ticket</Link>
-                                </Button>
-                            </TableCell>
-                        </TableRow>
-                        ))
-                    ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
                         <TableRow>
-                        <TableCell colSpan={3} className="h-24 text-center">
-                            You have no upcoming events.
-                        </TableCell>
+                            <TableHead>Event</TableHead>
+                            <TableHead className="text-right">Date</TableHead>
+                            <TableHead></TableHead>
                         </TableRow>
-                    )}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                        {upcomingEvents.length > 0 ? (
+                            upcomingEvents.map(event => (
+                            <TableRow key={event.id}>
+                                <TableCell>
+                                    <div className="font-medium">{event.title}</div>
+                                    <div className="text-sm text-muted-foreground">{event.location}</div>
+                                </TableCell>
+                                <TableCell className="text-right">{new Date(event.date).toLocaleDateString()}</TableCell>
+                                <TableCell className="text-right">
+                                    <Button asChild variant="outline" size="sm">
+                                        <Link href={`/dashboard/tickets/${event.ticket_id}`}>View Ticket</Link>
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                            <TableCell colSpan={3} className="h-24 text-center">
+                                You have no upcoming events.
+                            </TableCell>
+                            </TableRow>
+                        )}
+                        </TableBody>
+                    </Table>
+                  </div>
                 </CardContent>
                 <CardFooter className="flex justify-end">
                     <Button asChild variant="outline" size="sm">

@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -127,26 +128,28 @@ export default function ReportsPage() {
                     <CardDescription>Detailed metrics for all events</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Event</TableHead>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Capacity</TableHead>
-                                <TableHead>Registered</TableHead>
-                                <TableHead>Checked In</TableHead>
-                                <TableHead>Attendance Rate</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            <TableRow>
-                                <TableCell colSpan={7} className="h-24 text-center">
-                                    No event data available
-                                </TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Event</TableHead>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Capacity</TableHead>
+                                    <TableHead>Registered</TableHead>
+                                    <TableHead>Checked In</TableHead>
+                                    <TableHead>Attendance Rate</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                <TableRow>
+                                    <TableCell colSpan={7} className="h-24 text-center">
+                                        No event data available
+                                    </TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
 
@@ -156,32 +159,34 @@ export default function ReportsPage() {
                     <CardDescription>Latest 10 system activities and user actions</CardDescription>
                 </CardHeader>
                 <CardContent>
-                     <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Action</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Timestamp</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            <TableRow>
-                                <TableCell>role_changed</TableCell>
-                                <TableCell>System activity</TableCell>
-                                <TableCell>8/26/2025, 6:22:41 PM</TableCell>
-                            </TableRow>
-                             <TableRow>
-                                <TableCell>role_changed</TableCell>
-                                <TableCell>System activity</TableCell>
-                                <TableCell>8/26/2025, 4:20:40 PM</TableCell>
-                            </TableRow>
-                            <TableRow>
-                                <TableCell>user_registered</TableCell>
-                                <TableCell>System activity</TableCell>
-                                <TableCell>8/24/2025, 1:50:26 PM</TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Action</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead>Timestamp</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                <TableRow>
+                                    <TableCell>role_changed</TableCell>
+                                    <TableCell>System activity</TableCell>
+                                    <TableCell>8/26/2025, 6:22:41 PM</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell>role_changed</TableCell>
+                                    <TableCell>System activity</TableCell>
+                                    <TableCell>8/26/2025, 4:20:40 PM</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell>user_registered</TableCell>
+                                    <TableCell>System activity</TableCell>
+                                    <TableCell>8/24/2025, 1:50:26 PM</TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
         </div>
