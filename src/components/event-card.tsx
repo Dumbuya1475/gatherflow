@@ -3,27 +3,17 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useActionState, useEffect, useOptimistic, useTransition } from 'react';
+import { useActionState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye, Eye, Pencil, DollarSign, XCircle } from 'lucide-react';
+import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye, Eye, Pencil, DollarSign, Timer } from 'lucide-react';
 import type { EventWithAttendees } from '@/lib/types';
-import { registerForEventAction, unregisterFromEventAction } from '@/lib/actions/tickets';
+import { registerForEventAction } from '@/lib/actions/tickets';
 import { useToast } from '@/hooks/use-toast';
 import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Badge } from './ui/badge';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from './ui/alert-dialog';
+import { differenceInDays, isPast, isToday } from 'date-fns';
 
 interface EventCardProps {
   event: EventWithAttendees;
@@ -50,38 +40,10 @@ function RegisterButton({ eventId, isLoggedIn }: { eventId: number; isLoggedIn: 
     )
 }
 
-function UnregisterButton({ eventId }: { eventId: number }) {
-  const { pending } = useFormStatus();
-  return (
-      <AlertDialog>
-          <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" className="flex-1" disabled={pending}>
-                  <XCircle className="mr-2 h-4 w-4" />
-                  {pending ? 'Unregistering...' : 'Unregister'}
-              </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-              <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                      This will permanently remove your ticket for this event. You will lose your spot, and you may not be able to register again if the event is full.
-                  </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction asChild>
-                      <Button type="submit" variant="destructive" form="unregister-form">
-                          Yes, Unregister
-                      </Button>
-                  </AlertDialogAction>
-              </AlertDialogFooter>
-          </AlertDialogContent>
-      </AlertDialog>
-  );
-}
 
 export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent = false }: EventCardProps) {
     const { toast } = useToast();
+    const router = useRouter();
     
     const [registerState, registerAction] = useActionState(registerForEventAction, undefined);
 
@@ -93,13 +55,22 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
                 description: registerState.error,
             });
         }
-        if(registerState?.success) {
+        if(registerState?.success && registerState.ticketId) {
             toast({
                 title: 'Registration Successful!',
                 description: "You've got a ticket for this event.",
             });
+            router.push(`/dashboard/tickets/${registerState.ticketId}`);
         }
-    }, [registerState, toast])
+    }, [registerState, toast, router])
+
+    const daysLeft = useMemo(() => {
+      const eventDate = new Date(event.date);
+      if (isPast(eventDate) && !isToday(eventDate)) return null;
+      if (isToday(eventDate)) return 'Today';
+      const days = differenceInDays(eventDate, new Date());
+      return `${days + 1} day${days + 1 > 1 ? 's' : ''} left`;
+    }, [event.date]);
 
 
   return (
@@ -113,7 +84,7 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
             data-ai-hint="event music"
             className="object-cover"
           />
-          <div className="absolute top-2 right-2">
+          <div className="absolute top-2 right-2 flex gap-2">
             {event.is_paid ? (
                 <Badge className="bg-primary/80 backdrop-blur-sm">
                     <DollarSign className="mr-1 h-3 w-3" />
@@ -122,12 +93,17 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
             ) : (
                 <Badge variant="secondary" className='bg-secondary/80 backdrop-blur-sm'>Free</Badge>
             )}
+            {daysLeft && (
+              <Badge variant="secondary" className="bg-secondary/80 backdrop-blur-sm">
+                <Timer className="mr-1 h-3 w-3" />
+                {daysLeft}
+              </Badge>
+            )}
           </div>
         </Link>
       </CardHeader>
       <CardContent className="p-4 flex-1">
         <h3 className="font-bold text-lg leading-tight truncate font-headline">{event.title}</h3>
-        <p className="text-sm text-muted-foreground mt-1 h-10 line-clamp-2">{event.description || ''}</p>
         <div className="mt-2 space-y-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
@@ -135,7 +111,7 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
           </div>
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
-            <span>{event.location}</span>
+            <span className="truncate">{event.location}</span>
           </div>
         </div>
       </CardContent>
@@ -144,7 +120,7 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
             <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
                 <span>{event.attendees.toLocaleString()}</span>
-                <span className="text-muted-foreground">/{event.capacity || '∞'}</span>
+                {event.capacity && <span className="text-muted-foreground">/{event.capacity}</span>}
             </div>
           </div>
           {isScannerMode ? (

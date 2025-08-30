@@ -224,11 +224,13 @@ export async function deleteEventAction(formData: FormData) {
       throw new Error('You must be logged in to delete an event.');
     }
   
-    const { error } = await supabase.from('events').delete().match({ id: eventId, organizer_id: user.id });
+    // Note: RLS policies should ensure the user is the organizer.
+    // The policy for `events` table should allow delete for organizers.
+    const { error } = await supabase.from('events').delete().eq('id', eventId);
   
     if (error) {
         console.error('Error deleting event:', error);
-        throw new Error('Failed to delete event.');
+        throw new Error(`Failed to delete event: ${error.message}`);
     }
   
     revalidatePath('/dashboard/events');

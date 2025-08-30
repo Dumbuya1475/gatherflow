@@ -31,7 +31,7 @@ async function assignQrCodeToTicket(ticketId: number, eventId: number, userId: s
 
 
 export async function registerForEventAction(
-  prevState: { error: string | undefined } | undefined,
+  prevState: { error?: string; success?: boolean; ticketId?: number; } | undefined,
   formData: FormData
 ) {
   const supabase = createClient();
@@ -89,6 +89,9 @@ export async function registerForEventAction(
   revalidatePath('/dashboard/events');
   revalidatePath(`/dashboard/events/${eventId}/manage`);
   revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events`);
+  
+  // Don't redirect here, let the client-side handle it with the returned ticketId
   return { success: true, ticketId: ticket.id };
 }
 
@@ -154,27 +157,21 @@ export async function registerAndCreateTicket(
         return { error: signUpError?.message || "Could not sign up user." };
     }
     
-    const qrCodeToken = JSON.stringify({ eventId, userId: signUpData.user.id });
-
+    // Create ticket first to get the ID
     const { data: ticketData, error: ticketError } = await supabase.from('tickets').insert({
         event_id: eventId,
         user_id: signUpData.user.id,
-        qr_code_token: qrCodeToken
-    }).select('id, qr_code_token').single();
+    }).select('id').single();
 
     if (ticketError || !ticketData) {
         return { error: ticketError?.message || "You are registered as a user, but we failed to create your ticket. Please contact support." };
     }
     
-    // Now update the token with the ticketId
-    const finalQrCodeToken = JSON.stringify({ ticketId: ticketData.id, eventId, userId: signUpData.user.id });
-    const { error: updateError } = await supabase
-        .from('tickets')
-        .update({ qr_code_token: finalQrCodeToken })
-        .eq('id', ticketData.id);
-
-    if (updateError) {
-        return { error: `User created, but failed to finalize ticket: ${updateError.message}` };
+    // Now update the ticket with the final token including the new ticket ID
+    try {
+        await assignQrCodeToTicket(ticketData.id, eventId, signUpData.user.id);
+    } catch(e) {
+        return { error: (e as Error).message };
     }
     
     redirect(`/events/${eventId}/register/success?ticketId=${ticketData.id}`);

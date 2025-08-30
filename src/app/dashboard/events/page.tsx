@@ -64,6 +64,7 @@ async function getAllEvents(user: any) {
   const { data: events, error } = await supabase
     .from('events')
     .select('*, tickets(count)')
+    .eq('is_public', true)
     .order('date', { ascending: false });
 
   if (error) {

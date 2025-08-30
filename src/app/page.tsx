@@ -1,3 +1,4 @@
+
 'use server';
 
 import Link from 'next/link';
@@ -6,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
-import { CalendarDays, QrCode, Sparkles, Zap, Check } from 'lucide-react';
+import { CalendarDays, QrCode, Sparkles, Zap, Check, ArrowRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import type { EventWithAttendees } from '@/lib/types';
 import { EventCard } from '@/components/event-card';
@@ -79,6 +80,7 @@ async function getRecentEvents() {
     const { data: events, error } = await supabase
       .from('events')
       .select('*, tickets(count)')
+      .eq('is_public', true)
       .order('date', { ascending: true })
       .limit(4)
   
@@ -144,11 +146,20 @@ export default async function LandingPage() {
                 </div>
             </div>
             {recentEvents.length > 0 ? (
-                <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-4 mt-12">
-                    {recentEvents.map((event) => (
-                        <EventCard key={event.id} event={event} isLoggedIn={!!user} />
-                    ))}
-                </div>
+                <>
+                    <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-4 mt-12">
+                        {recentEvents.map((event) => (
+                            <EventCard key={event.id} event={event} isLoggedIn={!!user} isMyEvent={user ? event.organizer_id === user.id : false} />
+                        ))}
+                    </div>
+                    <div className="mt-12 text-center">
+                        <Button asChild variant="outline">
+                            <Link href="/events">
+                                View All Events <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
+                    </div>
+                </>
             ) : (
                 <div className="mt-12 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
                     <h3 className="text-xl font-semibold tracking-tight">No upcoming events</h3>
