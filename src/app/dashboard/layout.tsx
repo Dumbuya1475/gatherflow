@@ -32,7 +32,7 @@ import { logout } from '@/lib/actions/auth';
 import { Button } from '@/components/ui/button';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { AppLogo } from '@/components/app-logo';
-import { Toaster } from '@/components/ui/toaster';
+
 
 export default function DashboardLayout({
   children,
@@ -147,7 +147,6 @@ export default function DashboardLayout({
             <div className="mx-auto w-full max-w-none">{children}</div>
           </main>
         </div>
-        <Toaster />
       </div>
     </SidebarProvider>
   );

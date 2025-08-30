@@ -1,9 +1,22 @@
-import { getEventAttendees, getEventDetails } from "@/lib/actions/events";
+
+import { getEventAttendees, getEventDetails, deleteEventAction } from "@/lib/actions/events";
 import { Attendee } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default async function ManageEventPage({ params }: { params: { id: string } }) {
   const eventId = params.id;
@@ -35,7 +48,7 @@ export default async function ManageEventPage({ params }: { params: { id: string
           Manage: {event.title}
         </h1>
         <p className="text-muted-foreground">
-          View and manage your event attendees.
+          View and manage your event attendees and settings.
         </p>
       </div>
       <Card>
@@ -84,6 +97,46 @@ export default async function ManageEventPage({ params }: { params: { id: string
             )}
         </CardContent>
       </Card>
+       <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle>Danger Zone</CardTitle>
+            <CardDescription>
+              These actions are irreversible. Please proceed with caution.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-between items-center">
+            <div>
+                <p className="font-semibold">Delete this event</p>
+                <p className="text-sm text-muted-foreground">Once you delete an event, all associated data including tickets will be permanently removed.</p>
+            </div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Event
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete your
+                    event and all of its associated tickets and data.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <form action={deleteEventAction}>
+                      <input type="hidden" name="eventId" value={event.id} />
+                      <AlertDialogAction type="submit" className="bg-destructive hover:bg-destructive/90">
+                        Yes, delete event
+                      </AlertDialogAction>
+                  </form>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardContent>
+        </Card>
     </div>
   );
 }

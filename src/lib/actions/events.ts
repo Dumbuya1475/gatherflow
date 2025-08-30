@@ -4,6 +4,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { uploadFile } from '../supabase/storage';
+import { redirect } from 'next/navigation';
 
 export async function createEventAction(formData: FormData) {
     const supabase = createClient();
@@ -210,4 +211,26 @@ export async function getEventAttendees(eventId: string) {
     }
 
     return { data, error: null };
+}
+
+
+export async function deleteEventAction(formData: FormData) {
+    const supabase = createClient();
+    const eventId = formData.get('eventId') as string;
+  
+    const { data: { user } } = await supabase.auth.getUser();
+  
+    if (!user) {
+      throw new Error('You must be logged in to delete an event.');
+    }
+  
+    const { error } = await supabase.from('events').delete().match({ id: eventId, organizer_id: user.id });
+  
+    if (error) {
+        console.error('Error deleting event:', error);
+        throw new Error('Failed to delete event.');
+    }
+  
+    revalidatePath('/dashboard/events');
+    redirect('/dashboard/events');
 }
