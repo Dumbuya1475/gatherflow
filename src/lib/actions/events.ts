@@ -82,7 +82,7 @@ export async function createEventAction(formData: FormData) {
 
     revalidatePath('/dashboard/events');
     revalidatePath('/');
-    return { success: true };
+    return { success: true, data: eventData };
 }
 
 

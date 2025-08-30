@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import Image from 'next/image';
+
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -17,17 +20,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Sparkles, PlusCircle, X, Upload } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Sparkles, Upload, X } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
-import { generatePromotionAction } from '@/lib/actions/server/ai';
 import { useToast } from '@/hooks/use-toast';
 import { createEventAction, updateEventAction } from '@/lib/actions/events';
-import { useRouter } from 'next/navigation';
-import { Event } from '@/lib/types';
-import Image from 'next/image';
+import type { Event } from '@/lib/types';
+import { generatePromotionAction } from '@/lib/actions/server/ai';
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
@@ -52,7 +53,7 @@ const eventFormSchema = z.object({
   }),
   cover_image_file: z
     .any()
-    .refine((file) => file === undefined || file === null || file.length === 0 || (file instanceof File && ACCEPTED_IMAGE_TYPES.includes(file.type)), {
+    .refine((file) => file === undefined || file === null || (file instanceof File && ACCEPTED_IMAGE_TYPES.includes(file.type)), {
         message: "Only .jpg, .jpeg, .png and .webp formats are supported.",
     })
     .optional(),
@@ -81,7 +82,6 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
       description: defaultValues?.description || '',
       location: defaultValues?.location || '',
       targetAudience: defaultValues?.targetAudience || 'General Audience',
-      current_cover_image: defaultValues?.current_cover_image || '',
       scanners: defaultValues?.scanners || [],
       capacity: defaultValues?.capacity || undefined,
     },
@@ -226,7 +226,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
             <FormField
               control={form.control}
               name="cover_image_file"
-              render={({ field }) => (
+              render={({ field: { onChange, ...fieldProps } }) => (
                 <FormItem>
                     <FormLabel>Cover Image (Optional)</FormLabel>
                     <FormControl>
@@ -239,17 +239,21 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                                 )}
                             </div>
                             <Input
+                                {...fieldProps}
                                 type="file"
                                 accept={ACCEPTED_IMAGE_TYPES.join(",")}
                                 onChange={(e) => {
                                     const file = e.target.files?.[0];
                                     if (file) {
-                                        field.onChange(file);
+                                        onChange(file);
                                         const reader = new FileReader();
                                         reader.onloadend = () => {
                                             setPreview(reader.result as string);
                                         };
                                         reader.readAsDataURL(file);
+                                    } else {
+                                        onChange(null);
+                                        setPreview(null);
                                     }
                                 }}
                                 className="flex-1"
