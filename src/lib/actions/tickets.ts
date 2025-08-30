@@ -44,7 +44,7 @@ export async function registerForEventAction(
   const { data: ticket, error } = await supabase.from('tickets').insert({
     event_id: eventId,
     user_id: user.id,
-    qr_token: crypto.randomUUID(), // Generate secure token on creation
+    qr_token: crypto.randomUUID(),
   }).select('id').single();
 
   if (error || !ticket) {
@@ -95,7 +95,7 @@ export async function registerAndCreateTicket(
     const { data: ticketData, error: ticketError } = await supabase.from('tickets').insert({
         event_id: eventId,
         user_id: signUpData.user.id,
-        qr_token: crypto.randomUUID(), // Generate secure token on creation
+        qr_token: crypto.randomUUID(),
     }).select('id').single();
 
     if (ticketError || !ticketData) {
@@ -117,12 +117,19 @@ export async function getTicketDetails(ticketId: number) {
         .from('tickets')
         .select('*, events(*)')
         .eq('id', ticketId)
-        .eq('user_id', user.id)
         .single();
     
     if (error || !ticket) {
         console.error('Error fetching ticket', error);
-        return { data: null, error: 'Ticket not found or you do not have access.' };
+        return { data: null, error: 'Ticket not found.' };
+    }
+
+    // Security Check: Ensure the user is either the ticket owner or the event organizer
+    const isOwner = ticket.user_id === user.id;
+    const isOrganizer = ticket.events?.organizer_id === user.id;
+
+    if (!isOwner && !isOrganizer) {
+        return { data: null, error: 'You are not authorized to view this ticket.' };
     }
 
     return { data: ticket, error: null };
@@ -244,4 +251,3 @@ export async function getScannableEvents() {
     return { data: uniqueEvents, isLoggedIn: true, error: null };
 }
 
-    

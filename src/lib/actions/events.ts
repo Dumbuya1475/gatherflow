@@ -208,8 +208,7 @@ export async function getEventAttendees(eventId: number) {
             profiles:user_id (
                 id,
                 first_name,
-                last_name,
-                email
+                last_name
             )
         `)
         .eq('event_id', eventId);
@@ -218,19 +217,27 @@ export async function getEventAttendees(eventId: number) {
         console.error('Error fetching attendees:', error);
         return { data: null, error: 'Could not fetch attendees.' };
     }
+
+    const userIds = data.map(d => d.profiles?.id).filter(Boolean) as string[];
+    const { data: users, error: usersError } = await supabase.auth.admin.listUsers({
+        page: 1,
+        perPage: 1000,
+      });
+
+    if (usersError) {
+        console.error('Error fetching user emails:', usersError);
+        // Continue without emails if this fails
+    }
     
-    // The email is not directly on the profiles table in your schema.
-    // It's in auth.users. This query is simpler and safer.
-    // We can enrich with email if needed in a separate step, but let's get the page working first.
+    const emailMap = new Map(users?.users.map(u => [u.id, u.email]));
+
     const attendees = data.map(d => ({
         ...d,
-        profiles: {
+        profiles: d.profiles ? {
             ...d.profiles,
-            // The user's email isn't directly available on the profile table per your schema.
-            // This structure is safer and prevents query failures.
-            email: 'Not available' 
-        }
-    }))
+            email: emailMap.get(d.profiles.id) || 'Email not found'
+        } : null
+    }));
 
 
     return { data: attendees, error: null };
