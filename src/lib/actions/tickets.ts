@@ -56,7 +56,7 @@ export async function registerForEventAction(
     .single();
 
   if (existingTicket) {
-    return { error: 'You are already registered for this event.' };
+    return redirect(`/dashboard/tickets/${existingTicket.id}`);
   }
   
   const { data: eventData } = await supabase.from('events').select('capacity, tickets(count)').eq('id', eventId).single();
@@ -91,8 +91,7 @@ export async function registerForEventAction(
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/events`);
   
-  // Don't redirect here, let the client-side handle it with the returned ticketId
-  return { success: true, ticketId: ticket.id };
+  return redirect(`/dashboard/tickets/${ticket.id}`);
 }
 
 export async function unregisterFromEventAction(
