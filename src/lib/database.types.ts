@@ -135,7 +135,7 @@ export type Database = {
           created_at: string | null
           event_id: number | null
           id: number
-          qr_code_token: string | null
+          qr_token: string
           user_id: string | null
         }
         Insert: {
@@ -144,7 +144,7 @@ export type Database = {
           created_at?: string | null
           event_id?: number | null
           id?: number
-          qr_code_token?: string | null
+          qr_token?: string
           user_id?: string | null
         }
         Update: {
@@ -153,7 +153,7 @@ export type Database = {
           created_at?: string | null
           event_id?: number | null
           id?: number
-          qr_code_token?: string | null
+          qr_token?: string
           user_id?: string | null
         }
         Relationships: [

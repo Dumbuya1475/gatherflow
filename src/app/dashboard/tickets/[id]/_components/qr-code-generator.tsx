@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -9,7 +10,7 @@ export function QrCodeGenerator({ qrToken }: { qrToken: string | null }) {
 
   useEffect(() => {
     if (qrToken) {
-      QRCode.toDataURL(qrToken, { width: 300, margin: 2 })
+      QRCode.toDataURL(qrToken, { width: 300, margin: 2, errorCorrectionLevel: 'L' })
         .then(url => {
           setDataUrl(url);
         })
@@ -18,6 +19,15 @@ export function QrCodeGenerator({ qrToken }: { qrToken: string | null }) {
         });
     }
   }, [qrToken]);
+
+  if (!qrToken) {
+    return (
+        <div className="w-[300px] h-[300px] bg-muted rounded-md flex flex-col items-center justify-center text-center p-4">
+            <p className="font-semibold text-destructive">QR Code Error</p>
+            <p className="text-sm text-muted-foreground">Could not generate QR code. Please try again later.</p>
+        </div>
+    );
+  }
 
   if (!dataUrl) {
     return (

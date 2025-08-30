@@ -4,15 +4,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { z } from 'zod';
 import crypto from 'crypto';
-
-function generateQrToken(eventId: number, ticketId: number): string {
-    const payload = `${eventId}:${ticketId}`;
-    // This is a simple token, not a secure one. For v0.1 this is acceptable.
-    // A future version could use HMAC or a secret stored in the DB.
-    return `GF:${Buffer.from(payload).toString('base64')}`;
-}
 
 export async function registerForEventAction(
   prevState: { error?: string; success?: boolean; ticketId?: number; } | undefined,
@@ -52,24 +44,12 @@ export async function registerForEventAction(
   const { data: ticket, error } = await supabase.from('tickets').insert({
     event_id: eventId,
     user_id: user.id,
+    qr_token: crypto.randomUUID(), // Generate secure token on creation
   }).select('id').single();
 
   if (error || !ticket) {
     console.error('Error registering for event:', error);
     return { error: 'Could not register for the event.' };
-  }
-  
-  const qrCodeToken = generateQrToken(eventId, ticket.id);
-
-  const { error: updateError } = await supabase
-    .from('tickets')
-    .update({ qr_code_token: qrCodeToken })
-    .eq('id', ticket.id);
-
-  if (updateError) {
-      console.error('Error setting QR code token:', updateError);
-      // Even if this fails, the user is registered. They can regenerate QR from dashboard.
-      // For a critical app, you might want to roll back the ticket creation.
   }
 
   revalidatePath('/dashboard');
@@ -115,21 +95,11 @@ export async function registerAndCreateTicket(
     const { data: ticketData, error: ticketError } = await supabase.from('tickets').insert({
         event_id: eventId,
         user_id: signUpData.user.id,
+        qr_token: crypto.randomUUID(), // Generate secure token on creation
     }).select('id').single();
 
     if (ticketError || !ticketData) {
         return { error: ticketError?.message || "You are registered as a user, but we failed to create your ticket. Please contact support." };
-    }
-    
-    const qrCodeToken = generateQrToken(eventId, ticketData.id);
-
-    const { error: updateError } = await supabase
-      .from('tickets')
-      .update({ qr_code_token: qrCodeToken })
-      .eq('id', ticketData.id);
-
-    if (updateError) {
-        console.error('Error setting QR code token:', updateError);
     }
     
     redirect(`/events/${eventId}/register/success?ticketId=${ticketData.id}`);
@@ -164,32 +134,14 @@ export async function verifyTicket(qrToken: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if(!user) return { success: false, error: 'Not authenticated. Please log in.' };
 
-    if (!qrToken.startsWith('GF:')) {
-        return { success: false, error: 'Invalid QR Code format.' };
-    }
-
-    const decodedPayload = Buffer.from(qrToken.substring(3), 'base64').toString('ascii');
-    const parts = decodedPayload.split(':');
-
-    if (parts.length !== 2) {
-        return { success: false, error: 'Invalid QR Code payload.' };
-    }
-
-    const eventId = parseInt(parts[0], 10);
-    const ticketId = parseInt(parts[1], 10);
-
-    if (isNaN(eventId) || isNaN(ticketId)) {
-        return { success: false, error: 'Malformed QR Code data.' };
-    }
-
     const { data: ticket, error: ticketError } = await supabase
         .from('tickets')
         .select('id, event_id, checked_in, user_id, events(organizer_id), profiles(first_name, last_name)')
-        .eq('id', ticketId)
+        .eq('qr_token', qrToken)
         .single();
 
     if(ticketError || !ticket) {
-        return { success: false, error: 'Invalid Ticket ID found in QR Code.' };
+        return { success: false, error: 'Invalid QR Code. Ticket not found.' };
     }
     
     const { data: scannerAssignment, error: scannerError } = await supabase
@@ -262,7 +214,6 @@ export async function getScannableEvents() {
 
     if (organizedEventsError) {
         console.error('Error fetching organized event IDs:', organizedEventsError);
-        // Continue with assigned events even if this fails
     }
     const organizedEventIds = (organizedEventsData || []).map(e => e.id);
 
