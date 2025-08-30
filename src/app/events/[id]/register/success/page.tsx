@@ -1,3 +1,4 @@
+
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { getTicketDetails } from "@/lib/actions/tickets";
@@ -15,12 +16,14 @@ export default async function RegistrationSuccessPage({
     searchParams: { ticketId?: string };
 }) {
     const { data: { user } } = await createClient().auth.getUser();
+    const ticketId = searchParams.ticketId ? parseInt(searchParams.ticketId, 10) : null;
 
-    if (!user || !searchParams.ticketId) {
+
+    if (!user || !ticketId) {
         redirect('/login');
     }
 
-    const { data: ticket, error } = await getTicketDetails(searchParams.ticketId);
+    const { data: ticket, error } = await getTicketDetails(ticketId);
 
     if (error || !ticket || !ticket.events) {
         return <div className="text-center text-red-500 p-8">Error: {error || 'Ticket not found'}</div>
@@ -57,7 +60,7 @@ export default async function RegistrationSuccessPage({
                             <QrCodeGenerator qrToken={ticket.qr_code_token} />
                         </CardContent>
                         <CardContent className="p-0">
-                             <p className="text-xs text-muted-foreground">QR Code ID: {ticket.qr_code_token}</p>
+                             <p className="text-xs text-muted-foreground">Ticket ID: {ticket.id}</p>
                         </CardContent>
                     </Card>
 

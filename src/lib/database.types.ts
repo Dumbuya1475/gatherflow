@@ -1,3 +1,4 @@
+
 export type Json =
   | string
   | number
@@ -46,7 +47,7 @@ export type Database = {
         Row: {
           capacity: number | null
           cover_image: string | null
-          created_at: string
+          created_at: string | null
           date: string
           description: string | null
           end_date: string | null
@@ -54,14 +55,14 @@ export type Database = {
           is_paid: boolean | null
           is_public: boolean
           location: string | null
-          organizer_id: string
+          organizer_id: string | null
           price: number | null
           title: string
         }
         Insert: {
           capacity?: number | null
           cover_image?: string | null
-          created_at?: string
+          created_at?: string | null
           date: string
           description?: string | null
           end_date?: string | null
@@ -69,14 +70,14 @@ export type Database = {
           is_paid?: boolean | null
           is_public?: boolean
           location?: string | null
-          organizer_id: string
+          organizer_id?: string | null
           price?: number | null
           title: string
         }
         Update: {
           capacity?: number | null
           cover_image?: string | null
-          created_at?: string
+          created_at?: string | null
           date?: string
           description?: string | null
           end_date?: string | null
@@ -84,7 +85,7 @@ export type Database = {
           is_paid?: boolean | null
           is_public?: boolean
           location?: string | null
-          organizer_id?: string
+          organizer_id?: string | null
           price?: number | null
           title?: string
         }
@@ -131,29 +132,29 @@ export type Database = {
         Row: {
           checked_in: boolean
           checked_in_at: string | null
-          created_at: string
-          event_id: number
+          created_at: string | null
+          event_id: number | null
           id: number
           qr_code_token: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           checked_in?: boolean
           checked_in_at?: string | null
-          created_at?: string
-          event_id: number
+          created_at?: string | null
+          event_id?: number | null
           id?: number
           qr_code_token?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           checked_in?: boolean
           checked_in_at?: string | null
-          created_at?: string
-          event_id?: number
+          created_at?: string | null
+          event_id?: number | null
           id?: number
           qr_code_token?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -180,13 +181,6 @@ export type Database = {
       count_users: {
         Args: Record<PropertyKey, never>
         Returns: number
-      }
-      delete_ticket: {
-        Args: {
-          p_ticket_id: number
-          p_user_id: string
-        }
-        Returns: undefined
       }
       handle_new_user: {
         Args: Record<PropertyKey, never>

@@ -33,6 +33,7 @@ export default function EventDetailsPage({ params }: { params: { id: string } })
     const [user, setUser] = useState<any>(null);
     const [ticketId, setTicketId] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
+    const eventId = parseInt(params.id, 10);
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -40,7 +41,7 @@ export default function EventDetailsPage({ params }: { params: { id: string } })
             const { data: { user: currentUser } } = await supabase.auth.getUser();
             setUser(currentUser);
 
-            const { data: eventData, error } = await getEventDetails(params.id);
+            const { data: eventData, error } = await getEventDetails(eventId);
             if (error || !eventData) {
                 toast({ variant: 'destructive', title: 'Error', description: error || 'Event not found.' });
                 setLoading(false);
@@ -54,7 +55,7 @@ export default function EventDetailsPage({ params }: { params: { id: string } })
                 setEvent(eventData);
             }
 
-            if (currentUser) {
+            if (currentUser && eventData) {
                 const fetchedTicketId = await getTicketId(eventData.id, currentUser.id);
                 setTicketId(fetchedTicketId);
             }
@@ -62,7 +63,7 @@ export default function EventDetailsPage({ params }: { params: { id: string } })
         };
 
         fetchInitialData();
-    }, [params.id, toast]);
+    }, [eventId, toast]);
 
     const handleShare = async () => {
         if (navigator.share && event) {

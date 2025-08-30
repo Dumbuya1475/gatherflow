@@ -18,7 +18,6 @@ export type Attendee = {
         id: string;
         first_name: string | null;
         last_name: string | null;
-        email: string | null;
-        raw_user_meta_data: any;
+        email?: string | null;
     } | null
 }

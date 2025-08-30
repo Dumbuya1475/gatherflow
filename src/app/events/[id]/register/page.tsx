@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getEventDetails } from "@/lib/actions/events";
@@ -14,7 +15,8 @@ export default async function RegisterForEventPage({ params }: { params: { id: s
         redirect('/dashboard/events');
     }
 
-    const { data: event, error } = await getEventDetails(params.id);
+    const eventId = parseInt(params.id, 10);
+    const { data: event, error } = await getEventDetails(eventId);
 
     if (error || !event) {
         return (

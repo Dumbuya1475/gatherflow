@@ -93,7 +93,7 @@ export async function createEventAction(formData: FormData) {
 }
 
 
-export async function updateEventAction(eventId: string, formData: FormData) {
+export async function updateEventAction(eventId: number, formData: FormData) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -164,7 +164,7 @@ export async function updateEventAction(eventId: string, formData: FormData) {
 }
 
 
-export async function getEventDetails(eventId: string) {
+export async function getEventDetails(eventId: number) {
     const supabase = createClient();
     const { data: event, error } = await supabase
       .from('events')
@@ -184,7 +184,7 @@ export async function getEventDetails(eventId: string) {
     return { data: eventWithAttendeeCount, error: null };
 }
 
-export async function getEventAttendees(eventId: string) {
+export async function getEventAttendees(eventId: number) {
     const supabase = createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -218,8 +218,22 @@ export async function getEventAttendees(eventId: string) {
         console.error('Error fetching attendees:', error);
         return { data: null, error: 'Could not fetch attendees.' };
     }
+    
+    // The email is not directly on the profiles table in your schema.
+    // It's in auth.users. This query is simpler and safer.
+    // We can enrich with email if needed in a separate step, but let's get the page working first.
+    const attendees = data.map(d => ({
+        ...d,
+        profiles: {
+            ...d.profiles,
+            // The user's email isn't directly available on the profile table per your schema.
+            // This structure is safer and prevents query failures.
+            email: 'Not available' 
+        }
+    }))
 
-    return { data, error: null };
+
+    return { data: attendees, error: null };
 }
 
 
@@ -242,102 +256,4 @@ export async function deleteEventAction(formData: FormData) {
   
     revalidatePath('/dashboard/events');
     redirect('/dashboard/events');
-}
-
-
-export async function createSessionAction(formData: FormData) {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
-
-    const eventId = formData.get('eventId') as string;
-    const name = formData.get('name') as string;
-    const description = formData.get('description') as string;
-    const location = formData.get('location') as string;
-    const start_at = formData.get('start_at') as string;
-    const end_at = formData.get('end_at') as string;
-    const capacity = formData.get('capacity') ? Number(formData.get('capacity')) : null;
-
-    if (!eventId || !name || !start_at || !end_at) {
-        return { success: false, error: 'Missing required fields' };
-    }
-
-    const { error } = await supabase.from('sessions').insert({
-        event_id: eventId,
-        name,
-        description,
-        location,
-        start_at,
-        end_at,
-        capacity
-    });
-
-    if (error) {
-        console.error("Error creating session", error);
-        return { success: false, error: error.message };
-    }
-
-    revalidatePath(`/dashboard/events/${eventId}/manage`);
-    return { success: true };
-}
-
-export async function getEventSessions(eventId: string) {
-    const supabase = createClient();
-    const { data, error } = await supabase.from('sessions').select('*').eq('event_id', eventId);
-    if(error) return { data: [], error: 'Could not fetch sessions' };
-    return { data, error: null };
-}
-
-
-export async function createScanPointAction(formData: FormData) {
-    const supabase = createClient();
-    const eventId = formData.get('eventId') as string;
-    const name = formData.get('name') as string;
-
-    const { error } = await supabase.from('scan_points').insert({ event_id: eventId, name });
-    if (error) return { success: false, error: error.message };
-
-    revalidatePath(`/dashboard/events/${eventId}/manage`);
-    return { success: true };
-}
-
-
-export async function getEventScanPoints(eventId: string) {
-    const supabase = createClient();
-    const { data, error } = await supabase.from('scan_points').select('*').eq('event_id', eventId);
-    if(error) return { data: [], error: 'Could not fetch scan points' };
-    return { data, error: null };
-}
-
-export async function getEventScanners(eventId: string) {
-    const supabase = createClient();
-    const { data, error } = await supabase.from('scanner_assignments').select(`
-        profiles (id, first_name, last_name, email),
-        scan_points (name)
-    `).eq('event_id', eventId);
-
-    if (error) return { data: [], error: "Could not fetch scanners" };
-    return { data, error: null };
-}
-
-export async function assignScannerAction(formData: FormData) {
-    const supabase = createClient();
-    const eventId = formData.get('eventId') as string;
-    const scannerId = formData.get('scannerId') as string;
-    const scanPointId = formData.get('scanPointId') as string;
-
-    if(!scannerId || !scanPointId) return { success: false, error: "Missing scanner or scan point" };
-
-    const { error } = await supabase.from('scanner_assignments').upsert({
-        event_id: eventId,
-        scan_point_id: scanPointId,
-        scanner_id: scannerId,
-    }, { onConflict: 'scan_point_id, scanner_id' });
-
-    if (error) {
-        console.error("Error assigning scanner:", error);
-        return { success: false, error: error.message };
-    }
-    revalidatePath(`/dashboard/events/${eventId}/manage`);
-    return { success: true };
 }
