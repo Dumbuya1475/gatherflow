@@ -2,10 +2,33 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
+const APP_NAME = "GatherFlow";
+const APP_DEFAULT_TITLE = "GatherFlow";
+const APP_TITLE_TEMPLATE = "%s - GatherFlow";
+const APP_DESCRIPTION = "The future of event management.";
+
 export const metadata: Metadata = {
-  title: 'GatherFlow',
-  description: 'The future of event management.',
+  applicationName: APP_NAME,
+  title: {
+    default: APP_DEFAULT_TITLE,
+    template: APP_TITLE_TEMPLATE,
+  },
+  description: APP_DESCRIPTION,
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: APP_DEFAULT_TITLE,
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    shortcut: "/favicon.ico",
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+  },
 };
+
 
 export default function RootLayout({
   children,
