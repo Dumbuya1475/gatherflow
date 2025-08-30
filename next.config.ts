@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 
 const withPWA = require('@ducanh2912/next-pwa').default({
@@ -28,18 +29,6 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
-  },
-   webpack: (
-    config,
-    { isServer },
-  ) => {
-    if (isServer) {
-        config.externals.push({
-            'handlebars': 'handlebars',
-            'dotprompt': 'dotprompt'
-        });
-    }
-    return config
   },
 };
 
