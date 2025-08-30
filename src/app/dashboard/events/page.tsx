@@ -25,7 +25,7 @@ async function getMyEvents(userId: string) {
   const supabase = createClient();
   const { data: events, error } = await supabase
     .from('events')
-    .select('*, tickets(count)')
+    .select('*, tickets(count), organizer:profiles(first_name, last_name)')
     .eq('organizer_id', userId)
     .order('date', { ascending: false });
 
@@ -44,7 +44,7 @@ async function getRegisteredEvents(userId: string) {
     const supabase = createClient();
     const { data: tickets, error } = await supabase
         .from('tickets')
-        .select('events(*, tickets(count)), id')
+        .select('events(*, tickets(count), organizer:profiles(first_name, last_name)), id')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
         
@@ -68,7 +68,7 @@ async function getAllEvents(user: any) {
 
   const { data: events, error } = await supabase
     .from('events')
-    .select('*, tickets(count)')
+    .select('*, tickets(count), organizer:profiles(first_name, last_name)')
     .eq('is_public', true)
     .order('date', { ascending: false });
 
@@ -110,7 +110,7 @@ async function getPastEvents(userId: string) {
     // Fetch events the user attended
     const { data: attendedTickets, error: attendedError } = await supabase
         .from('tickets')
-        .select('events(*, tickets(count))')
+        .select('events(*, tickets(count), organizer:profiles(first_name, last_name))')
         .eq('user_id', userId);
 
     if(attendedError) {
@@ -125,7 +125,7 @@ async function getPastEvents(userId: string) {
     // Fetch events the user organized
     const { data: organizedEvents, error: organizedError } = await supabase
         .from('events')
-        .select('*, tickets(count)')
+        .select('*, tickets(count), organizer:profiles(first_name, last_name)')
         .eq('organizer_id', userId)
         .lt('date', new Date().toISOString())
         .order('date', { ascending: false });

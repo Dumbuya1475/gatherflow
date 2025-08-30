@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useActionState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye, Eye, Pencil, DollarSign, Timer } from 'lucide-react';
+import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye, Eye, Pencil, DollarSign, Timer, User } from 'lucide-react';
 import type { EventWithAttendees } from '@/lib/types';
 import { registerForEventAction } from '@/lib/actions/tickets';
 import { useToast } from '@/hooks/use-toast';
@@ -72,6 +72,18 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
       return `${days + 1} day${days + 1 > 1 ? 's' : ''} left`;
     }, [event.date]);
 
+    const organizerName = useMemo(() => {
+        if (!event.organizer) return 'Anonymous';
+        // Check if organizer is an array (which it shouldn't be, but good for type safety)
+        if (Array.isArray(event.organizer)) {
+             if (event.organizer.length === 0) return 'Anonymous';
+             const org = event.organizer[0];
+             return `${org.first_name || ''} ${org.last_name || ''}`.trim();
+        }
+        // Check if organizer is an object
+        return `${event.organizer.first_name || ''} ${event.organizer.last_name || ''}`.trim() || 'Anonymous';
+    }, [event.organizer]);
+
 
   return (
     <Card className="h-full flex flex-col overflow-hidden transition-transform transform-gpu hover:-translate-y-1 hover:shadow-xl">
@@ -112,6 +124,10 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
             <span className="truncate">{event.location}</span>
+          </div>
+           <div className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            <span className="truncate">Organized by {organizerName}</span>
           </div>
         </div>
       </CardContent>

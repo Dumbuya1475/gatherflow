@@ -19,7 +19,7 @@ async function getAllPublicEvents() {
 
   const { data: events, error } = await supabase
     .from('events')
-    .select('*, tickets(count)')
+    .select('*, tickets(count), organizer:profiles(first_name, last_name)')
     .eq('is_public', true)
     .order('date', { ascending: true });
 

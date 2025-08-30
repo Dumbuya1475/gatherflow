@@ -142,7 +142,7 @@ export async function verifyTicket(qrToken: string) {
 
     const { data: ticket, error: ticketError } = await supabase
         .from('tickets')
-        .select('id, event_id, checked_in, events(organizer_id)')
+        .select('id, event_id, checked_in, events(organizer_id), user_id')
         .eq('qr_token', qrToken)
         .single();
 
@@ -172,14 +172,12 @@ export async function verifyTicket(qrToken: string) {
         return { success: false, error: `This ticket has already been checked in.`, status: 'already_in' };
     }
 
-    const { data: updateData, error: updateError } = await supabase
+    const { error: updateError } = await supabase
       .from('tickets')
       .update({ checked_in: true, checked_in_at: new Date().toISOString() })
-      .eq('id', ticket.id)
-      .select('user_id')
-      .single();
+      .eq('id', ticket.id);
     
-    if(updateError || !updateData) {
+    if(updateError) {
         console.error("Failed to check in ticket:", updateError);
         return { success: false, error: 'Database error: Failed to check in ticket.' };
     }
@@ -187,7 +185,7 @@ export async function verifyTicket(qrToken: string) {
     const { data: profile } = await supabase
         .from('profiles')
         .select('first_name, last_name')
-        .eq('id', updateData.user_id)
+        .eq('id', ticket.user_id)
         .single();
     
     revalidatePath(`/dashboard/events/${ticket.event_id}/manage`);
@@ -234,7 +232,7 @@ export async function getScannableEvents() {
     
     const { data: events, error: eventsError } = await supabase
         .from('events')
-        .select('*, tickets(count)')
+        .select('*, tickets(count), organizer:profiles(first_name, last_name)')
         .in('id', allScannableEventIds)
         .gt('date', new Date(new Date().setDate(new Date().getDate() -1)).toISOString()); // show events from yesterday onwards
 
