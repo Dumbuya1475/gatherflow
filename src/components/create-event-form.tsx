@@ -324,7 +324,20 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                           disabled={(date) => date < new Date() || date < new Date('1900-01-01')}
                           initialFocus
                         />
-                         {/* Time picker would go here */}
+                         <div className="p-3 border-t border-border">
+                            <Input
+                                type="time"
+                                value={field.value ? format(field.value, 'HH:mm') : ''}
+                                onChange={(e) => {
+                                    const time = e.target.value;
+                                    const [hours, minutes] = time.split(':').map(Number);
+                                    const newDate = field.value ? new Date(field.value) : new Date();
+                                    newDate.setHours(hours);
+                                    newDate.setMinutes(minutes);
+                                    field.onChange(newDate);
+                                }}
+                            />
+                        </div>
                       </PopoverContent>
                     </Popover>
                     <FormMessage />
@@ -364,6 +377,20 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                           disabled={(date) => date < (form.getValues('date') || new Date())}
                           initialFocus
                         />
+                         <div className="p-3 border-t border-border">
+                            <Input
+                                type="time"
+                                value={field.value ? format(field.value, 'HH:mm') : ''}
+                                onChange={(e) => {
+                                    const time = e.target.value;
+                                    const [hours, minutes] = time.split(':').map(Number);
+                                    const newDate = field.value ? new Date(field.value) : new Date();
+                                    newDate.setHours(hours);
+                                    newDate.setMinutes(minutes);
+                                    field.onChange(newDate);
+                                }}
+                            />
+                        </div>
                       </PopoverContent>
                     </Popover>
                     <FormMessage />
@@ -530,3 +557,5 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
     </Card>
   );
 }
+
+    
