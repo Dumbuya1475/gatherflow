@@ -5,12 +5,12 @@ import type { EventWithAttendees } from '@/lib/types';
 import { createClient } from '@/lib/supabase/server';
 import { EventCard } from '@/components/event-card';
 import { Footer } from '@/components/footer';
-import { Header } from '@/components/header';
+import { PublicHeader } from '@/components/public-header';
 import Link from 'next/link';
 
 async function getAllPublicEvents() {
   const supabase = createClient();
-  const { data: user } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const { data: events, error } = await supabase
     .from('events')
@@ -23,18 +23,20 @@ async function getAllPublicEvents() {
     return [];
   }
 
-  if (!user.user) {
-    return events.map(event => ({
-      ...event,
-      attendees: event.tickets[0]?.count || 0,
-    }));
+  const eventsWithAttendeeCount = events.map(event => ({
+    ...event,
+    attendees: event.tickets[0]?.count || 0,
+  }));
+
+  if (!user) {
+    return eventsWithAttendeeCount;
   }
 
   const { data: userTickets, error: ticketError } = await supabase
     .from('tickets')
     .select('event_id, id')
     .in('event_id', events.map(e => e.id))
-    .eq('user_id', user.user.id);
+    .eq('user_id', user.id);
 
   if (ticketError) {
     console.error('Error fetching user tickets for all events:', ticketError);
@@ -42,9 +44,8 @@ async function getAllPublicEvents() {
 
   const userTicketMap = new Map(userTickets?.map(t => [t.event_id, t.id]));
 
-  return events.map(event => ({
+  return eventsWithAttendeeCount.map(event => ({
     ...event,
-    attendees: event.tickets[0]?.count || 0,
     ticket_id: userTicketMap.get(event.id),
   }));
 }
@@ -55,7 +56,7 @@ export default async function AllEventsPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Header />
+      <PublicHeader />
       <main className="flex-1">
         <section className="w-full py-28 md:py-36">
           <div className="container mx-auto px-4 md:px-6">
