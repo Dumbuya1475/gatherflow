@@ -30,7 +30,7 @@ export async function registerForEventAction(
     .maybeSingle();
 
   if (existingTicket) {
-    return redirect(`/events/${eventId}/register/success?ticketId=${existingTicket.id}`);
+    return redirect(`/dashboard/tickets/${existingTicket.id}`);
   }
   
   const { data: eventData } = await supabase.from('events').select('capacity, tickets(count)').eq('id', eventId).single();
@@ -45,7 +45,7 @@ export async function registerForEventAction(
     event_id: eventId,
     user_id: user.id,
     qr_token: crypto.randomUUID(),
-  }).select('id').single();
+  }).select('id, qr_token').single();
 
   if (error || !ticket) {
     console.error('Error registering for event:', error);
@@ -58,7 +58,7 @@ export async function registerForEventAction(
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/events`);
   
-  return redirect(`/events/${eventId}/register/success?ticketId=${ticket.id}`);
+  return redirect(`/dashboard/tickets/${ticket.id}`);
 }
 
 export async function registerAndCreateTicket(
@@ -124,7 +124,6 @@ export async function getTicketDetails(ticketId: number) {
         return { data: null, error: 'Ticket not found.' };
     }
 
-    // Security Check: Ensure the user is either the ticket owner or the event organizer
     const isOwner = ticket.user_id === user.id;
     const isOrganizer = ticket.events?.organizer_id === user.id;
 
@@ -143,7 +142,7 @@ export async function verifyTicket(qrToken: string) {
 
     const { data: ticket, error: ticketError } = await supabase
         .from('tickets')
-        .select('id, event_id, checked_in, user_id, events(organizer_id), profiles(first_name, last_name)')
+        .select('id, event_id, checked_in, events(organizer_id)')
         .eq('qr_token', qrToken)
         .single();
 
@@ -170,26 +169,31 @@ export async function verifyTicket(qrToken: string) {
     }
 
     if(ticket.checked_in) {
-        const attendeeName = ticket.profiles ? `${ticket.profiles.first_name} ${ticket.profiles.last_name}` : 'attendee';
-        return { success: false, error: `This ticket has already been checked in for ${attendeeName}.`, status: 'already_in' };
+        return { success: false, error: `This ticket has already been checked in.`, status: 'already_in' };
     }
 
     const { data: updateData, error: updateError } = await supabase
       .from('tickets')
       .update({ checked_in: true, checked_in_at: new Date().toISOString() })
       .eq('id', ticket.id)
-      .select('profiles(first_name, last_name)')
+      .select('user_id')
       .single();
     
     if(updateError || !updateData) {
         console.error("Failed to check in ticket:", updateError);
         return { success: false, error: 'Database error: Failed to check in ticket.' };
     }
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', updateData.user_id)
+        .single();
     
     revalidatePath(`/dashboard/events/${ticket.event_id}/manage`);
     revalidatePath(`/dashboard/analytics`);
 
-    const attendeeName = updateData.profiles ? `${updateData.profiles.first_name} ${updateData.profiles.last_name}`.trim() : 'attendee';
+    const attendeeName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : 'attendee';
     return { success: true, message: `Successfully checked in ${attendeeName}.` };
 }
 
@@ -201,7 +205,6 @@ export async function getScannableEvents() {
         return { data: [], error: 'You must be logged in to view scannable events.', isLoggedIn: false };
     }
     
-    // Fetch event IDs where the user is an assigned scanner
     const { data: scannerAssignments, error: scannerError } = await supabase
         .from('event_scanners')
         .select('event_id')
@@ -213,7 +216,6 @@ export async function getScannableEvents() {
     }
     const assignedEventIds = (scannerAssignments || []).map(a => a.event_id);
 
-    // Fetch events where the user is the organizer
     const { data: organizedEventsData, error: organizedEventsError } = await supabase
         .from('events')
         .select('id')
@@ -224,14 +226,12 @@ export async function getScannableEvents() {
     }
     const organizedEventIds = (organizedEventsData || []).map(e => e.id);
 
-    // Combine and deduplicate the event IDs
     const allScannableEventIds = [...new Set([...assignedEventIds, ...organizedEventIds])];
 
     if (allScannableEventIds.length === 0) {
         return { data: [], isLoggedIn: true, error: null };
     }
     
-    // Fetch full event details for the combined list of IDs
     const { data: events, error: eventsError } = await supabase
         .from('events')
         .select('*, tickets(count)')
@@ -250,4 +250,3 @@ export async function getScannableEvents() {
 
     return { data: uniqueEvents, isLoggedIn: true, error: null };
 }
-

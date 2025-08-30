@@ -190,7 +190,12 @@ export async function getEventAttendees(eventId: number) {
     const { data: { user } } = await supabase.auth.getUser();
     if(!user) return { data: null, error: 'Not authenticated' };
 
-    const { data: eventData, error: eventError } = await supabase.from('events').select('organizer_id').eq('id', eventId).single();
+    // First, verify if the current user is the organizer of the event.
+    const { data: eventData, error: eventError } = await supabase
+        .from('events')
+        .select('organizer_id')
+        .eq('id', eventId)
+        .single();
 
     if(eventError || !eventData) {
         return { data: null, error: 'Could not verify event ownership.' };
@@ -200,45 +205,63 @@ export async function getEventAttendees(eventId: number) {
         return { data: null, error: 'You are not authorized to view these attendees.' };
     }
 
-    const { data, error } = await supabase
+    // If authorized, fetch the tickets associated with the event.
+    const { data: tickets, error: ticketsError } = await supabase
         .from('tickets')
-        .select(`
-            ticket_id: id,
-            checked_in,
-            profiles:user_id (
-                id,
-                first_name,
-                last_name
-            )
-        `)
+        .select('id, checked_in, user_id')
         .eq('event_id', eventId);
 
-    if (error) {
-        console.error('Error fetching attendees:', error);
-        return { data: null, error: 'Could not fetch attendees.' };
+    if (ticketsError) {
+        console.error('Error fetching tickets for attendees:', ticketsError);
+        return { data: null, error: 'Could not fetch tickets for attendees.' };
     }
 
-    const userIds = data.map(d => d.profiles?.id).filter(Boolean) as string[];
-    const { data: users, error: usersError } = await supabase.auth.admin.listUsers({
-        page: 1,
-        perPage: 1000,
-      });
+    if (!tickets || tickets.length === 0) {
+        return { data: [], error: null };
+    }
 
-    if (usersError) {
-        console.error('Error fetching user emails:', usersError);
-        // Continue without emails if this fails
+    // Get all user IDs from the tickets.
+    const userIds = tickets.map(ticket => ticket.user_id).filter((id): id is string => id !== null);
+
+    // Fetch the profile information for all attendees in a single query.
+    const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', userIds);
+    
+    if (profilesError) {
+        console.error('Error fetching profiles for attendees:', profilesError);
+        return { data: null, error: 'Could not fetch profiles for attendees.' };
     }
     
-    const emailMap = new Map(users?.users.map(u => [u.id, u.email]));
+    const { data: authUsers, error: authUsersError } = await supabase.auth.admin.listUsers({
+        page: 1, perPage: 1000
+    });
 
-    const attendees = data.map(d => ({
-        ...d,
-        profiles: d.profiles ? {
-            ...d.profiles,
-            email: emailMap.get(d.profiles.id) || 'Email not found'
-        } : null
-    }));
+    if (authUsersError) {
+        console.error('Error fetching auth users for emails:', authUsersError);
+        return { data: null, error: 'Could not fetch user emails.'};
+    }
 
+    // Create maps for efficient lookups.
+    const profilesMap = new Map(profiles.map(p => [p.id, p]));
+    const emailsMap = new Map(authUsers.users.map(u => [u.id, u.email]));
+
+    // Combine the information.
+    const attendees = tickets.map(ticket => {
+        const profile = ticket.user_id ? profilesMap.get(ticket.user_id) : null;
+        const email = ticket.user_id ? emailsMap.get(ticket.user_id) : null;
+        return {
+            ticket_id: ticket.id,
+            checked_in: ticket.checked_in,
+            profiles: {
+                id: ticket.user_id || '',
+                first_name: profile?.first_name || '',
+                last_name: profile?.last_name || '',
+                email: email || 'Email not available',
+            }
+        };
+    });
 
     return { data: attendees, error: null };
 }
