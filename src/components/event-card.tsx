@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { useActionState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye, Eye, Pencil } from 'lucide-react';
+import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye, Eye, Pencil, DollarSign } from 'lucide-react';
 import type { EventWithAttendees } from '@/lib/types';
 import { registerForEventAction } from '@/lib/actions/tickets';
 import { useToast } from '@/hooks/use-toast';
 import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
+import { Badge } from './ui/badge';
 
 interface EventCardProps {
   event: EventWithAttendees;
@@ -69,6 +70,16 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
             data-ai-hint="event music"
             className="object-cover"
           />
+          <div className="absolute top-2 right-2">
+            {event.is_paid ? (
+                <Badge className="bg-primary/80 backdrop-blur-sm">
+                    <DollarSign className="mr-1 h-3 w-3" />
+                     {event.price ? `SLE ${Number(event.price).toLocaleString()}`: 'Paid'}
+                </Badge>
+            ) : (
+                <Badge variant="secondary" className='bg-secondary/80 backdrop-blur-sm'>Free</Badge>
+            )}
+          </div>
         </Link>
       </CardHeader>
       <CardContent className="p-4 flex-1">

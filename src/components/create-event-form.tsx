@@ -29,6 +29,8 @@ import { useToast } from '@/hooks/use-toast';
 import { createEventAction, updateEventAction } from '@/lib/actions/events';
 import type { Event } from '@/lib/types';
 import { generatePromotionAction } from '@/lib/actions/server/ai';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { Label } from './ui/label';
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
@@ -58,7 +60,18 @@ const eventFormSchema = z.object({
     })
     .optional(),
   current_cover_image: z.string().url().optional(),
+  is_paid: z.boolean().default(false),
+  price: z.coerce.number().nonnegative().optional(),
+}).refine(data => {
+    if (data.is_paid) {
+        return data.price !== undefined && data.price > 0;
+    }
+    return true;
+}, {
+    message: "Price must be a positive number for paid events.",
+    path: ["price"],
 });
+
 
 type EventFormValues = z.infer<typeof eventFormSchema>;
 
@@ -84,6 +97,8 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
       targetAudience: defaultValues?.targetAudience || 'General Audience',
       scanners: defaultValues?.scanners || [],
       capacity: defaultValues?.capacity || undefined,
+      is_paid: defaultValues?.is_paid || false,
+      price: defaultValues?.price || undefined,
     },
   });
 
@@ -91,6 +106,8 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
     control: form.control,
     name: "scanners",
   });
+
+  const isPaid = form.watch('is_paid');
 
   async function handleGenerateContent() {
     setIsGenerating(true);
@@ -142,7 +159,10 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                 formData.append(key, value);
             } else if (key === 'scanners' && Array.isArray(value)) {
                 formData.append(key, JSON.stringify(value.map(s => s.email)));
-            } else if (value instanceof Date) {
+            } else if (key === 'is_paid') {
+                formData.append(key, value.toString());
+            }
+            else if (value instanceof Date) {
                 formData.append(key, value.toISOString());
             } else if (typeof value === 'string' || typeof value === 'number') {
                 formData.append(key, String(value));
@@ -372,6 +392,53 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="is_paid"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Ticket Price</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={(value) => field.onChange(value === 'paid')}
+                      defaultValue={field.value ? 'paid' : 'free'}
+                      className="flex space-x-4"
+                    >
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <RadioGroupItem value="free" id="free" />
+                        </FormControl>
+                        <Label htmlFor="free">Free Event</Label>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <RadioGroupItem value="paid" id="paid" />
+                        </FormControl>
+                        <Label htmlFor="paid">Paid Event</Label>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {isPaid && (
+                 <FormField
+                 control={form.control}
+                 name="price"
+                 render={({ field }) => (
+                   <FormItem>
+                     <FormLabel>Price (SLE)</FormLabel>
+                     <FormControl>
+                       <Input type="number" placeholder="e.g., 500000" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} value={field.value ?? ''} />
+                     </FormControl>
+                     <FormMessage />
+                   </FormItem>
+                 )}
+               />
+            )}
             
             <div>
               <FormLabel>Invite Scanners</FormLabel>

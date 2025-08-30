@@ -3,7 +3,7 @@ import { getEventDetails } from "@/lib/actions/events";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, MapPin, Users, Ticket, ArrowLeft, Eye } from "lucide-react";
+import { Calendar, MapPin, Users, Ticket, ArrowLeft, Eye, DollarSign } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { format } from 'date-fns';
@@ -92,9 +92,9 @@ export default async function EventDetailsPage({ params }: { params: { id: strin
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Ticket className="h-5 w-5 text-primary" />
+                                        {event.is_paid ? <DollarSign className="h-5 w-5 text-primary" /> : <Ticket className="h-5 w-5 text-primary" />}
                                         <div className="flex-1">
-                                            <p className="font-semibold">Free</p>
+                                            <p className="font-semibold">{event.is_paid && event.price ? `SLE ${Number(event.price).toLocaleString()}` : 'Free'}</p>
                                             <p className="text-xs text-muted-foreground">Price</p>
                                         </div>
                                     </div>

@@ -51,8 +51,10 @@ export type Database = {
           description: string | null
           end_date: string | null
           id: number
+          is_paid: boolean | null
           location: string | null
           organizer_id: string
+          price: number | null
           title: string
         }
         Insert: {
@@ -63,8 +65,10 @@ export type Database = {
           description?: string | null
           end_date?: string | null
           id?: number
+          is_paid?: boolean | null
           location?: string | null
           organizer_id: string
+          price?: number | null
           title: string
         }
         Update: {
@@ -75,8 +79,10 @@ export type Database = {
           description?: string | null
           end_date?: string | null
           id?: number
+          is_paid?: boolean | null
           location?: string | null
           organizer_id?: string
+          price?: number | null
           title?: string
         }
         Relationships: [

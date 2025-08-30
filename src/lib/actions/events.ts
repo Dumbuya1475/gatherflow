@@ -24,6 +24,8 @@ export async function createEventAction(formData: FormData) {
     const capacity = formData.get('capacity') ? Number(formData.get('capacity')) : null;
     const scanners = JSON.parse(formData.get('scanners') as string || '[]') as string[];
     const cover_image_file = formData.get('cover_image_file') as File | null;
+    const is_paid = formData.get('is_paid') === 'true';
+    const price = formData.get('price') ? Number(formData.get('price')) : null;
   
     if (!title || !description || !date || !location) {
         return { success: false, error: 'Please fill in all required fields.' };
@@ -49,7 +51,9 @@ export async function createEventAction(formData: FormData) {
         location,
         cover_image: finalCoverImage,
         organizer_id: user.id,
-        capacity
+        capacity,
+        is_paid,
+        price,
     }).select('id').single();
 
     if (error || !eventData) {
@@ -115,6 +119,8 @@ export async function updateEventAction(eventId: number, formData: FormData) {
     const location = formData.get('location') as string;
     const capacity = formData.get('capacity') ? Number(formData.get('capacity')) : null;
     const cover_image_file = formData.get('cover_image_file') as File | null;
+    const is_paid = formData.get('is_paid') === 'true';
+    const price = formData.get('price') ? Number(formData.get('price')) : null;
     
     let finalCoverImage = existingEvent.cover_image;
 
@@ -136,6 +142,8 @@ export async function updateEventAction(eventId: number, formData: FormData) {
             location,
             cover_image: finalCoverImage,
             capacity,
+            is_paid,
+            price
         })
         .eq('id', eventId);
 
