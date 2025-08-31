@@ -15,7 +15,7 @@ export type EventWithAttendees = Event & {
   attendees: number;
   ticket_id?: number;
   type?: 'attended' | 'organized';
-  organizer?: OrganizerProfile;
+  organizer?: Profile | null;
 };
 
 export type Attendee = {

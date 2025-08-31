@@ -168,7 +168,7 @@ export async function getEventDetails(eventId: number) {
     const supabase = createClient();
     const { data: event, error } = await supabase
       .from('events')
-      .select('*, tickets(count), organizer:profiles(first_name, last_name)')
+      .select('*, tickets(count), organizer:profiles!inner(*)')
       .eq('id', eventId)
       .single();
   
@@ -190,7 +190,6 @@ export async function getEventAttendees(eventId: number) {
     const { data: { user } } = await supabase.auth.getUser();
     if(!user) return { data: null, error: 'Not authenticated' };
 
-    // First, verify if the current user is the organizer of the event.
     const { data: eventData, error: eventError } = await supabase
         .from('events')
         .select('organizer_id')
@@ -205,10 +204,9 @@ export async function getEventAttendees(eventId: number) {
         return { data: null, error: 'You are not authorized to view these attendees.' };
     }
 
-    // If authorized, fetch the tickets associated with the event.
     const { data: tickets, error: ticketsError } = await supabase
         .from('tickets')
-        .select('id, checked_in, profiles:profiles(id, first_name, last_name, email:users(email))')
+        .select('*, profiles(*)')
         .eq('event_id', eventId);
 
     if (ticketsError) {
@@ -220,21 +218,31 @@ export async function getEventAttendees(eventId: number) {
         return { data: [], error: null };
     }
     
-    const attendees = tickets.map(ticket => {
-        // This mapping is a bit complex due to nested profile and user data
-        // and handles cases where profile might be null.
-        const profile = ticket.profiles;
-        const email = (profile?.email as any)?.email; // Accessing the nested email property
+    // We need to fetch emails separately as they are in auth.users
+    const userIds = tickets.map(t => t.user_id).filter(Boolean) as string[];
+    const { data: users, error: usersError } = await supabase.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000, // Adjust as needed
+    });
+    
+    if(usersError) {
+        console.error('Error fetching user emails', usersError);
+        // We can proceed without emails if this fails
+    }
 
+    const emailMap = new Map(users?.users.map(u => [u.id, u.email]));
+
+    const attendees = tickets.map(ticket => {
+        const profile = ticket.profiles;
         return {
             ticket_id: ticket.id,
             checked_in: ticket.checked_in,
-            profiles: {
-                id: profile?.id || '',
-                first_name: profile?.first_name || '',
-                last_name: profile?.last_name || '',
-                email: email || '',
-            }
+            profiles: profile ? {
+                id: profile.id,
+                first_name: profile.first_name,
+                last_name: profile.last_name,
+                email: emailMap.get(profile.id) || '',
+            } : null
         };
     });
 
