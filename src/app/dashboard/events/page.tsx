@@ -25,7 +25,7 @@ async function getMyEvents(userId: string) {
   const supabase = createClient();
   const { data: events, error } = await supabase
     .from('events')
-    .select('*, tickets(count), organizer:profiles!inner(*)')
+    .select('*, tickets(count)')
     .eq('organizer_id', userId)
     .order('date', { ascending: false });
 
@@ -34,6 +34,7 @@ async function getMyEvents(userId: string) {
     return [];
   }
 
+  // No need to fetch profiles separately as they are part of the event card logic now
   return events.map(event => ({
     ...event,
     attendees: event.tickets[0]?.count || 0,
@@ -44,7 +45,7 @@ async function getRegisteredEvents(userId: string) {
     const supabase = createClient();
     const { data: tickets, error } = await supabase
         .from('tickets')
-        .select('events!inner(*, tickets(count), organizer:profiles!inner(*)), id')
+        .select('events!inner(*, tickets(count)), id')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
         
@@ -52,6 +53,33 @@ async function getRegisteredEvents(userId: string) {
         console.error('Error fetching registered events:', error);
         return [];
     }
+    
+    const events = tickets
+        .filter(ticket => ticket.events)
+        .map(ticket => ticket.events);
+    
+    const organizerIds = events.map(event => event!.organizer_id).filter(Boolean) as string[];
+
+    if (organizerIds.length === 0) {
+        return tickets
+        .filter(ticket => ticket.events)
+        .map(ticket => ({
+            ...ticket.events!,
+            attendees: ticket.events!.tickets[0]?.count || 0,
+            ticket_id: ticket.id,
+        }));
+    }
+
+    const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', organizerIds);
+    
+    if (profileError) {
+         console.error('Error fetching organizer profiles for registered events:', profileError);
+    }
+    
+    const profileMap = new Map(profiles?.map(p => [p.id, p]));
 
     return tickets
       .filter(ticket => ticket.events) // Ensure event data is not null
@@ -59,6 +87,7 @@ async function getRegisteredEvents(userId: string) {
         ...ticket.events!,
         attendees: ticket.events!.tickets[0]?.count || 0,
         ticket_id: ticket.id,
+        organizer: ticket.events!.organizer_id ? profileMap.get(ticket.events!.organizer_id) : null,
     }));
 }
 
@@ -68,7 +97,7 @@ async function getAllEvents(user: any) {
 
   const { data: events, error } = await supabase
     .from('events')
-    .select('*, tickets(count), organizer:profiles!inner(*)')
+    .select('*, tickets(count)')
     .eq('is_public', true)
     .order('date', { ascending: false });
 
@@ -77,11 +106,25 @@ async function getAllEvents(user: any) {
     return [];
   }
   
+  const organizerIds = events.map(event => event.organizer_id).filter(Boolean) as string[];
+  const { data: profiles, error: profileError } = await supabase
+    .from('profiles')
+    .select('id, first_name, last_name')
+    .in('id', organizerIds);
+
+  if (profileError) {
+    console.error('Error fetching profiles for all events:', profileError);
+  }
+  const profileMap = new Map(profiles?.map(p => [p.id, p]));
+  
+  const eventsWithOrganizer = events.map(event => ({
+    ...event,
+    organizer: event.organizer_id ? profileMap.get(event.organizer_id) : null,
+    attendees: event.tickets[0]?.count || 0,
+  }));
+  
   if (!user) {
-    return events.map(event => ({
-      ...event,
-      attendees: event.tickets[0]?.count || 0,
-    }));
+    return eventsWithOrganizer;
   }
 
   const { data: userTickets, error: ticketError } = await supabase
@@ -92,14 +135,12 @@ async function getAllEvents(user: any) {
   
   if (ticketError) {
       console.error('Error fetching user tickets for all events:', ticketError);
-      // Proceed without ticket info if this fails
   }
   
   const userTicketMap = new Map(userTickets?.map(t => [t.event_id, t.id]));
 
-  return events.map(event => ({
+  return eventsWithOrganizer.map(event => ({
     ...event,
-    attendees: event.tickets[0]?.count || 0,
     ticket_id: userTicketMap.get(event.id),
   }));
 }
@@ -110,7 +151,7 @@ async function getPastEvents(userId: string) {
     // Fetch events the user attended
     const { data: attendedTickets, error: attendedError } = await supabase
         .from('tickets')
-        .select('events!inner(*, tickets(count), organizer:profiles!inner(*))')
+        .select('events!inner(*, tickets(count))')
         .eq('user_id', userId);
 
     if(attendedError) {
@@ -125,7 +166,7 @@ async function getPastEvents(userId: string) {
     // Fetch events the user organized
     const { data: organizedEvents, error: organizedError } = await supabase
         .from('events')
-        .select('*, tickets(count), organizer:profiles!inner(*)')
+        .select('*, tickets(count)')
         .eq('organizer_id', userId)
         .lt('date', new Date().toISOString())
         .order('date', { ascending: false });
@@ -143,7 +184,22 @@ async function getPastEvents(userId: string) {
     
     uniquePastEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    return uniquePastEvents;
+    const organizerIds = uniquePastEvents.map(event => event.organizer_id).filter(Boolean) as string[];
+    if (organizerIds.length === 0) return uniquePastEvents;
+
+     const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', organizerIds);
+
+    if (profileError) console.error('Error fetching past events organizers:', profileError);
+
+    const profileMap = new Map(profiles?.map(p => [p.id, p]));
+
+    return uniquePastEvents.map(event => ({
+      ...event,
+      organizer: event.organizer_id ? profileMap.get(event.organizer_id) : null,
+    }));
 }
 
 
@@ -384,3 +440,5 @@ export default function EventsPage() {
     </div>
   );
 }
+
+    

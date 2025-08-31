@@ -168,7 +168,7 @@ export async function getEventDetails(eventId: number) {
     const supabase = createClient();
     const { data: event, error } = await supabase
       .from('events')
-      .select('*, tickets(count), organizer:profiles!inner(*)')
+      .select('*, tickets(count)')
       .eq('id', eventId)
       .single();
   
@@ -176,9 +176,21 @@ export async function getEventDetails(eventId: number) {
       console.error('Error fetching event details', error);
       return { data: null, error: 'Event not found' };
     }
+
+    const { data: organizerProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', event.organizer_id!)
+        .single();
+    
+    if(profileError) {
+        console.error('Error fetching organizer profile for event details', profileError);
+    }
+
     const eventWithAttendeeCount = {
         ...event,
         attendees: event.tickets[0]?.count || 0,
+        organizer: organizerProfile,
     }
   
     return { data: eventWithAttendeeCount, error: null };
@@ -206,7 +218,7 @@ export async function getEventAttendees(eventId: number) {
 
     const { data: tickets, error: ticketsError } = await supabase
         .from('tickets')
-        .select('*, profiles(*)')
+        .select('user_id, checked_in, id')
         .eq('event_id', eventId);
 
     if (ticketsError) {
@@ -218,22 +230,31 @@ export async function getEventAttendees(eventId: number) {
         return { data: [], error: null };
     }
     
-    // We need to fetch emails separately as they are in auth.users
     const userIds = tickets.map(t => t.user_id).filter(Boolean) as string[];
-    const { data: users, error: usersError } = await supabase.auth.admin.listUsers({
+    const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', userIds);
+
+    if (profilesError) {
+        console.error('Error fetching attendee profiles:', profilesError);
+        return { data: null, error: 'Could not fetch attendee profiles.' };
+    }
+    
+    const { data: usersData, error: usersError } = await supabase.auth.admin.listUsers({
       page: 1,
-      perPage: 1000, // Adjust as needed
+      perPage: 1000,
     });
     
     if(usersError) {
         console.error('Error fetching user emails', usersError);
-        // We can proceed without emails if this fails
     }
 
-    const emailMap = new Map(users?.users.map(u => [u.id, u.email]));
+    const emailMap = new Map(usersData?.users.map(u => [u.id, u.email]));
+    const profileMap = new Map(profiles.map(p => [p.id, p]));
 
     const attendees = tickets.map(ticket => {
-        const profile = ticket.profiles;
+        const profile = profileMap.get(ticket.user_id!);
         return {
             ticket_id: ticket.id,
             checked_in: ticket.checked_in,
@@ -270,3 +291,5 @@ export async function deleteEventAction(formData: FormData) {
     revalidatePath('/dashboard/events');
     redirect('/dashboard/events');
 }
+
+    

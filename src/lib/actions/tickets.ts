@@ -112,7 +112,7 @@ export async function getTicketDetails(ticketId: number) {
 
     const { data: ticket, error } = await supabase
         .from('tickets')
-        .select('*, events(*, organizer:profiles(first_name, last_name))')
+        .select('*, events(*)')
         .eq('id', ticketId)
         .single();
     
@@ -128,7 +128,25 @@ export async function getTicketDetails(ticketId: number) {
         return { data: null, error: 'You are not authorized to view this ticket.' };
     }
 
-    return { data: ticket, error: null };
+    const { data: organizerProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', ticket.events!.organizer_id!)
+        .single();
+    
+    if (profileError) {
+        console.error("Error fetching organizer profile for ticket", profileError);
+    }
+
+    const ticketWithOrganizer = {
+        ...ticket,
+        events: {
+            ...ticket.events!,
+            organizer: organizerProfile,
+        }
+    }
+
+    return { data: ticketWithOrganizer, error: null };
 }
 
 export async function verifyTicket(qrToken: string) {
@@ -229,7 +247,7 @@ export async function getScannableEvents() {
     
     const { data: events, error: eventsError } = await supabase
         .from('events')
-        .select('*, tickets(count), organizer:profiles(first_name, last_name)')
+        .select('*, tickets(count)')
         .in('id', allScannableEventIds)
         .gt('date', new Date(new Date().setDate(new Date().getDate() -1)).toISOString()); // show events from yesterday onwards
 
@@ -245,3 +263,5 @@ export async function getScannableEvents() {
 
     return { data: uniqueEvents, isLoggedIn: true, error: null };
 }
+
+    

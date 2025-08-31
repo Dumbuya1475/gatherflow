@@ -13,13 +13,11 @@ import { Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 
-async function getAllPublicEvents() {
+async function getAllPublicEvents(user: any) {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
   const { data: events, error } = await supabase
     .from('events')
-    .select('*, tickets(count), organizer:profiles!inner(*)')
+    .select('*, tickets(count)')
     .eq('is_public', true)
     .order('date', { ascending: true });
 
@@ -28,13 +26,30 @@ async function getAllPublicEvents() {
     return [];
   }
 
-  const eventsWithAttendeeCount = events.map(event => ({
+  const organizerIds = events.map(event => event.organizer_id).filter(Boolean) as string[];
+  if (organizerIds.length === 0) {
+    return events.map(event => ({ ...event, attendees: event.tickets[0]?.count || 0 }));
+  }
+
+  const { data: profiles, error: profileError } = await supabase
+    .from('profiles')
+    .select('id, first_name, last_name')
+    .in('id', organizerIds);
+
+  if (profileError) {
+    console.error('Error fetching organizer profiles:', profileError);
+  }
+
+  const profileMap = new Map(profiles?.map(p => [p.id, p]));
+
+  const eventsWithOrganizer = events.map(event => ({
     ...event,
     attendees: event.tickets[0]?.count || 0,
+    organizer: event.organizer_id ? profileMap.get(event.organizer_id) : null,
   }));
 
   if (!user) {
-    return eventsWithAttendeeCount;
+    return eventsWithOrganizer;
   }
 
   const { data: userTickets, error: ticketError } = await supabase
@@ -49,7 +64,7 @@ async function getAllPublicEvents() {
 
   const userTicketMap = new Map(userTickets?.map(t => [t.event_id, t.id]));
 
-  return eventsWithAttendeeCount.map(event => ({
+  return eventsWithOrganizer.map(event => ({
     ...event,
     ticket_id: userTicketMap.get(event.id),
   }));
@@ -90,7 +105,7 @@ export default function AllEventsPage() {
         const { data: { user: currentUser } } = await supabase.auth.getUser();
         setUser(currentUser);
 
-        const eventsData = await getAllPublicEvents();
+        const eventsData = await getAllPublicEvents(currentUser);
         setAllEvents(eventsData);
         setIsLoading(false);
     }
@@ -193,3 +208,5 @@ export default function AllEventsPage() {
     </div>
   );
 }
+
+    
