@@ -168,7 +168,7 @@ export async function getEventDetails(eventId: number) {
     const supabase = createClient();
     const { data: event, error } = await supabase
       .from('events')
-      .select('*, tickets(count), organizer:profiles(first_name, last_name)')
+      .select('*, tickets(count), organizer:profiles!events_organizer_id_fkey(first_name, last_name)')
       .eq('id', eventId)
       .single();
   
@@ -208,7 +208,7 @@ export async function getEventAttendees(eventId: number) {
     // If authorized, fetch the tickets associated with the event.
     const { data: tickets, error: ticketsError } = await supabase
         .from('tickets')
-        .select('id, checked_in, user_id, profiles(id, first_name, last_name, email:raw_user_meta_data->>\'email\')')
+        .select('id, checked_in, profiles:profiles!user_id(id, first_name, last_name, email:users!id(email))')
         .eq('event_id', eventId);
 
     if (ticketsError) {
@@ -221,10 +221,20 @@ export async function getEventAttendees(eventId: number) {
     }
     
     const attendees = tickets.map(ticket => {
+        // This mapping is a bit complex due to nested profile and user data
+        // and handles cases where profile might be null.
+        const profile = ticket.profiles;
+        const email = (profile?.email as any)?.email; // Accessing the nested email property
+
         return {
             ticket_id: ticket.id,
             checked_in: ticket.checked_in,
-            profiles: ticket.profiles
+            profiles: {
+                id: profile?.id || '',
+                first_name: profile?.first_name || '',
+                last_name: profile?.last_name || '',
+                email: email || '',
+            }
         };
     });
 
