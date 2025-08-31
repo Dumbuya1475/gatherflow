@@ -79,7 +79,7 @@ async function getRecentEvents() {
     const supabase = createClient();
     const { data: events, error } = await supabase
       .from('events')
-      .select('*, tickets(count), organizer:profiles!events_organizer_id_fkey(first_name, last_name)')
+      .select('*, tickets(count), organizer:profiles(first_name, last_name)')
       .eq('is_public', true)
       .order('date', { ascending: true })
       .limit(4)
@@ -263,3 +263,5 @@ export default async function LandingPage() {
     </div>
   );
 }
+
+    

@@ -19,12 +19,12 @@ async function getAllPublicEvents() {
 
   const { data: events, error } = await supabase
     .from('events')
-    .select('*, tickets(count), organizer:profiles!events_organizer_id_fkey(first_name, last_name)')
+    .select('*, tickets(count), organizer:profiles(first_name, last_name)')
     .eq('is_public', true)
     .order('date', { ascending: true });
 
   if (error) {
-    console.error('Error fetching all public events:', error.message);
+    console.error('Error fetching all public events:', error);
     return [];
   }
 
@@ -193,3 +193,5 @@ export default function AllEventsPage() {
     </div>
   );
 }
+
+    
