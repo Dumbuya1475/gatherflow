@@ -4,7 +4,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import crypto from 'crypto';
 
 export async function registerForEventAction(
   prevState: { error?: string; success?: boolean; ticketId?: number; } | undefined,
@@ -44,7 +43,6 @@ export async function registerForEventAction(
   const { data: ticket, error } = await supabase.from('tickets').insert({
     event_id: eventId,
     user_id: user.id,
-    qr_token: crypto.randomUUID(),
   }).select('id, qr_token').single();
 
   if (error || !ticket) {
@@ -95,7 +93,6 @@ export async function registerAndCreateTicket(
     const { data: ticketData, error: ticketError } = await supabase.from('tickets').insert({
         event_id: eventId,
         user_id: signUpData.user.id,
-        qr_token: crypto.randomUUID(),
     }).select('id').single();
 
     if (ticketError || !ticketData) {
@@ -142,7 +139,7 @@ export async function verifyTicket(qrToken: string) {
 
     const { data: ticket, error: ticketError } = await supabase
         .from('tickets')
-        .select('id, event_id, checked_in, events(organizer_id), user_id')
+        .select('id, event_id, checked_in, user_id, events(organizer_id)')
         .eq('qr_token', qrToken)
         .single();
 

@@ -90,7 +90,7 @@ async function getAttendeeDashboardStats(user: any) {
   const supabase = createClient();
   const { data: tickets, error } = await supabase
     .from('tickets')
-    .select('events(*, tickets(count)), id')
+    .select('events!inner(*, tickets(count)), id')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
@@ -292,7 +292,7 @@ export default async function DashboardPage() {
                                 <TableCell className="text-right">{new Date(event.date).toLocaleDateString()}</TableCell>
                                 <TableCell className="text-right">
                                     <Button asChild variant="outline" size="sm">
-                                        <Link href={`/dashboard/tickets/${event.ticket_id}`}>View Ticket</Link>
+                                        <Link href={`/dashboard/tickets/${event.id}`}>View Ticket</Link>
                                     </Button>
                                 </TableCell>
                             </TableRow>

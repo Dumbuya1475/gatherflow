@@ -168,7 +168,7 @@ export async function getEventDetails(eventId: number) {
     const supabase = createClient();
     const { data: event, error } = await supabase
       .from('events')
-      .select('*, tickets(count), organizer:profiles!events_organizer_id_fkey(first_name, last_name)')
+      .select('*, tickets(count), organizer:profiles(first_name, last_name)')
       .eq('id', eventId)
       .single();
   
@@ -208,7 +208,7 @@ export async function getEventAttendees(eventId: number) {
     // If authorized, fetch the tickets associated with the event.
     const { data: tickets, error: ticketsError } = await supabase
         .from('tickets')
-        .select('id, checked_in, profiles:profiles!user_id(id, first_name, last_name, email:users!id(email))')
+        .select('id, checked_in, profiles:profiles(id, first_name, last_name, email:users(email))')
         .eq('event_id', eventId);
 
     if (ticketsError) {
