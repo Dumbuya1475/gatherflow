@@ -231,9 +231,10 @@ export async function getEventAttendees(eventId: number) {
     }
     
     const userIds = tickets.map(t => t.user_id).filter(Boolean) as string[];
+    
     const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, avatar_url')
         .in('id', userIds);
 
     if (profilesError) {
@@ -241,16 +242,14 @@ export async function getEventAttendees(eventId: number) {
         return { data: null, error: 'Could not fetch attendee profiles.' };
     }
     
-    const { data: usersData, error: usersError } = await supabase.auth.admin.listUsers({
-      page: 1,
-      perPage: 1000,
-    });
-    
+    // Fetch emails from auth.users separately
+    const { data: usersResponse, error: usersError } = await supabase.auth.getUsers(userIds);
     if(usersError) {
         console.error('Error fetching user emails', usersError);
+        return { data: null, error: 'Could not fetch attendee emails.' };
     }
 
-    const emailMap = new Map(usersData?.users.map(u => [u.id, u.email]));
+    const emailMap = new Map(usersResponse?.users.map(u => [u.id, u.email]));
     const profileMap = new Map(profiles.map(p => [p.id, p]));
 
     const attendees = tickets.map(ticket => {
@@ -291,5 +290,3 @@ export async function deleteEventAction(formData: FormData) {
     revalidatePath('/dashboard/events');
     redirect('/dashboard/events');
 }
-
-    
