@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { uploadFile } from '../supabase/storage';
 import { redirect } from 'next/navigation';
+import type { Attendee } from '../types';
 
 export async function createEventAction(formData: FormData) {
     const supabase = createClient();
@@ -196,7 +197,7 @@ export async function getEventDetails(eventId: number) {
     return { data: eventWithAttendeeCount, error: null };
 }
 
-export async function getEventAttendees(eventId: number) {
+export async function getEventAttendees(eventId: number): Promise<{ data: Attendee[] | null, error: string | null }> {
     const supabase = createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -218,7 +219,7 @@ export async function getEventAttendees(eventId: number) {
 
     const { data: tickets, error: ticketsError } = await supabase
         .from('tickets')
-        .select('user_id, checked_in, id')
+        .select('user_id, checked_in, checked_out, id')
         .eq('event_id', eventId);
 
     if (ticketsError) {
@@ -242,21 +243,25 @@ export async function getEventAttendees(eventId: number) {
         return { data: null, error: 'Could not fetch attendee profiles.' };
     }
     
-    // Fetch emails from auth.users separately
-    const { data: usersResponse, error: usersError } = await supabase.auth.getUsers(userIds);
-    if(usersError) {
-        console.error('Error fetching user emails', usersError);
+    const { data: authUsers, error: authUsersError } = await supabase.auth.admin.listUsers({
+        page: 1,
+        perPage: 1000, // Adjust as needed
+    });
+    
+    if (authUsersError) {
+        console.error('Error fetching user emails from auth:', authUsersError);
         return { data: null, error: 'Could not fetch attendee emails.' };
     }
 
-    const emailMap = new Map(usersResponse?.users.map(u => [u.id, u.email]));
+    const emailMap = new Map(authUsers.users.map(u => [u.id, u.email]));
     const profileMap = new Map(profiles.map(p => [p.id, p]));
 
-    const attendees = tickets.map(ticket => {
+    const attendees: Attendee[] = tickets.map(ticket => {
         const profile = profileMap.get(ticket.user_id!);
         return {
             ticket_id: ticket.id,
             checked_in: ticket.checked_in,
+            checked_out: ticket.checked_out,
             profiles: profile ? {
                 id: profile.id,
                 first_name: profile.first_name,
@@ -289,4 +294,28 @@ export async function deleteEventAction(formData: FormData) {
   
     revalidatePath('/dashboard/events');
     redirect('/dashboard/events');
+}
+
+export async function unregisterAttendeeAction(formData: FormData) {
+    const supabase = createClient();
+    const ticketId = formData.get('ticketId') as string;
+    const eventId = formData.get('eventId') as string;
+  
+    const { data: { user } } = await supabase.auth.getUser();
+  
+    if (!user) {
+      throw new Error('You must be logged in.');
+    }
+  
+    // Optional: Add check to ensure user is organizer before deleting
+  
+    const { error } = await supabase.from('tickets').delete().eq('id', ticketId);
+  
+    if (error) {
+        console.error('Error unregistering attendee:', error);
+        throw new Error(`Failed to unregister attendee: ${error.message}`);
+    }
+  
+    revalidatePath(`/dashboard/events/${eventId}/manage`);
+    return { success: true };
 }

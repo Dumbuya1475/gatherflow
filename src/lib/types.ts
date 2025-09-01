@@ -21,6 +21,7 @@ export type EventWithAttendees = Event & {
 export type Attendee = {
     ticket_id: number;
     checked_in: boolean;
+    checked_out: boolean;
     profiles: {
         id: string;
         first_name: string | null;

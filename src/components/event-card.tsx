@@ -6,14 +6,25 @@ import Link from 'next/link';
 import { useActionState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye, Eye, Pencil, DollarSign, Timer, User } from 'lucide-react';
+import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye, Eye, Pencil, DollarSign, Timer, User, X } from 'lucide-react';
 import type { EventWithAttendees } from '@/lib/types';
-import { registerForEventAction } from '@/lib/actions/tickets';
+import { registerForEventAction, unregisterForEventAction } from '@/lib/actions/tickets';
 import { useToast } from '@/hooks/use-toast';
 import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Badge } from './ui/badge';
 import { differenceInDays, isPast, isToday } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface EventCardProps {
   event: EventWithAttendees;
@@ -46,6 +57,8 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
     const router = useRouter();
     
     const [registerState, registerAction] = useActionState(registerForEventAction, undefined);
+    const [unregisterState, unregisterAction] = useActionState(unregisterForEventAction, undefined);
+
 
     useEffect(() => {
         if(registerState?.error) {
@@ -62,7 +75,23 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
             });
             router.push(`/dashboard/tickets/${registerState.ticketId}`);
         }
-    }, [registerState, toast, router])
+    }, [registerState, toast, router]);
+
+    useEffect(() => {
+      if (unregisterState?.error) {
+        toast({
+          variant: 'destructive',
+          title: 'Unregistration Failed',
+          description: unregisterState.error,
+        });
+      }
+      if (unregisterState?.success) {
+        toast({
+          title: 'Unregistered Successfully',
+          description: "You have cancelled your registration for this event.",
+        });
+      }
+    }, [unregisterState, toast]);
 
     const daysLeft = useMemo(() => {
       const eventDate = new Date(event.date);
@@ -161,12 +190,36 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
                     </Link>
                 </Button>
                 {event.ticket_id ? (
-                     <Button asChild size="sm" className="flex-1">
-                        <Link href={`/dashboard/tickets/${event.ticket_id}`}>
-                            <TicketIcon className="mr-2 h-4 w-4" />
-                            View Ticket
-                        </Link>
-                    </Button>
+                     <div className="flex-1 flex gap-2">
+                        <Button asChild size="sm" className="flex-1">
+                            <Link href={`/dashboard/tickets/${event.ticket_id}`}>
+                                <TicketIcon className="mr-2 h-4 w-4" />
+                                View Ticket
+                            </Link>
+                        </Button>
+                         <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="icon">
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Cancel Registration?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to cancel your registration for this event? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Keep Ticket</AlertDialogCancel>
+                              <form action={unregisterAction}>
+                                <input type="hidden" name="ticketId" value={event.ticket_id} />
+                                <AlertDialogAction type="submit">Yes, Cancel</AlertDialogAction>
+                              </form>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                 ) : (
                     <form action={registerAction} className="flex-1">
                         <input type="hidden" name="eventId" value={event.id} />

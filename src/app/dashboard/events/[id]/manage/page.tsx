@@ -1,12 +1,12 @@
 
 'use server';
 
-import { getEventAttendees, getEventDetails, deleteEventAction } from "@/lib/actions/events";
+import { getEventAttendees, getEventDetails, deleteEventAction, unregisterAttendeeAction } from "@/lib/actions/events";
 import type { Attendee } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { CheckCircle, XCircle, Trash2, Eye, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -20,6 +20,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Link from "next/link";
+import { checkoutAttendeeAction } from "@/lib/actions/tickets";
 
 
 function SettingsTab({ event }: { event: { id: number }}) {
@@ -67,6 +69,16 @@ function SettingsTab({ event }: { event: { id: number }}) {
     )
 }
 
+function getStatus(attendee: Attendee): { text: string; variant: 'default' | 'secondary' | 'outline', Icon: React.ElementType, badgeClass?: string } {
+    if (attendee.checked_out) {
+        return { text: 'Checked Out', variant: 'secondary', Icon: LogOut, badgeClass: 'bg-orange-500 hover:bg-orange-600' };
+    }
+    if (attendee.checked_in) {
+        return { text: 'Checked In', variant: 'default', Icon: CheckCircle, badgeClass: 'bg-green-500 hover:bg-green-600' };
+    }
+    return { text: 'Not Checked In', variant: 'secondary', Icon: XCircle };
+}
+
 
 export default async function ManageEventPage({ params }: { params: { id: string } }) {
   const eventId = parseInt(params.id, 10);
@@ -84,7 +96,7 @@ export default async function ManageEventPage({ params }: { params: { id: string
   if (attendeesError) {
     return (
       <div className="text-center text-red-500">
-        <p>Error: {attendeesError}</p>
+        <p>Error fetching attendees: {attendeesError}</p>
       </div>
     );
   }
@@ -119,29 +131,54 @@ export default async function ManageEventPage({ params }: { params: { id: string
                             <TableRow>
                             <TableHead>Name</TableHead>
                             <TableHead>Email</TableHead>
-                            <TableHead className="text-center">Checked In</TableHead>
+                            <TableHead>Role</TableHead>
+                            <TableHead className="text-center">Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {typedAttendees.map((attendee) => (
-                            <TableRow key={attendee.ticket_id}>
-                                <TableCell>{attendee.profiles?.first_name} {attendee.profiles?.last_name}</TableCell>
-                                <TableCell>{attendee.profiles?.email}</TableCell>
-                                <TableCell className="text-center">
-                                {attendee.checked_in ? (
-                                    <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-                                    <CheckCircle className="mr-2 h-4 w-4" />
-                                    Yes
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="secondary">
-                                    <XCircle className="mr-2 h-4 w-4" />
-                                    No
-                                    </Badge>
-                                )}
-                                </TableCell>
-                            </TableRow>
-                            ))}
+                            {typedAttendees.map((attendee) => {
+                                const status = getStatus(attendee);
+                                return (
+                                <TableRow key={attendee.ticket_id}>
+                                    <TableCell>{attendee.profiles?.first_name} {attendee.profiles?.last_name}</TableCell>
+                                    <TableCell>{attendee.profiles?.email}</TableCell>
+                                    <TableCell>Attendee</TableCell>
+                                    <TableCell className="text-center">
+                                        <Badge variant={status.variant} className={status.badgeClass}>
+                                            <status.Icon className="mr-2 h-4 w-4" />
+                                            {status.text}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right space-x-2">
+                                        <Button asChild variant="outline" size="sm">
+                                           <Link href={`/dashboard/tickets/${attendee.ticket_id}`}>
+                                                <Eye className="mr-2 h-4 w-4" />
+                                                View Ticket
+                                            </Link>
+                                        </Button>
+                                        {attendee.checked_in && !attendee.checked_out && (
+                                            <form action={checkoutAttendeeAction} className="inline-block">
+                                                <input type="hidden" name="ticketId" value={attendee.ticket_id} />
+                                                <input type="hidden" name="eventId" value={event.id} />
+                                                <Button type="submit" variant="outline" size="sm">
+                                                    <LogOut className="mr-2 h-4 w-4" />
+                                                    Check Out
+                                                </Button>
+                                            </form>
+                                        )}
+                                        <form action={unregisterAttendeeAction} className="inline-block">
+                                            <input type="hidden" name="ticketId" value={attendee.ticket_id} />
+                                            <input type="hidden" name="eventId" value={event.id} />
+                                            <Button type="submit" variant="destructive" size="sm">
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Unregister
+                                            </Button>
+                                        </form>
+                                    </TableCell>
+                                </TableRow>
+                                )
+                            })}
                         </TableBody>
                         </Table>
                     ) : (
