@@ -20,17 +20,6 @@ export async function registerForEventAction(
      redirect(`/events/${eventId}/register`);
   }
 
-  const { data: existingTicket } = await supabase
-    .from('tickets')
-    .select('id')
-    .eq('event_id', eventId)
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (existingTicket) {
-    return redirect(`/events/${eventId}/register/success?ticketId=${existingTicket.id}`);
-  }
-  
   const { data: eventData, error: eventError } = await supabase
     .from('events')
     .select('capacity, tickets(count)')
@@ -44,8 +33,19 @@ export async function registerForEventAction(
   const capacity = eventData.capacity;
   const currentRegistrations = eventData.tickets[0]?.count || 0;
 
-  if (capacity && currentRegistrations >= capacity) {
+  if (capacity !== null && currentRegistrations >= capacity) {
     return { error: 'This event has reached its maximum capacity.' };
+  }
+
+  const { data: existingTicket } = await supabase
+    .from('tickets')
+    .select('id')
+    .eq('event_id', eventId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (existingTicket) {
+    return redirect(`/events/${eventId}/register/success?ticketId=${existingTicket.id}`);
   }
   
   const { data: ticket, error } = await supabase.from('tickets').insert({
@@ -142,7 +142,7 @@ export async function registerAndCreateTicket(
     const capacity = eventData.capacity;
     const currentRegistrations = eventData.tickets[0]?.count || 0;
 
-    if (capacity && currentRegistrations >= capacity) {
+    if (capacity !== null && currentRegistrations >= capacity) {
       return { error: 'This event has reached its maximum capacity.' };
     }
 
