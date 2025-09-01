@@ -200,58 +200,28 @@ export async function getEventDetails(eventId: number) {
 export async function getEventAttendees(eventId: number): Promise<{ data: Attendee[] | null, error: string | null }> {
     const supabase = createClient();
 
-    // Step 1: Fetch all tickets for the given event.
-    const { data: tickets, error: ticketsError } = await supabase
-        .from('tickets')
-        .select('id, user_id, checked_in, checked_out')
-        .eq('event_id', eventId);
-
-    if (ticketsError) {
-        console.error('Error fetching tickets for event:', ticketsError);
-        return { data: null, error: 'Could not fetch tickets for attendees.' };
-    }
-    
-    if (!tickets || tickets.length === 0) {
-        return { data: [], error: null };
-    }
-
-    // Step 2: Extract user IDs from the tickets.
-    const userIds = tickets.map(ticket => ticket.user_id).filter((id): id is string => id !== null);
-
-    if (userIds.length === 0) {
-      return { data: [], error: null };
-    }
-
-    // Step 3: Fetch profiles for those user IDs.
-    const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, email')
-        .in('id', userIds);
-
-    if (profilesError) {
-        console.error('Error fetching attendee profiles:', profilesError);
-        return { data: null, error: 'Could not fetch profiles for attendees.' };
-    }
-    
-    const profileMap = new Map(profiles.map(p => [p.id, p]));
-
-    // Step 4: Combine ticket and profile information.
-    const attendees: Attendee[] = tickets.map(ticket => {
-        const profile = ticket.user_id ? profileMap.get(ticket.user_id) : null;
-        return {
-            ticket_id: ticket.id,
-            checked_in: ticket.checked_in,
-            checked_out: ticket.checked_out,
-            profiles: profile ? {
-                id: profile.id,
-                first_name: profile.first_name,
-                last_name: profile.last_name,
-                email: profile.email,
-            } : null,
-        }
+    const { data: attendees, error } = await supabase.rpc('get_attendees_for_event', {
+        event_id_param: eventId
     });
 
-    return { data: attendees, error: null };
+    if (error) {
+        console.error('Error fetching event attendees via RPC:', error);
+        return { data: null, error: 'Could not fetch event attendees.' };
+    }
+
+    // The RPC function returns a structured list that matches our needs, but we might need to map it to the `Attendee` type shape.
+    const formattedAttendees = attendees.map(att => ({
+        ticket_id: att.ticket_id,
+        checked_in: att.checked_in,
+        checked_out: att.checked_out,
+        profiles: { // The RPC returns profile data directly, so we nest it.
+            first_name: att.first_name,
+            last_name: att.last_name,
+            email: att.email,
+        }
+    }));
+
+    return { data: formattedAttendees, error: null };
 }
 
 

@@ -23,7 +23,6 @@ export type Attendee = {
     checked_in: boolean;
     checked_out: boolean;
     profiles: {
-        id: string;
         first_name: string | null;
         last_name: string | null;
         email?: string | null;
