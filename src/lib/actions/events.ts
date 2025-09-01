@@ -200,41 +200,56 @@ export async function getEventDetails(eventId: number) {
 export async function getEventAttendees(eventId: number): Promise<{ data: Attendee[] | null, error: string | null }> {
     const supabase = createClient();
 
-    const { data, error } = await supabase
-      .from('tickets')
-      .select(`
-        id,
-        checked_in,
-        checked_out,
-        profiles (
-          id,
-          first_name,
-          last_name,
-          email
-        )
-      `)
-      .eq('event_id', eventId);
+    // Step 1: Fetch all tickets for the given event.
+    const { data: tickets, error: ticketsError } = await supabase
+        .from('tickets')
+        .select('id, user_id, checked_in, checked_out')
+        .eq('event_id', eventId);
 
-    if (error) {
-        console.error('Error fetching event attendees:', error);
+    if (ticketsError) {
+        console.error('Error fetching tickets for event:', ticketsError);
         return { data: null, error: 'Could not fetch tickets for attendees.' };
     }
-
-    if (!data) {
+    
+    if (!tickets || tickets.length === 0) {
         return { data: [], error: null };
     }
 
-    const attendees: Attendee[] = data.map(ticket => ({
-        ticket_id: ticket.id,
-        checked_in: ticket.checked_in,
-        checked_out: ticket.checked_out,
-        profiles: ticket.profiles ? {
-            id: ticket.profiles.id,
-            first_name: ticket.profiles.first_name,
-            last_name: ticket.profiles.last_name,
-            email: ticket.profiles.email,
-        } : null,
-    })).filter((a): a is Attendee & { profiles: NonNullable<Attendee['profiles']> } => a.profiles !== null);
+    // Step 2: Extract user IDs from the tickets.
+    const userIds = tickets.map(ticket => ticket.user_id).filter((id): id is string => id !== null);
+
+    if (userIds.length === 0) {
+      return { data: [], error: null };
+    }
+
+    // Step 3: Fetch profiles for those user IDs.
+    const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email')
+        .in('id', userIds);
+
+    if (profilesError) {
+        console.error('Error fetching attendee profiles:', profilesError);
+        return { data: null, error: 'Could not fetch profiles for attendees.' };
+    }
+    
+    const profileMap = new Map(profiles.map(p => [p.id, p]));
+
+    // Step 4: Combine ticket and profile information.
+    const attendees: Attendee[] = tickets.map(ticket => {
+        const profile = ticket.user_id ? profileMap.get(ticket.user_id) : null;
+        return {
+            ticket_id: ticket.id,
+            checked_in: ticket.checked_in,
+            checked_out: ticket.checked_out,
+            profiles: profile ? {
+                id: profile.id,
+                first_name: profile.first_name,
+                last_name: profile.last_name,
+                email: profile.email,
+            } : null,
+        }
+    });
 
     return { data: attendees, error: null };
 }
