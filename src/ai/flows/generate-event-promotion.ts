@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -15,7 +16,7 @@ import {z} from 'genkit';
 const GenerateEventPromotionInputSchema = z.object({
   eventTitle: z.string().describe('The title of the event.'),
   eventDescription: z.string().describe('A brief description of the event.'),
-  eventDateTime: z.string().describe('The date and time of the event.'),
+  eventDateTime: z.string().describe('The date and time of the event in ISO 8601 format.'),
   targetAudience: z.string().describe('The target audience for the event.'),
 });
 export type GenerateEventPromotionInput = z.infer<typeof GenerateEventPromotionInputSchema>;
@@ -55,6 +56,9 @@ const generateEventPromotionFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await generateEventPromotionPrompt(input);
-    return output!;
+    if (!output) {
+      throw new Error('The AI model did not return any output.');
+    }
+    return output;
   }
 );

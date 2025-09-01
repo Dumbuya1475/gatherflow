@@ -147,7 +147,7 @@ export async function registerAndCreateTicket(
     }
 
     // Check if user already exists
-    const { data: existingUser, error: userFetchError } = await supabase
+    const { data: existingUser } = await supabase
       .from('profiles')
       .select('id')
       .eq('email', email)

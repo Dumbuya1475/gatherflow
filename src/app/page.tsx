@@ -144,12 +144,12 @@ export default async function LandingPage() {
                 </div>
               </div>
               <Image
-                src="https://picsum.photos/800/600"
+                src="/GatherFlow_logo.png"
                 width="800"
                 height="600"
                 alt="Hero"
                 data-ai-hint="event concert"
-                className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full lg:order-last"
+                className="mx-auto aspect-video overflow-hidden rounded-xl object-contain sm:w-full lg:order-last"
               />
             </div>
           </div>
@@ -283,5 +283,3 @@ export default async function LandingPage() {
     </div>
   );
 }
-
-    
