@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { EventWithAttendees } from '@/lib/types';
 import { EventCard } from '@/components/event-card';
 import FullLogo from "./GatherFlow_Logo.png";
+import HeroVideo from './GatherFlow_Logo.mp4';
 
 const features = [
   {
@@ -144,14 +145,17 @@ export default async function LandingPage() {
                   </Button>
                 </div>
               </div>
-              <Image
-                src={FullLogo}
-                width="800"
-                height="600"
-                alt="Hero"
-                data-ai-hint="event concert"
-                className="mx-auto aspect-video overflow-hidden rounded-xl object-contain sm:w-full lg:order-last"
-              />
+              <div className="mx-auto aspect-video overflow-hidden rounded-xl sm:w-full lg:order-last">
+                <video 
+                  className="w-full h-full object-contain"
+                  src={HeroVideo} 
+                  poster={FullLogo.src}
+                  autoPlay 
+                  loop 
+                  muted 
+                  playsInline
+                />
+              </div>
             </div>
           </div>
         </section>
