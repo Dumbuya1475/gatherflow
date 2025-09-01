@@ -11,6 +11,7 @@ import { CalendarDays, QrCode, Sparkles, Zap, Check, ArrowRight } from 'lucide-r
 import { createClient } from '@/lib/supabase/server';
 import type { EventWithAttendees } from '@/lib/types';
 import { EventCard } from '@/components/event-card';
+import FullLogo from "./GatherFlow_Logo.png";
 
 const features = [
   {
@@ -144,7 +145,7 @@ export default async function LandingPage() {
                 </div>
               </div>
               <Image
-                src="/GatherFlow_logo.png"
+                src={FullLogo}
                 width="800"
                 height="600"
                 alt="Hero"

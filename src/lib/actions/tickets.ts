@@ -393,6 +393,7 @@ export async function getScannableEvents() {
     return { data: uniqueEvents, isLoggedIn: true, error: null };
 }
 
+
 export async function unregisterAttendeeAction(formData: FormData) {
     const supabase = createClient();
     const ticketId = formData.get('ticketId') as string;
