@@ -102,18 +102,21 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          email: string | null
           first_name: string | null
           id: string
           last_name: string | null
         }
         Insert: {
           avatar_url?: string | null
+          email?: string | null
           first_name?: string | null
           id: string
           last_name?: string | null
         }
         Update: {
           avatar_url?: string | null
+          email?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
@@ -295,5 +298,3 @@ export type Enums<
   : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
     ? PublicSchema["Enums"][PublicEnumNameOrOptions]
     : never
-
-    

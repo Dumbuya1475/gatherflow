@@ -204,7 +204,7 @@ export async function getEventAttendees(eventId: number): Promise<{ data: Attend
     if(!user) return { data: null, error: 'Not authenticated' };
 
     // The RLS policy handles authorization, so we can query directly.
-    const { data: tickets, error: ticketsError } = await supabase
+    const { data, error } = await supabase
         .from('tickets')
         .select(`
             id,
@@ -213,56 +213,28 @@ export async function getEventAttendees(eventId: number): Promise<{ data: Attend
             profiles (
                 id,
                 first_name,
-                last_name
+                last_name,
+                email
             )
         `)
         .eq('event_id', eventId);
 
-    if (ticketsError) {
-        console.error('Error fetching tickets for attendees:', ticketsError);
+    if (error) {
+        console.error('Error fetching event attendees:', error);
         return { data: null, error: 'Could not fetch tickets for attendees.' };
     }
 
-    if (!tickets || tickets.length === 0) {
-        return { data: [], error: null };
-    }
-
-    // Now, fetch user emails from the auth schema.
-    const userIds = tickets.map(t => t.profiles?.id).filter((id): id is string => !!id);
-    const { data: authUsers, error: authUsersError } = await supabase.auth.admin.listUsers({
-        page: 1,
-        perPage: userIds.length,
-    });
-    
-    const usersMap = new Map<string, { email?: string }>();
-    if (authUsers?.users) {
-        for(const u of authUsers.users) {
-            if (userIds.includes(u.id)) {
-                 usersMap.set(u.id, { email: u.email });
-            }
-        }
-    }
-    
-    if (authUsersError) {
-        console.error('Error fetching user emails from auth:', authUsersError);
-        // This is not a fatal error; we can proceed without emails if necessary.
-    }
-    
-    const attendees: Attendee[] = tickets.map(ticket => {
-        const profile = ticket.profiles;
-        const authUser = profile ? usersMap.get(profile.id) : null;
-        return {
-            ticket_id: ticket.id,
-            checked_in: ticket.checked_in,
-            checked_out: ticket.checked_out,
-            profiles: profile ? {
-                id: profile.id,
-                first_name: profile.first_name,
-                last_name: profile.last_name,
-                email: authUser?.email || 'Email not available',
-            } : null
-        };
-    }).filter(a => a.profiles); // Filter out any tickets that failed to join with a profile
+    const attendees: Attendee[] = data.map(ticket => ({
+        ticket_id: ticket.id,
+        checked_in: ticket.checked_in,
+        checked_out: ticket.checked_out,
+        profiles: ticket.profiles ? {
+            id: ticket.profiles.id,
+            first_name: ticket.profiles.first_name,
+            last_name: ticket.profiles.last_name,
+            email: ticket.profiles.email,
+        } : null,
+    })).filter(a => a.profiles); // Filter out any tickets that failed to join with a profile
 
     return { data: attendees, error: null };
 }
@@ -312,6 +284,3 @@ export async function unregisterAttendeeAction(formData: FormData) {
     revalidatePath(`/dashboard/events/${eventId}/manage`);
     return { success: true };
 }
-
-
-    
