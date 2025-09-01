@@ -89,7 +89,7 @@ function ScannerView({ event, onBack }: { event: EventWithAttendees, onBack: () 
   useEffect(() => {
     if(scannedData) {
         const processScan = async () => {
-            const result = await verifyTicket(scannedData);
+            const result = await verifyTicket(scannedData, event.id);
             if(result.success) {
                 toast({
                     title: 'Ticket Verified',

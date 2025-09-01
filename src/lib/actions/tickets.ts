@@ -195,7 +195,7 @@ export async function getTicketDetails(ticketId: number) {
     return { data: ticketWithOrganizer, error: null };
 }
 
-export async function verifyTicket(qrToken: string) {
+export async function verifyTicket(qrToken: string, eventId: number) {
     const supabase = createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -209,6 +209,10 @@ export async function verifyTicket(qrToken: string) {
 
     if(ticketError || !ticket) {
         return { success: false, error: 'Invalid QR Code. Ticket not found.' };
+    }
+
+    if (ticket.event_id !== eventId) {
+        return { success: false, error: 'This ticket is not for this event.' };
     }
     
     const { data: scannerAssignment, error: scannerError } = await supabase
