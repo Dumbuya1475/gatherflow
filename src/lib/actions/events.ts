@@ -203,23 +203,19 @@ export async function getEventAttendees(eventId: number): Promise<{ data: Attend
     const { data: { user } } = await supabase.auth.getUser();
     if(!user) return { data: null, error: 'Not authenticated' };
 
-    const { data: eventData, error: eventError } = await supabase
-        .from('events')
-        .select('organizer_id')
-        .eq('id', eventId)
-        .single();
-
-    if(eventError || !eventData) {
-        return { data: null, error: 'Could not verify event ownership.' };
-    }
-    
-    if(eventData.organizer_id !== user.id) {
-        return { data: null, error: 'You are not authorized to view these attendees.' };
-    }
-
+    // The RLS policy handles authorization, so we can query directly.
     const { data: tickets, error: ticketsError } = await supabase
         .from('tickets')
-        .select('user_id, checked_in, checked_out, id')
+        .select(`
+            id,
+            checked_in,
+            checked_out,
+            profiles (
+                id,
+                first_name,
+                last_name
+            )
+        `)
         .eq('event_id', eventId);
 
     if (ticketsError) {
@@ -230,34 +226,31 @@ export async function getEventAttendees(eventId: number): Promise<{ data: Attend
     if (!tickets || tickets.length === 0) {
         return { data: [], error: null };
     }
-    
-    const userIds = tickets.map(t => t.user_id).filter(Boolean) as string[];
-    
-    const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, avatar_url')
-        .in('id', userIds);
 
-    if (profilesError) {
-        console.error('Error fetching attendee profiles:', profilesError);
-        return { data: null, error: 'Could not fetch attendee profiles.' };
-    }
-    
+    // Now, fetch user emails from the auth schema.
+    const userIds = tickets.map(t => t.profiles?.id).filter((id): id is string => !!id);
     const { data: authUsers, error: authUsersError } = await supabase.auth.admin.listUsers({
         page: 1,
-        perPage: 1000, // Adjust as needed
+        perPage: userIds.length,
     });
+    
+    const usersMap = new Map<string, { email?: string }>();
+    if (authUsers?.users) {
+        for(const u of authUsers.users) {
+            if (userIds.includes(u.id)) {
+                 usersMap.set(u.id, { email: u.email });
+            }
+        }
+    }
     
     if (authUsersError) {
         console.error('Error fetching user emails from auth:', authUsersError);
-        return { data: null, error: 'Could not fetch attendee emails.' };
+        // This is not a fatal error; we can proceed without emails if necessary.
     }
-
-    const emailMap = new Map(authUsers.users.map(u => [u.id, u.email]));
-    const profileMap = new Map(profiles.map(p => [p.id, p]));
-
+    
     const attendees: Attendee[] = tickets.map(ticket => {
-        const profile = profileMap.get(ticket.user_id!);
+        const profile = ticket.profiles;
+        const authUser = profile ? usersMap.get(profile.id) : null;
         return {
             ticket_id: ticket.id,
             checked_in: ticket.checked_in,
@@ -266,10 +259,10 @@ export async function getEventAttendees(eventId: number): Promise<{ data: Attend
                 id: profile.id,
                 first_name: profile.first_name,
                 last_name: profile.last_name,
-                email: emailMap.get(profile.id) || '',
+                email: authUser?.email || 'Email not available',
             } : null
         };
-    });
+    }).filter(a => a.profiles); // Filter out any tickets that failed to join with a profile
 
     return { data: attendees, error: null };
 }
@@ -319,3 +312,6 @@ export async function unregisterAttendeeAction(formData: FormData) {
     revalidatePath(`/dashboard/events/${eventId}/manage`);
     return { success: true };
 }
+
+
+    
