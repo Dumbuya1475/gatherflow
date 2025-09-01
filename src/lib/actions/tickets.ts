@@ -29,12 +29,21 @@ export async function registerForEventAction(
     .maybeSingle();
 
   if (existingTicket) {
-    return redirect(`/dashboard/tickets/${existingTicket.id}`);
+    return redirect(`/events/${eventId}/register/success?ticketId=${existingTicket.id}`);
   }
   
-  const { data: eventData } = await supabase.from('events').select('capacity, tickets(count)').eq('id', eventId).single();
-  const capacity = eventData?.capacity;
-  const currentRegistrations = eventData?.tickets[0]?.count || 0;
+  const { data: eventData, error: eventError } = await supabase
+    .from('events')
+    .select('capacity, tickets(count)')
+    .eq('id', eventId)
+    .single();
+
+  if(eventError || !eventData) {
+    return { error: 'Could not find the event to register for.' };
+  }
+
+  const capacity = eventData.capacity;
+  const currentRegistrations = eventData.tickets[0]?.count || 0;
 
   if (capacity && currentRegistrations >= capacity) {
     return { error: 'This event has reached its maximum capacity.' };
@@ -43,7 +52,7 @@ export async function registerForEventAction(
   const { data: ticket, error } = await supabase.from('tickets').insert({
     event_id: eventId,
     user_id: user.id,
-  }).select('id, qr_token').single();
+  }).select('id').single();
 
   if (error || !ticket) {
     console.error('Error registering for event:', error);
@@ -56,7 +65,7 @@ export async function registerForEventAction(
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/events`);
   
-  return redirect(`/dashboard/tickets/${ticket.id}`);
+  return redirect(`/events/${eventId}/register/success?ticketId=${ticket.id}`);
 }
 
 export async function unregisterForEventAction(

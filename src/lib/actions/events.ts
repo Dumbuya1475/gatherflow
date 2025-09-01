@@ -203,7 +203,6 @@ export async function getEventAttendees(eventId: number): Promise<{ data: Attend
     const { data: { user } } = await supabase.auth.getUser();
     if(!user) return { data: null, error: 'Not authenticated' };
 
-    // The RLS policy handles authorization, so we can query directly.
     const { data, error } = await supabase
         .from('tickets')
         .select(`
@@ -234,7 +233,7 @@ export async function getEventAttendees(eventId: number): Promise<{ data: Attend
             last_name: ticket.profiles.last_name,
             email: ticket.profiles.email,
         } : null,
-    })).filter(a => a.profiles); // Filter out any tickets that failed to join with a profile
+    })).filter(a => a.profiles);
 
     return { data: attendees, error: null };
 }
@@ -271,8 +270,6 @@ export async function unregisterAttendeeAction(formData: FormData) {
     if (!user) {
       throw new Error('You must be logged in.');
     }
-  
-    // Optional: Add check to ensure user is organizer before deleting
   
     const { error } = await supabase.from('tickets').delete().eq('id', ticketId);
   
