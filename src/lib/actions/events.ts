@@ -200,7 +200,7 @@ export async function getEventDetails(eventId: number) {
 export async function getEventAttendees(eventId: number): Promise<{ data: Attendee[] | null, error: string | null }> {
     const supabase = createClient();
 
-    const { data: attendees, error } = await supabase.rpc('get_attendees_for_event', {
+    const { data, error } = await supabase.rpc('get_attendees_for_event', {
         event_id_param: eventId
     });
 
@@ -209,12 +209,11 @@ export async function getEventAttendees(eventId: number): Promise<{ data: Attend
         return { data: null, error: 'Could not fetch event attendees.' };
     }
 
-    // The RPC function returns a structured list that matches our needs, but we might need to map it to the `Attendee` type shape.
-    const formattedAttendees = attendees.map(att => ({
+    const formattedAttendees = data.map(att => ({
         ticket_id: att.ticket_id,
         checked_in: att.checked_in,
         checked_out: att.checked_out,
-        profiles: { // The RPC returns profile data directly, so we nest it.
+        profiles: {
             first_name: att.first_name,
             last_name: att.last_name,
             email: att.email,

@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { getEventAttendees, getEventDetails, deleteEventAction, unregisterAttendeeAction } from "@/lib/actions/events";
