@@ -146,6 +146,17 @@ export async function registerAndCreateTicket(
       return { error: 'This event has reached its maximum capacity.' };
     }
 
+    // Check if user already exists
+    const { data: existingUser, error: userFetchError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    if (existingUser) {
+        return { error: 'An account with this email already exists. Please log in to register.' };
+    }
+
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,

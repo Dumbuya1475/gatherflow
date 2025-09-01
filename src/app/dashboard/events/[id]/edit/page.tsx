@@ -1,3 +1,4 @@
+
 'use server';
 import { CreateEventForm } from '@/components/create-event-form';
 import { getEventDetails } from '@/lib/actions/events';
@@ -7,7 +8,8 @@ import { redirect } from 'next/navigation';
 export default async function EditEventPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: event, error } = await getEventDetails(params.id);
+  const eventId = parseInt(params.id, 10);
+  const { data: event, error } = await getEventDetails(eventId);
 
   if (error || !event || !user || user.id !== event.organizer_id) {
     redirect('/dashboard/events');

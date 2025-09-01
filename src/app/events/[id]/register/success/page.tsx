@@ -15,11 +15,12 @@ export default async function RegistrationSuccessPage({
     params: { id: string };
     searchParams: { ticketId?: string };
 }) {
-    const { data: { user } } = await createClient().auth.getUser();
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
     const ticketId = searchParams.ticketId ? parseInt(searchParams.ticketId, 10) : null;
 
-
     if (!user || !ticketId) {
+        // If user is somehow not logged in, or ticketId is missing, redirect to login
         redirect('/login');
     }
 
@@ -76,7 +77,7 @@ export default async function RegistrationSuccessPage({
 
                     <div className="flex flex-col sm:flex-row gap-4">
                         <Button asChild className="w-full"><Link href="/dashboard/events">View My Events</Link></Button>
-                        <Button asChild variant="outline" className="w-full"><Link href="/">Register for More Events</Link></Button>
+                        <Button asChild variant="outline" className="w-full"><Link href="/events">Browse More Events</Link></Button>
                     </div>
 
                 </CardContent>
@@ -84,5 +85,3 @@ export default async function RegistrationSuccessPage({
         </div>
     )
 }
-
-    

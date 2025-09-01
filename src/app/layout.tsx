@@ -1,3 +1,4 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
@@ -24,7 +25,8 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    shortcut: "/favicon.ico",
+    icon: '/favicon.ico',
+    apple: '/apple-icon.png',
   },
 };
 

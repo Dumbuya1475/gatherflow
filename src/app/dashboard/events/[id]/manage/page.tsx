@@ -84,10 +84,10 @@ export default async function ManageEventPage({ params }: { params: { id: string
   const eventId = parseInt(params.id, 10);
   const { data: event, error: eventError } = await getEventDetails(eventId);
   const { data: attendees, error: attendeesError } = await getEventAttendees(eventId);
-  
+
   if (eventError || !event) {
     return (
-      <div className="text-center text-red-500">
+      <div className="text-center text-destructive">
         <p>Error: {eventError || 'Event not found.'}</p>
       </div>
     );
@@ -95,13 +95,11 @@ export default async function ManageEventPage({ params }: { params: { id: string
 
   if (attendeesError) {
     return (
-      <div className="text-center text-red-500">
+      <div className="text-center text-destructive">
         <p>Error fetching attendees: {attendeesError}</p>
       </div>
     );
   }
- 
-  const typedAttendees = attendees as unknown as Attendee[];
 
   return (
     <div className="space-y-6">
@@ -115,17 +113,17 @@ export default async function ManageEventPage({ params }: { params: { id: string
       </div>
        <Tabs defaultValue="attendees">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="attendees">Attendees</TabsTrigger>
+          <TabsTrigger value="attendees">Attendees ({attendees.length})</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="attendees">
             <Card>
                 <CardHeader>
-                <CardTitle>Attendees ({typedAttendees.length})</CardTitle>
+                <CardTitle>Attendees ({attendees.length})</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {typedAttendees.length > 0 ? (
+                    {attendees.length > 0 ? (
                         <Table>
                         <TableHeader>
                             <TableRow>
@@ -137,7 +135,7 @@ export default async function ManageEventPage({ params }: { params: { id: string
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {typedAttendees.map((attendee) => {
+                            {attendees.map((attendee) => {
                                 const status = getStatus(attendee);
                                 return (
                                 <TableRow key={attendee.ticket_id}>
