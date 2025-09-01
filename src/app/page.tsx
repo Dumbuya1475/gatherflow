@@ -144,7 +144,7 @@ export default async function LandingPage() {
                 </div>
               </div>
               <Image
-                src="/GatherFlow_logo.png"
+                src="/GatherFlow_Logo.png"
                 width="800"
                 height="600"
                 alt="Hero"
