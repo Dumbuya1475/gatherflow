@@ -200,27 +200,28 @@ export async function getEventDetails(eventId: number) {
 export async function getEventAttendees(eventId: number): Promise<{ data: Attendee[] | null, error: string | null }> {
     const supabase = createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if(!user) return { data: null, error: 'Not authenticated' };
-
     const { data, error } = await supabase
-        .from('tickets')
-        .select(`
-            id,
-            checked_in,
-            checked_out,
-            profiles (
-                id,
-                first_name,
-                last_name,
-                email
-            )
-        `)
-        .eq('event_id', eventId);
+      .from('tickets')
+      .select(`
+        id,
+        checked_in,
+        checked_out,
+        profiles (
+          id,
+          first_name,
+          last_name,
+          email
+        )
+      `)
+      .eq('event_id', eventId);
 
     if (error) {
         console.error('Error fetching event attendees:', error);
         return { data: null, error: 'Could not fetch tickets for attendees.' };
+    }
+
+    if (!data) {
+        return { data: [], error: null };
     }
 
     const attendees: Attendee[] = data.map(ticket => ({
@@ -233,7 +234,7 @@ export async function getEventAttendees(eventId: number): Promise<{ data: Attend
             last_name: ticket.profiles.last_name,
             email: ticket.profiles.email,
         } : null,
-    })).filter(a => a.profiles);
+    })).filter((a): a is Attendee & { profiles: NonNullable<Attendee['profiles']> } => a.profiles !== null);
 
     return { data: attendees, error: null };
 }

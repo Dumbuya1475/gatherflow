@@ -17,8 +17,7 @@ export async function registerForEventAction(
   } = await supabase.auth.getUser();
 
   if (!user) {
-     const eventRedirectPath = eventId ? `/events/${eventId}/register` : '/signup';
-     redirect(eventRedirectPath);
+     redirect(`/events/${eventId}/register`);
   }
 
   const { data: existingTicket } = await supabase
@@ -39,7 +38,7 @@ export async function registerForEventAction(
     .single();
 
   if(eventError || !eventData) {
-    return { error: 'Could not find the event to register for.' };
+    return { error: 'This event could not be found.' };
   }
 
   const capacity = eventData.capacity;
@@ -167,7 +166,7 @@ export async function getTicketDetails(ticketId: number) {
 
     const { data: ticket, error } = await supabase
         .from('tickets')
-        .select('*, events(*)')
+        .select('*, events(*, tickets(count))')
         .eq('id', ticketId)
         .single();
     
@@ -177,7 +176,14 @@ export async function getTicketDetails(ticketId: number) {
     }
 
     const isOwner = ticket.user_id === user.id;
-    const isOrganizer = ticket.events?.organizer_id === user.id;
+    
+    const { data: eventData } = await supabase
+        .from('events')
+        .select('organizer_id')
+        .eq('id', ticket.event_id!)
+        .single();
+
+    const isOrganizer = eventData?.organizer_id === user.id;
 
     if (!isOwner && !isOrganizer) {
         return { data: null, error: 'You are not authorized to view this ticket.' };
@@ -197,6 +203,7 @@ export async function getTicketDetails(ticketId: number) {
         ...ticket,
         events: {
             ...ticket.events!,
+            attendees: ticket.events!.tickets[0]?.count || 0,
             organizer: organizerProfile,
         }
     }
