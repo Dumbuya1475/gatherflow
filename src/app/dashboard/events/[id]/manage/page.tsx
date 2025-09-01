@@ -141,8 +141,8 @@ export default async function ManageEventPage({ params }: { params: { id: string
                                 const status = getStatus(attendee);
                                 return (
                                 <TableRow key={attendee.ticket_id}>
-                                    <TableCell>{attendee.profiles?.first_name} {attendee.profiles?.last_name}</TableCell>
-                                    <TableCell>{attendee.profiles?.email}</TableCell>
+                                    <TableCell>{attendee.first_name} {attendee.last_name}</TableCell>
+                                    <TableCell>{attendee.email}</TableCell>
                                     <TableCell>Attendee</TableCell>
                                     <TableCell className="text-center">
                                         <Badge variant={status.variant} className={status.badgeClass}>
@@ -153,8 +153,8 @@ export default async function ManageEventPage({ params }: { params: { id: string
                                     <TableCell className="text-right space-x-2">
                                         <Button asChild variant="outline" size="sm">
                                            <Link href={`/dashboard/tickets/${attendee.ticket_id}`}>
-                                                <Eye className="mr-2 h-4 w-4" />
-                                                View Ticket
+                                              <Eye className="mr-2 h-4 w-4" />
+                                              View Ticket
                                             </Link>
                                         </Button>
                                         {attendee.checked_in && !attendee.checked_out && (

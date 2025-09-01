@@ -8,6 +8,7 @@ export function AppLogo({ className }: { className?: string }) {
       width={32}
       height={32}
       className={className}
+      priority
     />
   );
 }

@@ -209,18 +209,7 @@ export async function getEventAttendees(eventId: number): Promise<{ data: Attend
         return { data: null, error: 'Could not fetch event attendees.' };
     }
 
-    const formattedAttendees = data.map(att => ({
-        ticket_id: att.ticket_id,
-        checked_in: att.checked_in,
-        checked_out: att.checked_out,
-        profiles: {
-            first_name: att.first_name,
-            last_name: att.last_name,
-            email: att.email,
-        }
-    }));
-
-    return { data: formattedAttendees, error: null };
+    return { data: data || [], error: null };
 }
 
 

@@ -129,6 +129,23 @@ export async function registerAndCreateTicket(
         return { error: "Passwords do not match." };
     }
 
+    const { data: eventData, error: eventError } = await supabase
+      .from('events')
+      .select('capacity, tickets(count)')
+      .eq('id', eventId)
+      .single();
+
+    if(eventError || !eventData) {
+      return { error: 'This event could not be found.' };
+    }
+
+    const capacity = eventData.capacity;
+    const currentRegistrations = eventData.tickets[0]?.count || 0;
+
+    if (capacity && currentRegistrations >= capacity) {
+      return { error: 'This event has reached its maximum capacity.' };
+    }
+
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,

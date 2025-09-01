@@ -22,9 +22,7 @@ export type Attendee = {
     ticket_id: number;
     checked_in: boolean;
     checked_out: boolean;
-    profiles: {
-        first_name: string | null;
-        last_name: string | null;
-        email: string | null;
-    } | null
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
 }
