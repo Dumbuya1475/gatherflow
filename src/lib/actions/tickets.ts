@@ -116,9 +116,8 @@ export async function unregisterForEventAction(
 }
 
 export async function unregisterAttendeeAction(formData: FormData) {
-  'use server'
   const supabase = createClient();
-  const ticketId = parseInt(formData.get('ticketId') as string, 10);
+  const ticketId = formData.get('ticketId') as string;
   const eventId = formData.get('eventId') as string;
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -139,7 +138,7 @@ export async function unregisterAttendeeAction(formData: FormData) {
   const { error: deleteError } = await supabase
     .from('tickets')
     .delete()
-    .eq('id', ticketId);
+    .eq('id', parseInt(ticketId, 10));
   
   if (deleteError) {
     console.error('Error unregistering attendee:', deleteError);
@@ -188,7 +187,7 @@ export async function registerAndCreateTicket(
     }
 
     const { data: existingUser } = await supabase
-      .from('profiles')
+      .from('users')
       .select('id')
       .eq('email', email)
       .single();
@@ -212,6 +211,17 @@ export async function registerAndCreateTicket(
         return { error: signUpError?.message || "Could not sign up user." };
     }
     
+    // Manually set the session after sign-up so the redirect works
+    if (signUpData.session) {
+      const { error: sessionError } = await supabase.auth.setSession(signUpData.session);
+      if (sessionError) {
+         return { error: "Could not establish session. Please log in."}
+      }
+    } else {
+        return { error: "Could not establish session. Please log in."}
+    }
+
+
     const { data: ticketData, error: ticketError } = await supabase.from('tickets').insert({
         event_id: eventId,
         user_id: signUpData.user.id,
@@ -280,13 +290,6 @@ export async function getTicketDetails(ticketId: number) {
 }
 
 export async function verifyTicket(qrToken: string, eventId: number) {
-    const uuidSchema = z.string().uuid();
-    const validation = uuidSchema.safeParse(qrToken);
-
-    if (!validation.success) {
-        return { success: false, error: 'Invalid QR Code format.' };
-    }
-    
     try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
@@ -354,6 +357,9 @@ export async function verifyTicket(qrToken: string, eventId: number) {
         return { success: true, message: `Successfully checked in ${attendeeName}.` };
     } catch (e) {
         console.error("Verification failed:", e);
+        if (e instanceof Error && e.message.includes('invalid input syntax for type uuid')) {
+             return { success: false, error: 'Invalid QR Code format.' };
+        }
         return { success: false, error: 'An unexpected error occurred during verification.' };
     }
 }
@@ -371,7 +377,7 @@ export async function checkoutAttendeeAction(formData: FormData) {
     const { error } = await supabase
         .from('tickets')
         .update({ checked_out: true, checked_out_at: new Date().toISOString() })
-        .eq('id', ticketId);
+        .eq('id', parseInt(ticketId, 10));
 
     if (error) {
         console.error('Error checking out attendee:', error);
