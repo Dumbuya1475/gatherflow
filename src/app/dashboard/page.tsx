@@ -1,9 +1,8 @@
-
 'use server';
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, ArrowRight, Users, CalendarCheck, Activity, Calendar as CalendarIcon } from 'lucide-react';
+import { PlusCircle, ArrowRight, Users, CalendarCheck, Activity, Calendar as CalendarIcon, TrendingUp, Clock, MapPin, Ticket } from 'lucide-react';
 import type { EventWithAttendees } from '@/lib/types';
 import { createClient } from '@/lib/supabase/server';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
@@ -117,15 +116,51 @@ export default async function DashboardPage() {
   const { isOrganizer, totalEvents, activeEvents, totalAttendees, checkInsToday, recentEvents } = await getDashboardStats(user);
   const { registeredEventsCount, upcomingEvents, attendedEventsCount } = user ? await getAttendeeDashboardStats(user) : { registeredEventsCount: 0, upcomingEvents: [], attendedEventsCount: 0 };
 
+  const StatCard = ({ title, value, description, icon: Icon, delay, trend, className = "" }: any) => (
+    <Card className={`group relative overflow-hidden bg-gradient-to-br from-card to-card/50 backdrop-blur-sm border-0 shadow-sm hover:shadow-lg transition-all duration-500 cursor-pointer ${className}`}>
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.02] to-secondary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+      <div className="absolute -top-10 -right-10 w-20 h-20 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"></div>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
+        <CardTitle className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors duration-300">
+          {title}
+        </CardTitle>
+        <div className="p-2 rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10 group-hover:from-primary/20 group-hover:to-secondary/20 transition-all duration-300 group-hover:scale-110">
+          <Icon className="h-4 w-4 text-primary" />
+        </div>
+      </CardHeader>
+      <CardContent className="relative z-10">
+        <div className="flex items-baseline gap-2 mb-1">
+          <div className="text-2xl font-bold group-hover:text-primary transition-colors duration-300">{value}</div>
+          {trend && (
+            <div className="flex items-center text-xs text-green-600">
+              <TrendingUp className="h-3 w-3 mr-1" />
+              {trend}
+            </div>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
+      </CardContent>
+    </Card>
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
-          Dashboard
-        </h1>
-        <Button asChild>
+    <div className="space-y-8 animate-in fade-in-0 duration-700">
+      {/* Enhanced Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-700">
+        <div className="space-y-1">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
+            Dashboard
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {isOrganizer ? 'Manage your events and track performance' : 'View your registered events and tickets'}
+          </p>
+        </div>
+        <Button 
+          asChild 
+          className="group relative overflow-hidden bg-gradient-to-r from-primary to-secondary hover:shadow-lg transition-all duration-300"
+        >
           <Link href="/dashboard/events/create">
-            <PlusCircle className="mr-2 h-4 w-4" />
+            <PlusCircle className="mr-2 h-4 w-4 group-hover:rotate-90 transition-transform duration-300" />
             Create Event
           </Link>
         </Button>
@@ -133,194 +168,294 @@ export default async function DashboardPage() {
 
       {isOrganizer ? (
         <>
-            {/* Stat Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Events</CardTitle>
-                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{totalEvents}</div>
-                    <p className="text-xs text-muted-foreground">All events you have created</p>
-                </CardContent>
-                </Card>
-                <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Active Events</CardTitle>
-                    <Activity className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{activeEvents}</div>
-                    <p className="text-xs text-muted-foreground">Upcoming events</p>
-                </CardContent>
-                </Card>
-                <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Attendees</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{totalAttendees}</div>
-                    <p className="text-xs text-muted-foreground">Across all your events</p>
-                </CardContent>
-                </Card>
-                <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Check-ins Today</CardTitle>
-                    <CalendarCheck className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">+{checkInsToday}</div>
-                    <p className="text-xs text-muted-foreground">Scanned tickets today</p>
-                </CardContent>
-                </Card>
+          {/* Enhanced Stat Cards with Animations */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="animate-in slide-in-from-bottom-4 duration-700 delay-100">
+              <StatCard
+                title="Total Events"
+                value={totalEvents}
+                description="All events you have created"
+                icon={CalendarIcon}
+                trend={totalEvents > 0 ? "+12%" : null}
+              />
             </div>
+            <div className="animate-in slide-in-from-bottom-4 duration-700 delay-200">
+              <StatCard
+                title="Active Events"
+                value={activeEvents}
+                description="Upcoming events"
+                icon={Activity}
+                className="border-green-500/20"
+              />
+            </div>
+            <div className="animate-in slide-in-from-bottom-4 duration-700 delay-300">
+              <StatCard
+                title="Total Attendees"
+                value={totalAttendees}
+                description="Across all your events"
+                icon={Users}
+                trend={totalAttendees > 0 ? "+24%" : null}
+              />
+            </div>
+            <div className="animate-in slide-in-from-bottom-4 duration-700 delay-400">
+              <StatCard
+                title="Check-ins Today"
+                value={`+${checkInsToday}`}
+                description="Scanned tickets today"
+                icon={CalendarCheck}
+                className="border-blue-500/20"
+              />
+            </div>
+          </div>
 
-            {/* Recent Events Table */}
-            <Card>
-                <CardHeader>
-                <CardTitle>Recent Events</CardTitle>
-                <CardDescription>Your latest events and their status.</CardDescription>
-                </CardHeader>
-                <CardContent>
+          {/* Enhanced Recent Events Table */}
+          <div className="animate-in slide-in-from-bottom-4 duration-700 delay-500">
+            <Card className="relative overflow-hidden bg-gradient-to-br from-card to-card/50 backdrop-blur-sm border-0 shadow-sm">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/[0.01] to-secondary/[0.01]"></div>
+              <CardHeader className="relative z-10 border-b border-border/40 bg-gradient-to-r from-card/80 to-card/60 backdrop-blur-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <div className="p-1 rounded-md bg-gradient-to-br from-primary/10 to-secondary/10">
+                        <CalendarIcon className="h-4 w-4 text-primary" />
+                      </div>
+                      Recent Events
+                    </CardTitle>
+                    <CardDescription className="mt-1">Your latest events and their performance metrics</CardDescription>
+                  </div>
+                  <Badge variant="outline" className="bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20">
+                    {recentEvents.length} Events
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="relative z-10 p-0">
                 <div className="overflow-x-auto">
                   <Table>
-                      <TableHeader>
-                      <TableRow>
-                          <TableHead>Event</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Attendees</TableHead>
-                          <TableHead className="text-right">Date</TableHead>
+                    <TableHeader>
+                      <TableRow className="border-border/40 hover:bg-muted/30">
+                        <TableHead className="font-semibold">Event</TableHead>
+                        <TableHead className="font-semibold">Status</TableHead>
+                        <TableHead className="text-right font-semibold">Attendees</TableHead>
+                        <TableHead className="text-right font-semibold">Date</TableHead>
                       </TableRow>
-                      </TableHeader>
-                      <TableBody>
+                    </TableHeader>
+                    <TableBody>
                       {recentEvents.length > 0 ? (
-                          recentEvents.map(event => (
-                          <TableRow key={event.id}>
-                              <TableCell>
-                              <Link href={`/dashboard/events/${event.id}/manage`} className="font-medium hover:underline">
-                                  {event.title}
+                        recentEvents.map((event, index) => (
+                          <TableRow 
+                            key={event.id} 
+                            className="group border-border/40 hover:bg-gradient-to-r hover:from-primary/[0.02] hover:to-secondary/[0.02] transition-all duration-300"
+                          >
+                            <TableCell>
+                              <Link 
+                                href={`/dashboard/events/${event.id}/manage`} 
+                                className="font-medium hover:text-primary transition-colors duration-200 group-hover:underline flex items-start gap-2"
+                              >
+                                <div className="flex-1">
+                                  <div className="font-medium">{event.title}</div>
+                                  {event.location && (
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                                      <MapPin className="h-3 w-3" />
+                                      {event.location}
+                                    </div>
+                                  )}
+                                </div>
                               </Link>
-                              </TableCell>
-                              <TableCell>
-                              <Badge variant={new Date(event.date) > new Date() ? 'default' : 'secondary'} className={new Date(event.date) > new Date() ? 'bg-green-500' : ''}>
-                                  {new Date(event.date) > new Date() ? 'Upcoming' : 'Past'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={new Date(event.date) > new Date() ? 'default' : 'secondary'} 
+                                className={`transition-all duration-200 ${
+                                  new Date(event.date) > new Date() 
+                                    ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700' 
+                                    : 'bg-gradient-to-r from-gray-500 to-gray-600'
+                                }`}
+                              >
+                                <Clock className="h-3 w-3 mr-1" />
+                                {new Date(event.date) > new Date() ? 'Upcoming' : 'Past'}
                               </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">{event.attendees}</TableCell>
-                              <TableCell className="text-right">{new Date(event.date).toLocaleDateString()}</TableCell>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Users className="h-3 w-3 text-muted-foreground" />
+                                <span className="font-medium">{event.attendees}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right text-sm text-muted-foreground">
+                              {new Date(event.date).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                year: 'numeric' 
+                              })}
+                            </TableCell>
                           </TableRow>
-                          ))
+                        ))
                       ) : (
-                          <TableRow>
-                          <TableCell colSpan={4} className="h-24 text-center">
-                              No recent events.
+                        <TableRow>
+                          <TableCell colSpan={4} className="h-32 text-center">
+                            <div className="flex flex-col items-center justify-center space-y-3">
+                              <div className="p-3 rounded-full bg-gradient-to-br from-primary/10 to-secondary/10">
+                                <CalendarIcon className="h-6 w-6 text-muted-foreground/50" />
+                              </div>
+                              <div className="space-y-1">
+                                <p className="font-medium text-muted-foreground">No recent events</p>
+                                <p className="text-sm text-muted-foreground/70">Create your first event to get started</p>
+                              </div>
+                            </div>
                           </TableCell>
-                          </TableRow>
+                        </TableRow>
                       )}
-                      </TableBody>
+                    </TableBody>
                   </Table>
                 </div>
-                </CardContent>
-                <CardFooter className="flex justify-end">
-                    <Button asChild variant="outline" size="sm">
-                        <Link href="/dashboard/events">
-                            View All Events <ArrowRight className="ml-2 h-4 w-4" />
-                        </Link>
-                    </Button>
-                </CardFooter>
+              </CardContent>
+              <CardFooter className="relative z-10 border-t border-border/40 bg-gradient-to-r from-card/80 to-card/60 backdrop-blur-sm">
+                <Button asChild variant="outline" size="sm" className="ml-auto group">
+                  <Link href="/dashboard/events">
+                    View All Events 
+                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
+                  </Link>
+                </Button>
+              </CardFooter>
             </Card>
+          </div>
         </>
       ) : (
         <>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">My Tickets</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{registeredEventsCount}</div>
-                        <p className="text-xs text-muted-foreground">Total events you've registered for</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
-                        <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{upcomingEvents.length}</div>
-                         <p className="text-xs text-muted-foreground">Events you're registered for that are coming up</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Events Attended</CardTitle>
-                        <CalendarCheck className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{attendedEventsCount}</div>
-                        <p className="text-xs text-muted-foreground">Events you've attended in the past</p>
-                    </CardContent>
-                </Card>
+          {/* Enhanced Attendee Stats */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="animate-in slide-in-from-bottom-4 duration-700 delay-100">
+              <StatCard
+                title="My Tickets"
+                value={registeredEventsCount}
+                description="Total events you've registered for"
+                icon={Ticket}
+                className="border-blue-500/20"
+              />
             </div>
-             <Card>
-                <CardHeader>
-                <CardTitle>Your Upcoming Events</CardTitle>
-                <CardDescription>Events you are registered for.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                        <TableRow>
-                            <TableHead>Event</TableHead>
-                            <TableHead className="text-right">Date</TableHead>
-                            <TableHead></TableHead>
-                        </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                        {upcomingEvents.length > 0 ? (
-                            upcomingEvents.map(event => (
-                            <TableRow key={event.id}>
-                                <TableCell>
-                                    <div className="font-medium">{event.title}</div>
-                                    <div className="text-sm text-muted-foreground">{event.location}</div>
-                                </TableCell>
-                                <TableCell className="text-right">{new Date(event.date).toLocaleDateString()}</TableCell>
-                                <TableCell className="text-right">
-                                    <Button asChild variant="outline" size="sm">
-                                        <Link href={`/dashboard/tickets/${event.id}`}>View Ticket</Link>
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                            <TableCell colSpan={3} className="h-24 text-center">
-                                You have no upcoming events.
-                            </TableCell>
-                            </TableRow>
-                        )}
-                        </TableBody>
-                    </Table>
+            <div className="animate-in slide-in-from-bottom-4 duration-700 delay-200">
+              <StatCard
+                title="Upcoming Events"
+                value={upcomingEvents.length}
+                description="Events you're registered for that are coming up"
+                icon={CalendarIcon}
+                className="border-green-500/20"
+              />
+            </div>
+            <div className="animate-in slide-in-from-bottom-4 duration-700 delay-300">
+              <StatCard
+                title="Events Attended"
+                value={attendedEventsCount}
+                description="Events you've attended in the past"
+                icon={CalendarCheck}
+                className="border-purple-500/20"
+              />
+            </div>
+          </div>
+
+          {/* Enhanced Upcoming Events for Attendees */}
+          <div className="animate-in slide-in-from-bottom-4 duration-700 delay-400">
+            <Card className="relative overflow-hidden bg-gradient-to-br from-card to-card/50 backdrop-blur-sm border-0 shadow-sm">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/[0.01] to-secondary/[0.01]"></div>
+              <CardHeader className="relative z-10 border-b border-border/40 bg-gradient-to-r from-card/80 to-card/60 backdrop-blur-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <div className="p-1 rounded-md bg-gradient-to-br from-primary/10 to-secondary/10">
+                        <Ticket className="h-4 w-4 text-primary" />
+                      </div>
+                      Your Upcoming Events
+                    </CardTitle>
+                    <CardDescription className="mt-1">Events you are registered to attend</CardDescription>
                   </div>
-                </CardContent>
-                <CardFooter className="flex justify-end">
-                    <Button asChild variant="outline" size="sm">
-                        <Link href="/dashboard/events">
-                            Browse Events <ArrowRight className="ml-2 h-4 w-4" />
-                        </Link>
-                    </Button>
-                </CardFooter>
+                  <Badge variant="outline" className="bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20">
+                    {upcomingEvents.length} Tickets
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="relative z-10 p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border/40 hover:bg-muted/30">
+                        <TableHead className="font-semibold">Event</TableHead>
+                        <TableHead className="text-right font-semibold">Date</TableHead>
+                        <TableHead className="text-right font-semibold">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {upcomingEvents.length > 0 ? (
+                        upcomingEvents.map((event, index) => (
+                          <TableRow 
+                            key={event.id} 
+                            className="group border-border/40 hover:bg-gradient-to-r hover:from-primary/[0.02] hover:to-secondary/[0.02] transition-all duration-300"
+                          >
+                            <TableCell>
+                              <div className="space-y-1">
+                                <div className="font-medium group-hover:text-primary transition-colors duration-200">
+                                  {event.title}
+                                </div>
+                                {event.location && (
+                                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                    <MapPin className="h-3 w-3" />
+                                    {event.location}
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Clock className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-sm">
+                                  {new Date(event.date).toLocaleDateString('en-US', { 
+                                    month: 'short', 
+                                    day: 'numeric', 
+                                    year: 'numeric' 
+                                  })}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button asChild variant="outline" size="sm" className="group">
+                                <Link href={`/dashboard/tickets/${event.id}`}>
+                                  <Ticket className="mr-1 h-3 w-3" />
+                                  View Ticket
+                                </Link>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={3} className="h-32 text-center">
+                            <div className="flex flex-col items-center justify-center space-y-3">
+                              <div className="p-3 rounded-full bg-gradient-to-br from-primary/10 to-secondary/10">
+                                <CalendarIcon className="h-6 w-6 text-muted-foreground/50" />
+                              </div>
+                              <div className="space-y-1">
+                                <p className="font-medium text-muted-foreground">No upcoming events</p>
+                                <p className="text-sm text-muted-foreground/70">Browse events to find something interesting</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+              <CardFooter className="relative z-10 border-t border-border/40 bg-gradient-to-r from-card/80 to-card/60 backdrop-blur-sm">
+                <Button asChild variant="outline" size="sm" className="ml-auto group">
+                  <Link href="/dashboard/events">
+                    Browse Events 
+                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
+                  </Link>
+                </Button>
+              </CardFooter>
             </Card>
+          </div>
         </>
       )}
-
     </div>
   );
 }
-
-    

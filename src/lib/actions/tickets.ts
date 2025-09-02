@@ -105,9 +105,11 @@ export async function unregisterForEventAction(
   }
 
   revalidatePath('/dashboard/events');
+  revalidatePath('/dashboard');
   revalidatePath(`/events`);
   if (ticket.event_id) {
       revalidatePath(`/events/${ticket.event_id}`);
+      revalidatePath(`/dashboard/events/${ticket.event_id}/manage`);
   }
   
   return { success: true };
@@ -184,13 +186,22 @@ export async function registerAndCreateTicket(
       return { error: 'This event has reached its maximum capacity.' };
     }
 
-    const { data: existingUser } = await supabase
+    const { data: { user: existingUser }, error: userFetchError } = await supabase.auth.getUser();
+    if (userFetchError) {
+        // This is fine, just means no one is logged in.
+    }
+    if (existingUser) {
+        return { error: 'You are already logged in. Please register from the dashboard.'}
+    }
+    
+    // Check if email already exists in auth.users
+    const { data: existingAuthUser, error: existingAuthUserError } = await supabase
       .from('users')
       .select('id')
       .eq('email', email)
       .single();
 
-    if (existingUser) {
+    if (existingAuthUser) {
         return { error: 'An account with this email already exists. Please log in to register.' };
     }
 
@@ -209,19 +220,8 @@ export async function registerAndCreateTicket(
         return { error: signUpError?.message || "Could not sign up user." };
     }
     
-    // Manually set the session after sign-up so the redirect works
-    if (signUpData.session) {
-      const { error: sessionError } = await supabase.auth.setSession(signUpData.session);
-      if (sessionError) {
-         return { error: "Could not establish session. Please log in."}
-      }
-    } else {
-        const { data: { session }, error: sessionError } = await supabase.auth.signInWithPassword({ email, password });
-        if(sessionError || !session) {
-          return { error: "Could not establish session. Please log in."}
-        }
-    }
-
+    // After signUp, the user is automatically logged in and a session is created.
+    // We can proceed to create the ticket.
 
     const { data: ticketData, error: ticketError } = await supabase.from('tickets').insert({
         event_id: eventId,
@@ -232,6 +232,8 @@ export async function registerAndCreateTicket(
         return { error: ticketError?.message || "You are registered as a user, but we failed to create your ticket. Please contact support." };
     }
     
+    revalidatePath(`/dashboard/events`);
+    revalidatePath(`/events`);
     redirect(`/events/${eventId}/register/success?ticketId=${ticketData.id}`);
 }
 
@@ -303,7 +305,7 @@ export async function verifyTicket(qrToken: string, eventId: number) {
             .single();
 
         if(ticketError || !ticket) {
-            console.error("Ticket lookup error:", ticketError);
+            console.error("Ticket lookup error:", ticketError?.message);
             return { success: false, error: 'Invalid QR Code. Ticket not found.' };
         }
 
