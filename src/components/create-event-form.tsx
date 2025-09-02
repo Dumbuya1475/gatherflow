@@ -332,8 +332,9 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                                 onChange={(e) => {
                                     const time = e.target.value;
                                     const [hours, minutes] = time.split(':').map(Number);
-                                    const newDate = field.value ? new Date(field.value) : new Date();
-                                    newDate.setHours(hours);
+                                    const baseDate = field.value instanceof Date ? field.value : new Date();
+                                    const newDate = new Date(baseDate); // make a new copy
+                                                                        newDate.setHours(hours);
                                     newDate.setMinutes(minutes);
                                     field.onChange(newDate);
                                 }}
@@ -385,8 +386,9 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                                 onChange={(e) => {
                                     const time = e.target.value;
                                     const [hours, minutes] = time.split(':').map(Number);
-                                    const newDate = field.value ? new Date(field.value) : new Date();
-                                    newDate.setHours(hours);
+                                    const baseDate = field.value instanceof Date ? field.value : new Date();
+                                    const newDate = new Date(baseDate); // make a new copy
+                                                                        newDate.setHours(hours);
                                     newDate.setMinutes(minutes);
                                     field.onChange(newDate);
                                 }}

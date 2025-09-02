@@ -36,111 +36,193 @@ export function DashboardSheet() {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button size="icon" variant="outline" className="md:hidden">
-          <PanelLeft className="h-5 w-5" />
+        <Button 
+          size="icon" 
+          variant="outline" 
+          className="md:hidden group relative overflow-hidden border-2 hover:border-primary/30 transition-all duration-300"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <PanelLeft className="h-5 w-5 relative z-10 group-hover:text-primary transition-colors duration-300" />
           <span className="sr-only">Toggle Menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="sm:max-w-xs">
-        <SidebarHeader className="mb-4">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <AppLogo />
-            <span className="text-lg font-semibold text-foreground">
-              GatherFlow
-            </span>
+      <SheetContent 
+        side="left" 
+        className="sm:max-w-xs bg-gradient-to-br from-card/95 to-card/90 backdrop-blur-xl border-r border-border/40"
+      >
+        {/* Enhanced Header */}
+        <SidebarHeader className="mb-6 border-b border-border/40 pb-4">
+          <Link 
+            href="/dashboard" 
+            className="flex items-center gap-3 transition-opacity hover:opacity-80 group"
+          >
+            <div className="p-2 rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10 group-hover:from-primary/20 group-hover:to-secondary/20 transition-all duration-300 group-hover:scale-110">
+              <AppLogo />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold text-foreground">
+                GatherFlow
+              </span>
+              <span className="text-xs text-foreground/60">
+                Event Management
+              </span>
+            </div>
           </Link>
           <SheetTitle className="sr-only">Menu</SheetTitle>
         </SidebarHeader>
 
-        <SidebarContent className="h-full">
-          <SidebarMenu>
+        {/* Enhanced Content */}
+        <SidebarContent className="flex-1 px-1">
+          <SidebarMenu className="space-y-2">
             <SidebarMenuItem>
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton 
+                asChild 
+                className="group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+              >
                 <Link href="/dashboard">
-                  <Home />
-                  <span>Dashboard</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
+                  <Home className="relative z-10 group-hover:text-primary transition-colors duration-200" />
+                  <span className="relative z-10 group-hover:text-primary transition-colors duration-200">Dashboard</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarGroup>
-              <SidebarGroupLabel>Events</SidebarGroupLabel>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/dashboard/events">
-                    <Calendar />
-                    <span>All Events</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/dashboard/events/create">
-                    <CalendarPlus />
-                    <span>Create Event</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+            
+            <SidebarGroup className="mt-6">
+              <SidebarGroupLabel className="text-xs font-semibold text-foreground/50 uppercase tracking-wider mb-3 px-2">
+                Events
+              </SidebarGroupLabel>
+              <div className="space-y-1">
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    asChild 
+                    className="group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+                  >
+                    <Link href="/dashboard/events">
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
+                      <Calendar className="relative z-10 group-hover:text-primary transition-colors duration-200" />
+                      <span className="relative z-10 group-hover:text-primary transition-colors duration-200">All Events</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    asChild 
+                    className="group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+                  >
+                    <Link href="/dashboard/events/create">
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
+                      <CalendarPlus className="relative z-10 group-hover:text-primary transition-colors duration-200 group-hover:rotate-90" />
+                      <span className="relative z-10 group-hover:text-primary transition-colors duration-200">Create Event</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </div>
             </SidebarGroup>
 
-            <SidebarGroup>
-              <SidebarGroupLabel>Operations</SidebarGroupLabel>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/dashboard/scanner">
-                    <ScanLine />
-                    <span>Scanner</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+            <SidebarGroup className="mt-6">
+              <SidebarGroupLabel className="text-xs font-semibold text-foreground/50 uppercase tracking-wider mb-3 px-2">
+                Operations
+              </SidebarGroupLabel>
+              <div className="space-y-1">
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    asChild 
+                    className="group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+                  >
+                    <Link href="/dashboard/scanner">
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
+                      <ScanLine className="relative z-10 group-hover:text-primary transition-colors duration-200" />
+                      <span className="relative z-10 group-hover:text-primary transition-colors duration-200">Scanner</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </div>
             </SidebarGroup>
 
-            <SidebarGroup>
-              <SidebarGroupLabel>Analytics</SidebarGroupLabel>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/dashboard/analytics">
-                    <BarChart />
-                    <span>Analytics</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/dashboard/reports">
-                    <FileDown />
-                    <span>Reports</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+            <SidebarGroup className="mt-6">
+              <SidebarGroupLabel className="text-xs font-semibold text-foreground/50 uppercase tracking-wider mb-3 px-2">
+                Analytics
+              </SidebarGroupLabel>
+              <div className="space-y-1">
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    asChild 
+                    className="group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+                  >
+                    <Link href="/dashboard/analytics">
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
+                      <BarChart className="relative z-10 group-hover:text-primary transition-colors duration-200" />
+                      <span className="relative z-10 group-hover:text-primary transition-colors duration-200">Analytics</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    asChild 
+                    className="group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+                  >
+                    <Link href="/dashboard/reports">
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
+                      <FileDown className="relative z-10 group-hover:text-primary transition-colors duration-200" />
+                      <span className="relative z-10 group-hover:text-primary transition-colors duration-200">Reports</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </div>
             </SidebarGroup>
           </SidebarMenu>
         </SidebarContent>
 
-        <SidebarFooter className="mt-auto">
-          <SidebarMenu>
+        {/* Enhanced Footer */}
+        <SidebarFooter className="border-t border-border/40 pt-4 mt-auto">
+          <SidebarMenu className="space-y-1">
             <SidebarMenuItem>
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton 
+                asChild 
+                className="group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+              >
                 <Link href="/dashboard/profile">
-                  <User />
-                  <span>Profile</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
+                  <User className="relative z-10 group-hover:text-primary transition-colors duration-200" />
+                  <span className="relative z-10 group-hover:text-primary transition-colors duration-200">Profile</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton 
+                asChild 
+                className="group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+              >
                 <Link href="/dashboard/settings">
-                  <Settings />
-                  <span>Settings</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
+                  <Settings className="relative z-10 group-hover:text-primary transition-colors duration-200" />
+                  <span className="relative z-10 group-hover:text-primary transition-colors duration-200">Settings</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
-          <form action={logout} className="pt-2">
-              <Button type="submit" variant="ghost" className="w-full justify-start gap-2 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent">
-                <LogOut />
-                <span>Logout</span>
-              </Button>
+          
+          {/* Enhanced Logout Button */}
+          <form action={logout} className="pt-3">
+            <Button 
+              type="submit" 
+              variant="ghost" 
+              className="w-full justify-start gap-2 text-foreground/70 hover:text-foreground group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-destructive/5 to-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
+              <LogOut className="relative z-10 h-4 w-4 group-hover:text-destructive transition-colors duration-200" />
+              <span className="relative z-10 group-hover:text-destructive transition-colors duration-200">Logout</span>
+            </Button>
           </form>
+          
+          {/* Mobile Footer Branding */}
+          <div className="mt-4 pt-3 border-t border-border/20">
+            <div className="text-center">
+              <div className="text-xs text-foreground/40">
+                GatherFlow Mobile
+              </div>
+            </div>
+          </div>
         </SidebarFooter>
       </SheetContent>
     </Sheet>
