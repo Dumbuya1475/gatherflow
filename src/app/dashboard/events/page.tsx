@@ -36,7 +36,7 @@ async function getMyEvents(userId: string): Promise<EventWithAttendees[]> {
 
   return events.map(event => ({
     ...event,
-    attendees: event.tickets.length > 0 ? event.tickets[0].count : 0,
+    attendees: event.tickets[0]?.count || 0,
   }));
 }
 
@@ -64,7 +64,7 @@ async function getRegisteredEvents(userId: string): Promise<EventWithAttendees[]
         .filter(ticket => ticket.events)
         .map(ticket => ({
             ...ticket.events!,
-            attendees: ticket.events!.tickets.length > 0 ? ticket.events!.tickets[0].count : 0,
+            attendees: ticket.events!.tickets[0]?.count || 0,
             ticket_id: ticket.id,
         }));
     }
@@ -84,7 +84,7 @@ async function getRegisteredEvents(userId: string): Promise<EventWithAttendees[]
       .filter(ticket => ticket.events) // Ensure event data is not null
       .map(ticket => ({
         ...ticket.events!,
-        attendees: ticket.events!.tickets.length > 0 ? ticket.events!.tickets[0].count : 0,
+        attendees: ticket.events!.tickets[0]?.count || 0,
         ticket_id: ticket.id,
         organizer: ticket.events!.organizer_id ? profileMap.get(ticket.events!.organizer_id) : null,
     }));
@@ -159,7 +159,7 @@ async function getPastEvents(userId: string): Promise<EventWithAttendees[]> {
     
     const attendedEvents = (attendedTickets || [])
       .filter(t => t.events && new Date(t.events.date) < new Date())
-      .map(t => ({...t.events!, type: 'attended' as const, attendees: t.events!.tickets.length > 0 ? t.events!.tickets[0].count : 0 }));
+      .map(t => ({...t.events!, type: 'attended' as const, attendees: t.events!.tickets[0]?.count || 0 }));
 
 
     // Fetch events the user organized
@@ -174,7 +174,7 @@ async function getPastEvents(userId: string): Promise<EventWithAttendees[]> {
         console.error('Error fetching past organized events:', organizedError);
     }
 
-    const pastOrganizedEvents = (organizedEvents || []).map(e => ({...e, type: 'organized' as const, attendees: e.tickets.length > 0 ? e.tickets[0].count : 0 }));
+    const pastOrganizedEvents = (organizedEvents || []).map(e => ({...e, type: 'organized' as const, attendees: e.tickets[0]?.count || 0 }));
 
     const allPastEvents = [...attendedEvents, ...pastOrganizedEvents];
     

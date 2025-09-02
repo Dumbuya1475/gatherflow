@@ -145,14 +145,6 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
                 {daysLeft}
               </Badge>
             )}
-             {event.is_paid ? (
-              <div className="flex bg-secondary/100 backdrop-blur-sm items-center gap-1 font-semibold text-primary">
-                  <DollarSign className="h-4 w-4" />
-                   {event.price ? `SLE ${Number(event.price).toLocaleString()}`: 'Paid'}
-              </div>
-              ) : (
-              <Badge variant="outline">Free</Badge>
-            )}
           </div>
         </Link>
       </CardHeader>
@@ -180,7 +172,14 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
                 <span>{event.attendees.toLocaleString()}</span>
                 {event.capacity && <span className="text-muted-foreground">/{event.capacity}</span>}
             </div>
-           
+            {event.is_paid ? (
+              <div className="flex items-center gap-1 font-semibold text-primary">
+                  <DollarSign className="h-4 w-4" />
+                   {event.price ? `SLE ${Number(event.price).toLocaleString()}`: 'Paid'}
+              </div>
+              ) : (
+              <Badge variant="outline">Free</Badge>
+              )}
           </div>
           {isScannerMode ? (
             <Button size="sm" className="w-full">

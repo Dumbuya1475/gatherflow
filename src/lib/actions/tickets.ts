@@ -74,14 +74,12 @@ export async function unregisterForEventAction(
 ) {
   const supabase = createClient();
   const ticketId = parseInt(formData.get('ticketId') as string, 10);
-  const eventId = formData.get('eventId') as string;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { error: 'You must be logged in.' };
   }
   
-  // Verify the user owns this ticket before deleting
   const { data: ticket, error: ticketError } = await supabase
     .from('tickets')
     .select('id, user_id, event_id')
@@ -92,8 +90,6 @@ export async function unregisterForEventAction(
     return { error: 'Ticket not found.' };
   }
 
-  // The user can only unregister themselves, not others, unless they are the organizer.
-  // For simplicity, we only allow self-unregister here.
   if (ticket.user_id !== user.id) {
     return { error: 'You are not authorized to perform this action.' };
   }
@@ -130,7 +126,6 @@ export async function unregisterAttendeeAction(formData: FormData) {
     throw new Error('You must be logged in.');
   }
 
-  // Verify the user is the organizer of the event
   const { data: event, error: eventError } = await supabase
     .from('events')
     .select('organizer_id')
