@@ -45,6 +45,7 @@ export async function registerForEventAction(
     .maybeSingle();
 
   if (existingTicket) {
+    // If they are already registered, just redirect them to success
     return redirect(`/events/${eventId}/register/success?ticketId=${existingTicket.id}`);
   }
   
@@ -64,7 +65,8 @@ export async function registerForEventAction(
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/events`);
   
-  return redirect(`/events/${eventId}/register/success?ticketId=${ticket.id}`);
+  // Return success state for client-side navigation
+  return { success: true, ticketId: ticket.id };
 }
 
 export async function unregisterForEventAction(
@@ -245,6 +247,7 @@ export async function verifyTicket(qrToken: string, eventId: number) {
         const { data: { user } } = await supabase.auth.getUser();
         if(!user) return { success: false, error: 'Not authenticated. Please log in.' };
 
+        // 1. Find the ticket by its qr_token
         const { data: ticket, error: ticketError } = await supabase
             .from('tickets')
             .select('id, event_id, checked_in, user_id, events(organizer_id)')
@@ -256,9 +259,13 @@ export async function verifyTicket(qrToken: string, eventId: number) {
             return { success: false, error: 'Invalid QR Code. Ticket not found.' };
         }
 
+        // 2. Check if ticket is for the correct event
         if (ticket.event_id !== eventId) {
             return { success: false, error: 'This ticket is not for this event.' };
         }
+        
+        // 3. Check if the current user is authorized to scan for this event
+        const isOrganizer = ticket.events?.organizer_id === user.id;
         
         const { data: scannerAssignment, error: scannerError } = await supabase
             .from('event_scanners')
@@ -270,18 +277,19 @@ export async function verifyTicket(qrToken: string, eventId: number) {
             console.error("Error checking scanner assignment:", scannerError);
             return { success: false, error: "Could not verify scanner permissions."};
         }
-
-        const isOrganizer = ticket.events?.organizer_id === user.id;
+        
         const isScanner = scannerAssignment && scannerAssignment.count > 0;
 
         if (!isOrganizer && !isScanner) {
             return { success: false, error: 'You are not authorized to check in tickets for this event.' };
         }
 
+        // 4. Check if ticket has already been used
         if(ticket.checked_in) {
             return { success: false, error: `This ticket has already been checked in.`, status: 'already_in' };
         }
 
+        // 5. Update the ticket to checked_in
         const { error: updateError } = await supabase
         .from('tickets')
         .update({ checked_in: true, checked_in_at: new Date().toISOString() })
@@ -391,7 +399,6 @@ export async function getScannableEvents() {
 
     return { data: uniqueEvents, isLoggedIn: true, error: null };
 }
-
 
 export async function unregisterAttendeeAction(formData: FormData) {
     const supabase = createClient();

@@ -12,7 +12,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { EventWithAttendees } from '@/lib/types';
 import { EventCard } from '@/components/event-card';
 import FullLogo from "./GatherFlow_Logo.png";
-import HeroVideo from './GatherFlow_Logo.mp4';
+import HeroVideo from "./GatherFlow_Logo.mp4";
 
 const features = [
   {

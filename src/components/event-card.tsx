@@ -6,14 +6,14 @@ import Link from 'next/link';
 import { useActionState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye, Eye, Pencil, DollarSign, Timer, User, X } from 'lucide-react';
+import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye, Eye, Pencil, DollarSign, Timer, User, X, Clock } from 'lucide-react';
 import type { EventWithAttendees } from '@/lib/types';
 import { registerForEventAction, unregisterForEventAction } from '@/lib/actions/tickets';
 import { useToast } from '@/hooks/use-toast';
 import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Badge } from './ui/badge';
-import { differenceInDays, isPast, isToday } from 'date-fns';
+import { differenceInDays, isPast, isToday, formatDistanceStrict } from 'date-fns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +33,7 @@ interface EventCardProps {
   isMyEvent?: boolean;
 }
 
-function RegisterButton({ eventId, isLoggedIn }: { eventId: number; isLoggedIn: boolean }) {
+function RegisterButton({ eventId, isLoggedIn, isFull }: { eventId: number; isLoggedIn: boolean, isFull: boolean }) {
     const { pending } = useFormStatus();
     const router = useRouter();
 
@@ -42,6 +42,10 @@ function RegisterButton({ eventId, isLoggedIn }: { eventId: number; isLoggedIn: 
             e.preventDefault();
             router.push(`/events/${eventId}/register`);
         }
+    }
+
+    if(isFull) {
+        return <Button size="sm" className="flex-1" disabled>Event Full</Button>
     }
 
     return (
@@ -90,8 +94,11 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
           title: 'Unregistered Successfully',
           description: "You have cancelled your registration for this event.",
         });
+        // This is a client component, a hard refresh might be needed or better state management
+        // For now, we rely on the revalidation from the server action.
+         router.refresh();
       }
-    }, [unregisterState, toast]);
+    }, [unregisterState, toast, router]);
 
     const daysLeft = useMemo(() => {
       const eventDate = new Date(event.date);
@@ -101,11 +108,21 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
       return `${days + 1} day${days + 1 > 1 ? 's' : ''} left`;
     }, [event.date]);
 
+    const eventDuration = useMemo(() => {
+        if (!event.end_date) return "1 Day";
+        const duration = formatDistanceStrict(new Date(event.date), new Date(event.end_date));
+        // A simple day calculation might be better
+        const days = differenceInDays(new Date(event.end_date), new Date(event.date)) + 1;
+        return `${days} Day${days > 1 ? 's' : ''}`;
+    }, [event.date, event.end_date]);
+
+
     const organizerName = useMemo(() => {
         if (!event.organizer) return 'Anonymous';
         return `${event.organizer.first_name || ''} ${event.organizer.last_name || ''}`.trim() || 'Anonymous';
     }, [event.organizer]);
-
+    
+    const isFull = event.capacity ? event.attendees >= event.capacity : false;
 
   return (
     <Card className="h-full flex flex-col overflow-hidden transition-transform transform-gpu hover:-translate-y-1 hover:shadow-xl">
@@ -119,14 +136,10 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
             className="object-cover"
           />
           <div className="absolute top-2 right-2 flex gap-2">
-            {event.is_paid ? (
-                <Badge className="bg-primary/80 backdrop-blur-sm">
-                    <DollarSign className="mr-1 h-3 w-3" />
-                     {event.price ? `SLE ${Number(event.price).toLocaleString()}`: 'Paid'}
-                </Badge>
-            ) : (
-                <Badge variant="secondary" className='bg-secondary/80 backdrop-blur-sm'>Free</Badge>
-            )}
+             <Badge variant="secondary" className="bg-secondary/80 backdrop-blur-sm">
+                <Clock className="mr-1 h-3 w-3" />
+                {eventDuration}
+            </Badge>
             {daysLeft && (
               <Badge variant="secondary" className="bg-secondary/80 backdrop-blur-sm">
                 <Timer className="mr-1 h-3 w-3" />
@@ -160,6 +173,14 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
                 <span>{event.attendees.toLocaleString()}</span>
                 {event.capacity && <span className="text-muted-foreground">/{event.capacity}</span>}
             </div>
+             {event.is_paid ? (
+                <div className="flex items-center gap-1 font-semibold text-primary">
+                    <DollarSign className="h-4 w-4" />
+                     {event.price ? `SLE ${Number(event.price).toLocaleString()}`: 'Paid'}
+                </div>
+            ) : (
+                <Badge variant="outline">Free</Badge>
+            )}
           </div>
           {isScannerMode ? (
             <Button size="sm" className="w-full">
@@ -223,7 +244,7 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
                 ) : (
                     <form action={registerAction} className="flex-1">
                         <input type="hidden" name="eventId" value={event.id} />
-                        <RegisterButton eventId={event.id} isLoggedIn={isLoggedIn} />
+                        <RegisterButton eventId={event.id} isLoggedIn={isLoggedIn} isFull={isFull} />
                     </form>
                 )}
             </div>
