@@ -104,14 +104,12 @@ export async function unregisterForEventAction(
     return { error: 'Could not cancel your registration.' };
   }
 
-  revalidatePath('/dashboard');
   revalidatePath('/dashboard/events');
+  revalidatePath(`/events`);
   if (ticket.event_id) {
-    revalidatePath(`/dashboard/events/${ticket.event_id}/manage`);
-    revalidatePath(`/events/${ticket.event_id}`);
+      revalidatePath(`/events/${ticket.event_id}`);
   }
-  revalidatePath('/events');
-
+  
   return { success: true };
 }
 
@@ -218,7 +216,10 @@ export async function registerAndCreateTicket(
          return { error: "Could not establish session. Please log in."}
       }
     } else {
-        return { error: "Could not establish session. Please log in."}
+        const { data: { session }, error: sessionError } = await supabase.auth.signInWithPassword({ email, password });
+        if(sessionError || !session) {
+          return { error: "Could not establish session. Please log in."}
+        }
     }
 
 

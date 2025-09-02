@@ -119,7 +119,7 @@ async function getAllEvents(user: any): Promise<EventWithAttendees[]> {
   const eventsWithOrganizer = events.map(event => ({
     ...event,
     organizer: event.organizer_id ? profileMap.get(event.organizer_id) : null,
-    attendees: event.tickets.length > 0 ? event.tickets[0].count : 0,
+    attendees: event.tickets[0]?.count || 0,
   }));
   
   if (!user) {
@@ -439,5 +439,3 @@ export default function EventsPage() {
     </div>
   );
 }
-
-    
