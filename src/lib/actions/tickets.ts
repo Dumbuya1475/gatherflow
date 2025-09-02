@@ -242,7 +242,6 @@ export async function getTicketDetails(ticketId: number) {
 export async function verifyTicket(qrToken: string, eventId: number) {
     try {
         const supabase = createClient();
-
         const { data: { user } } = await supabase.auth.getUser();
         if(!user) return { success: false, error: 'Not authenticated. Please log in.' };
 

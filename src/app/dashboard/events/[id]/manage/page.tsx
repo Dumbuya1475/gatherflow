@@ -1,7 +1,7 @@
 
 'use server';
 
-import { getEventAttendees, getEventDetails, deleteEventAction, unregisterAttendeeAction } from "@/lib/actions/events";
+import { getEventAttendees, getEventDetails, deleteEventAction } from "@/lib/actions/events";
 import type { Attendee } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
-import { checkoutAttendeeAction } from "@/lib/actions/tickets";
+import { checkoutAttendeeAction, unregisterAttendeeAction } from "@/lib/actions/tickets";
 
 
 function SettingsTab({ event }: { event: { id: number }}) {

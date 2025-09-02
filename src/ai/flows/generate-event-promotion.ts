@@ -24,7 +24,7 @@ export type GenerateEventPromotionInput = z.infer<typeof GenerateEventPromotionI
 const GenerateEventPromotionOutputSchema = z.object({
   promotionalContent: z
     .string()
-    .describe('A compelling promotional message of about two paragraphs for the event.'),
+    .describe('A compelling promotional message of about one paragraph for the event.'),
 });
 export type GenerateEventPromotionOutput = z.infer<typeof GenerateEventPromotionOutputSchema>;
 
@@ -40,7 +40,7 @@ const generateEventPromotionPrompt = ai.definePrompt({
   output: {schema: GenerateEventPromotionOutputSchema},
   prompt: `You are an expert marketing copywriter specializing in events.
 
-  Generate a compelling promotional message of about two paragraphs for the following event. Make it sound exciting and engaging.
+  Generate a compelling promotional message of about one single paragraph for the following event. Make it sound exciting and engaging, but keep it concise.
 
   Event Title: {{{eventTitle}}}
   Event Description: {{{eventDescription}}}
