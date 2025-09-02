@@ -178,7 +178,7 @@ export default async function DashboardPage() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in-0 duration-700">
+    <div className="min-h-screen animate-in fade-in-0 duration-700">
       {/* Enhanced Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-700">
         <div className="space-y-1">

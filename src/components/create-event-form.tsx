@@ -162,13 +162,16 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
   
       if (key === 'cover_image_file' && value instanceof File) {
         formData.append(key, value);
-      } else if (key === 'scanners') {
-        formData.append(key, JSON.stringify(Array.isArray(value) ? value.map(s => s.email) : []));
-      } else if (key === 'is_paid' || key === 'is_public') {
+      } else if (key === 'scanners' && Array.isArray(value)) {
+        const filtered = value.map(s => s.email).filter(Boolean); // remove empty emails
+        formData.append(key, JSON.stringify(filtered));
+    }
+     else if (key === 'is_paid' || key === 'is_public') {
         formData.append(key, value ? 'true' : 'false');
-      } else if (value instanceof Date) {
+      }else if (value instanceof Date && !isNaN(value.getTime())) {
         formData.append(key, value.toISOString());
-      } else {
+    }
+     else {
         formData.append(key, String(value));
       }
     });
@@ -177,13 +180,16 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
   
     const result = await action(formData);
   
-    if (result.success) {
+    if (result?.success) {
       toast({
         title: event ? "Event Updated!" : "Event Created!",
         description: `Your event has been ${event ? 'updated' : 'saved'}.`,
       });
-      router.push('/dashboard/events');
-    } else {
+      // Redirect is now handled by the server action on create
+      if (event) {
+          router.push('/dashboard/events');
+      }
+    } else if (result?.error) {
       toast({
         variant: 'destructive',
         title: event ? 'Update Failed' : 'Creation Failed',
@@ -560,5 +566,3 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
     </Card>
   );
 }
-
-    

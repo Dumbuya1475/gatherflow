@@ -5,8 +5,8 @@ export function AppLogo({ className }: { className?: string }) {
     <Image
       src="/GatherFlow_Logo.png"
       alt="GatherFlow Logo"
-      width={40}
-      height={40}
+      width={50}
+      height={50}
       className={className}
       priority
     />
