@@ -110,10 +110,9 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
 
     const eventDuration = useMemo(() => {
         if (!event.end_date) return "1 Day";
-        const duration = formatDistanceStrict(new Date(event.date), new Date(event.end_date));
-        // A simple day calculation might be better
-        const days = differenceInDays(new Date(event.end_date), new Date(event.date)) + 1;
-        return `${days} Day${days > 1 ? 's' : ''}`;
+        const days = differenceInDays(new Date(event.end_date), new Date(event.date));
+        if (days < 1) return "1 Day"; // Same day event
+        return `${days + 1} Day${days + 1 > 1 ? 's' : ''}`;
     }, [event.date, event.end_date]);
 
 
@@ -150,7 +149,7 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
         </Link>
       </CardHeader>
       <CardContent className="p-4 flex-1">
-        <h3 className="font-bold text-lg leading-tight truncate font-headline">{event.title}</h3>
+        <h3 className="font-bold text-lg leading-tight whitespace-normal font-headline">{event.title}</h3>
         <div className="mt-2 space-y-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />

@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
-import { checkoutAttendeeAction, unregisterForEventAction } from "@/lib/actions/tickets";
+import { checkoutAttendeeAction, unregisterAttendeeAction } from "@/lib/actions/tickets";
 
 
 function SettingsTab({ event }: { event: { id: number }}) {
@@ -165,7 +165,7 @@ export default async function ManageEventPage({ params }: { params: { id: string
                                                 </Button>
                                             </form>
                                         )}
-                                        <form action={unregisterForEventAction} className="inline-block">
+                                        <form action={unregisterAttendeeAction} className="inline-block">
                                             <input type="hidden" name="ticketId" value={attendee.ticket_id} />
                                             <input type="hidden" name="eventId" value={event.id} />
                                             <Button type="submit" variant="destructive" size="sm">

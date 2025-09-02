@@ -80,6 +80,23 @@ export async function unregisterForEventAction(
   if (!user) {
     return { error: 'You must be logged in.' };
   }
+  
+  // Verify the user owns this ticket before deleting
+  const { data: ticket, error: ticketError } = await supabase
+    .from('tickets')
+    .select('id, user_id, event_id')
+    .eq('id', ticketId)
+    .single();
+
+  if (ticketError || !ticket) {
+    return { error: 'Ticket not found.' };
+  }
+
+  // The user can only unregister themselves, not others, unless they are the organizer.
+  // For simplicity, we only allow self-unregister here.
+  if (ticket.user_id !== user.id) {
+    return { error: 'You are not authorized to perform this action.' };
+  }
 
   const { error: deleteError } = await supabase
     .from('tickets')
@@ -93,13 +110,52 @@ export async function unregisterForEventAction(
 
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/events');
-  if (eventId) {
-    revalidatePath(`/dashboard/events/${eventId}/manage`);
-    revalidatePath(`/events/${eventId}`);
+  if (ticket.event_id) {
+    revalidatePath(`/dashboard/events/${ticket.event_id}/manage`);
+    revalidatePath(`/events/${ticket.event_id}`);
   }
   revalidatePath('/events');
 
   return { success: true };
+}
+
+export async function unregisterAttendeeAction(formData: FormData) {
+  'use server'
+  const supabase = createClient();
+  const ticketId = parseInt(formData.get('ticketId') as string, 10);
+  const eventId = formData.get('eventId') as string;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: 'You must be logged in.' };
+  }
+
+  // Verify the user is the organizer of the event
+  const { data: event, error: eventError } = await supabase
+    .from('events')
+    .select('organizer_id')
+    .eq('id', eventId)
+    .single();
+  
+  if (eventError || !event || event.organizer_id !== user.id) {
+    return { error: 'You are not authorized to perform this action.' };
+  }
+
+  const { error: deleteError } = await supabase
+    .from('tickets')
+    .delete()
+    .eq('id', ticketId);
+  
+  if (deleteError) {
+    console.error('Error unregistering attendee:', deleteError);
+    return { error: 'Could not unregister the attendee.' };
+  }
+
+  revalidatePath(`/dashboard/events/${eventId}/manage`);
+  revalidatePath(`/dashboard/analytics`);
+  revalidatePath('/events');
+  
+  redirect(`/dashboard/events/${eventId}/manage`);
 }
 
 
@@ -258,18 +314,19 @@ export async function verifyTicket(qrToken: string, eventId: number) {
         
         const isOrganizer = ticket.events?.organizer_id === user.id;
         
-        const { count: scannerCount, error: scannerError } = await supabase
+        const { data: scannerAssignment, error: scannerError } = await supabase
             .from('event_scanners')
-            .select('*', { count: 'exact', head: true })
+            .select('user_id', { count: 'exact' })
             .eq('event_id', ticket.event_id)
-            .eq('user_id', user.id);
-        
+            .eq('user_id', user.id)
+            .maybeSingle();
+
         if (scannerError) {
             console.error("Error checking scanner assignment:", scannerError);
             return { success: false, error: "Could not verify scanner permissions."};
         }
         
-        const isScanner = scannerCount > 0;
+        const isScanner = !!scannerAssignment;
 
         if (!isOrganizer && !isScanner) {
             return { success: false, error: 'You are not authorized to check in tickets for this event.' };
