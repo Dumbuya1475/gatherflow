@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getProfile, getProfileStats } from '@/lib/actions/user';
@@ -7,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { Progress } from '@/components/ui/progress';
+import { Crown } from 'lucide-react';
 
 function InfoCard({ title, value }: { title: string, value: string | number }) {
   return (
@@ -26,7 +29,9 @@ export default async function ProfilePage() {
   }
   
   const { data: stats, error: statsError } = await getProfileStats();
-
+  const activeEventCount = stats?.activeEventCount || 0;
+  const eventLimit = 3;
+  const progressValue = (activeEventCount / eventLimit) * 100;
 
   const fallback = (profile?.first_name?.[0] || 'U') + (profile?.last_name?.[0] || '');
 
@@ -41,8 +46,31 @@ export default async function ProfilePage() {
         </p>
       </div>
       <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
             <ProfileForm profile={profile} />
+             <Card>
+                <CardHeader>
+                    <CardTitle>Plan Details</CardTitle>
+                    <CardDescription>Your current subscription plan and usage.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex justify-between items-center p-4 rounded-lg bg-gradient-to-r from-primary/5 to-secondary/10 border">
+                        <div>
+                            <p className="font-bold text-lg flex items-center gap-2">Free Plan <Crown className="w-5 h-5 text-yellow-500" /></p>
+                            <p className="text-sm text-muted-foreground">The essentials for getting started with event management.</p>
+                        </div>
+                        <Button variant="outline" disabled>Upgrade (Coming Soon)</Button>
+                    </div>
+                     <div>
+                        <div className="flex justify-between items-center mb-1">
+                           <p className="text-sm text-muted-foreground">Active Events</p>
+                           <p className="text-sm font-medium">{activeEventCount} of {eventLimit}</p>
+                        </div>
+                        <Progress value={progressValue} className="h-2" />
+                        <p className="text-xs text-muted-foreground mt-1">You can have up to {eventLimit} active events on the Free Plan.</p>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
         <div className="space-y-6">
             <Card>
@@ -62,7 +90,7 @@ export default async function ProfilePage() {
                 </CardContent>
                 <CardContent className="grid grid-cols-2 gap-4">
                   <InfoCard title="Events Created" value={stats?.userEventCount || 0} />
-                  <InfoCard title="Active Events" value={stats?.activeEventCount || 0} />
+                  <InfoCard title="Active Events" value={activeEventCount} />
                   <InfoCard title="Total Events" value={stats?.totalEventCount || 0} />
                   <InfoCard title="Total Users" value={stats?.totalUserCount || 0} />
                 </CardContent>

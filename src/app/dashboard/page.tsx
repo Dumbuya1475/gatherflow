@@ -1,13 +1,16 @@
+
 'use server';
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, ArrowRight, Users, CalendarCheck, Activity, Calendar as CalendarIcon, TrendingUp, Clock, MapPin, Ticket } from 'lucide-react';
+import { PlusCircle, ArrowRight, Users, CalendarCheck, Activity, Calendar as CalendarIcon, TrendingUp, Clock, MapPin, Ticket, Info } from 'lucide-react';
 import type { EventWithAttendees } from '@/lib/types';
 import { createClient } from '@/lib/supabase/server';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 async function getDashboardStats(user: any) {
@@ -116,6 +119,8 @@ export default async function DashboardPage() {
   const { isOrganizer, totalEvents, activeEvents, totalAttendees, checkInsToday, recentEvents } = await getDashboardStats(user);
   const { registeredEventsCount, upcomingEvents, attendedEventsCount } = user ? await getAttendeeDashboardStats(user) : { registeredEventsCount: 0, upcomingEvents: [], attendedEventsCount: 0 };
 
+  const isEventLimitReached = activeEvents >= 3;
+
   const StatCard = ({ title, value, description, icon: Icon, delay, trend, className = "" }: any) => (
     <Card className={`group relative overflow-hidden bg-gradient-to-br from-card to-card/50 backdrop-blur-sm border-0 shadow-sm hover:shadow-lg transition-all duration-500 cursor-pointer ${className}`}>
       <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.02] to-secondary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -143,6 +148,35 @@ export default async function DashboardPage() {
     </Card>
   );
 
+  const CreateEventButton = () => {
+    const button = (
+      <Button 
+        asChild={!isEventLimitReached}
+        disabled={isEventLimitReached}
+        className="group relative overflow-hidden bg-gradient-to-r from-primary to-secondary hover:shadow-lg transition-all duration-300"
+      >
+        <Link href="/dashboard/events/create">
+          <PlusCircle className="mr-2 h-4 w-4 group-hover:rotate-90 transition-transform duration-300" />
+          Create Event
+        </Link>
+      </Button>
+    );
+
+    if (isEventLimitReached) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div tabIndex={0}>{button}</div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>You've reached your free event limit. Upgrade to create more.</p>
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+    return button;
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in-0 duration-700">
       {/* Enhanced Header */}
@@ -155,16 +189,18 @@ export default async function DashboardPage() {
             {isOrganizer ? 'Manage your events and track performance' : 'View your registered events and tickets'}
           </p>
         </div>
-        <Button 
-          asChild 
-          className="group relative overflow-hidden bg-gradient-to-r from-primary to-secondary hover:shadow-lg transition-all duration-300"
-        >
-          <Link href="/dashboard/events/create">
-            <PlusCircle className="mr-2 h-4 w-4 group-hover:rotate-90 transition-transform duration-300" />
-            Create Event
-          </Link>
-        </Button>
+        <CreateEventButton />
       </div>
+
+       {isOrganizer && isEventLimitReached && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>Event Limit Reached</AlertTitle>
+          <AlertDescription>
+            You are on the Free Plan and have reached your limit of 3 active events. To create more events, please upgrade your plan.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {isOrganizer ? (
         <>
@@ -182,8 +218,8 @@ export default async function DashboardPage() {
             <div className="animate-in slide-in-from-bottom-4 duration-700 delay-200">
               <StatCard
                 title="Active Events"
-                value={activeEvents}
-                description="Upcoming events"
+                value={`${activeEvents} / 3`}
+                description="Upcoming events on Free Plan"
                 icon={Activity}
                 className="border-green-500/20"
               />
@@ -417,7 +453,7 @@ export default async function DashboardPage() {
                             </TableCell>
                             <TableCell className="text-right">
                               <Button asChild variant="outline" size="sm" className="group">
-                                <Link href={`/dashboard/tickets/${event.id}`}>
+                                <Link href={`/dashboard/tickets/${event.ticket_id}`}>
                                   <Ticket className="mr-1 h-3 w-3" />
                                   View Ticket
                                 </Link>

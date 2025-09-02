@@ -1,3 +1,6 @@
+
+'use server';
+
 import Link from 'next/link';
 import {
   CalendarPlus,
@@ -9,13 +12,7 @@ import {
   BarChart,
   FileDown,
   Calendar,
-  ChevronDown,
 } from 'lucide-react';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 import {
   Sidebar,
   SidebarContent,
@@ -32,13 +29,66 @@ import { logout } from '@/lib/actions/auth';
 import { Button } from '@/components/ui/button';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { AppLogo } from '@/components/app-logo';
+import { createClient } from '@/lib/supabase/server';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+
+async function getActiveEventCount(userId: string) {
+  const supabase = createClient();
+  const { count, error } = await supabase
+    .from('events')
+    .select('*', { count: 'exact', head: true })
+    .eq('organizer_id', userId)
+    .gt('date', new Date().toISOString());
+
+  if (error) {
+    console.error("Error fetching active event count:", error);
+    return 0;
+  }
+  return count || 0;
+}
 
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const activeEventCount = user ? await getActiveEventCount(user.id) : 0;
+  const isLimitReached = activeEventCount >= 3;
+
+  const CreateEventButton = () => {
+    const button = (
+      <SidebarMenuButton 
+        asChild 
+        tooltip="Create Event" 
+        className="group relative overflow-hidden"
+        disabled={isLimitReached}
+      >
+        <Link href="/dashboard/events/create">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
+          <CalendarPlus className="relative z-10" />
+          <span className="relative z-10">Create Event</span>
+        </Link>
+      </SidebarMenuButton>
+    );
+
+    if (isLimitReached) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className='w-full' tabIndex={0}>{button}</div>
+          </TooltipTrigger>
+          <TooltipContent side="right" align="center">
+            <p>You have reached your event limit.</p>
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+    return button;
+  };
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen bg-background">
@@ -87,13 +137,7 @@ export default function DashboardLayout({
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="Create Event" className="group relative overflow-hidden">
-                      <Link href="/dashboard/events/create">
-                        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
-                        <CalendarPlus className="relative z-10" />
-                        <span className="relative z-10">Create Event</span>
-                      </Link>
-                    </SidebarMenuButton>
+                    <CreateEventButton />
                   </SidebarMenuItem>
                 </div>
               </SidebarGroup>
@@ -194,16 +238,16 @@ export default function DashboardLayout({
             <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-tl from-secondary/[0.02] to-primary/[0.02] rounded-full blur-3xl opacity-30 pointer-events-none hidden xl:block"></div>
             
             {/* Full-width Content Container */}
-            <div className="relative z-10 h-full w-full">
-              <div className="w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-                <div className="min-h-[calc(100vh-12rem)] flex flex-col w-full">
+            <div className="relative z-10 h-full">
+              <div className="px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+                <div className="min-h-[calc(100vh-12rem)] flex flex-col">
                   {/* Content wrapper with full width */}
-                  <div className="flex-1 w-full">
+                  <div className="flex-1">
                     {children}
                   </div>
                   
                   {/* Footer spacing for better visual balance on large screens */}
-                  <div className="mt-auto pt-12 hidden xl:block w-full">
+                  <div className="mt-auto pt-12 hidden xl:block">
                     <div className="text-center text-sm text-muted-foreground/40">
                       <div className="w-full h-px bg-gradient-to-r from-transparent via-border/20 to-transparent mb-4"></div>
                       GatherFlow Dashboard • Event Management Platform

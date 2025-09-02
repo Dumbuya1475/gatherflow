@@ -7,6 +7,8 @@ import { uploadFile } from '../supabase/storage';
 import { redirect } from 'next/navigation';
 import type { Attendee } from '../types';
 
+const EVENT_LIMIT = 3;
+
 export async function createEventAction(formData: FormData) {
     const supabase = createClient();
 
@@ -16,6 +18,22 @@ export async function createEventAction(formData: FormData) {
 
     if (!user) {
         return { success: false, error: 'You must be logged in to create an event.' };
+    }
+
+    // Check event limit
+    const { count, error: countError } = await supabase
+        .from('events')
+        .select('*', { count: 'exact', head: true })
+        .eq('organizer_id', user.id)
+        .gt('date', new Date().toISOString());
+
+    if (countError) {
+        console.error('Error counting active events:', countError);
+        return { success: false, error: 'Could not verify your event count.' };
+    }
+    
+    if (count !== null && count >= EVENT_LIMIT) {
+        return { success: false, error: 'You have reached your limit of 3 active events for the free plan.' };
     }
 
     const title = formData.get('title') as string;
@@ -89,6 +107,7 @@ export async function createEventAction(formData: FormData) {
     }
 
     revalidatePath('/dashboard/events');
+    revalidatePath('/dashboard');
     revalidatePath('/');
     return { success: true, data: eventData };
 }
