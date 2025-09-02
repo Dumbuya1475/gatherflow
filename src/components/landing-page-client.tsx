@@ -51,8 +51,8 @@ const pricingTiers = [
         price: 'Free',
         priceDetail: 'For small & personal events',
         features: [
-            'Up to 100 attendees',
-            'Unlimited events',
+            'Up to 3 active events',
+            'Up to 100 attendees per event',
             'QR code ticketing',
             'Basic analytics',
             'Community support'
@@ -64,9 +64,10 @@ const pricingTiers = [
         priceDetail: '/month, for growing businesses',
         isPopular: true,
         features: [
-            'Up to 1,000 attendees',
+            'Unlimited events',
+            'Up to 1,000 attendees per event',
             'Everything in Basic',
-            'Advanced analytics',
+            'Advanced analytics & reporting',
             'AI-powered promotions',
             'Email & chat support'
         ]

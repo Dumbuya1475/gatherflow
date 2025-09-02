@@ -153,31 +153,30 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
 
   async function onSubmit(data: EventFormValues) {
     setIsSubmitting(true);
-    
+  
     const formData = new FormData();
-    
-    // Append all form data
+  
+    // Append all form data safely
     Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-             if (key === 'cover_image_file' && value instanceof File) {
-                formData.append(key, value);
-            } else if (key === 'scanners' && Array.isArray(value)) {
-                formData.append(key, JSON.stringify(value.map(s => s.email)));
-            } else if (key === 'is_paid' || key === 'is_public') {
-                formData.append(key, value.toString());
-            }
-            else if (value instanceof Date) {
-                formData.append(key, value.toISOString());
-            } else if (typeof value === 'string' || typeof value === 'number') {
-                formData.append(key, String(value));
-            }
-        }
+      if (value === undefined || value === null) return;
+  
+      if (key === 'cover_image_file' && value instanceof File) {
+        formData.append(key, value);
+      } else if (key === 'scanners') {
+        formData.append(key, JSON.stringify(Array.isArray(value) ? value.map(s => s.email) : []));
+      } else if (key === 'is_paid' || key === 'is_public') {
+        formData.append(key, value ? 'true' : 'false');
+      } else if (value instanceof Date) {
+        formData.append(key, value.toISOString());
+      } else {
+        formData.append(key, String(value));
+      }
     });
-
+  
     const action = event ? updateEventAction.bind(null, event.id) : createEventAction;
-    
+  
     const result = await action(formData);
-    
+  
     if (result.success) {
       toast({
         title: event ? "Event Updated!" : "Event Created!",
@@ -191,8 +190,10 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
         description: result.error,
       });
     }
+  
     setIsSubmitting(false);
   }
+  
 
   return (
     <Card>
