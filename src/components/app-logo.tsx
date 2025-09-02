@@ -3,10 +3,10 @@ import Image from 'next/image';
 export function AppLogo({ className }: { className?: string }) {
   return (
     <Image
-      src="/icon.png"
+      src="/GatherFlow_Logo.png"
       alt="GatherFlow Logo"
-      width={32}
-      height={32}
+      width={40}
+      height={40}
       className={className}
       priority
     />

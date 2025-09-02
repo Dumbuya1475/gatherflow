@@ -144,18 +144,15 @@ export default async function LandingPage() {
                 </div>
               </div>
               <div className="mx-auto aspect-video overflow-hidden rounded-xl sm:w-full lg:order-last">
-                {/* <video 
-                  className="w-full h-full object-contain"
-                  src={HeroVideo} 
-                  poster={FullLogo.src}
+                <video 
+                  className="w-full h-full object-cover"
+                  src="/GatherFlow_Logo.mp4" 
+                  poster="/GatherFlow_Logo.png"
                   autoPlay 
                   loop 
                   muted 
                   playsInline
-                /> */}
-                <video autoPlay muted loop>
-                  <source src="/GatherFlow_Logo.mp4" type="video/mp4"/>
-                  </video>
+                />
               </div>
             </div>
           </div>

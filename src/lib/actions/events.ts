@@ -199,23 +199,51 @@ export async function getEventDetails(eventId: number) {
 
 export async function getEventAttendees(eventId: number): Promise<{ data: Attendee[] | null, error: string | null }> {
     const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
+    if (!user) {
+        return { data: null, error: 'You are not authorized to view these attendees.' };
+    }
+    
     const { data: event } = await supabase.from('events').select('organizer_id').eq('id', eventId).single();
 
-    if (event?.organizer_id !== (await supabase.auth.getUser()).data.user?.id) {
+    if (!event || event.organizer_id !== user.id) {
         return { data: null, error: 'You are not authorized to view these attendees.' };
     }
 
-    const { data, error } = await supabase.rpc('get_attendees_for_event', {
-        event_id_param: eventId
-    });
+    const { data, error } = await supabase
+        .from('tickets')
+        .select(`
+            id,
+            checked_in,
+            checked_out,
+            profiles (
+                first_name,
+                last_name,
+                email
+            )
+        `)
+        .eq('event_id', eventId);
+
 
     if (error) {
-        console.error('Error fetching event attendees via RPC:', error);
+        console.error('Error fetching event attendees:', error);
         return { data: null, error: 'Could not fetch event attendees.' };
     }
 
-    return { data: data || [], error: null };
+    const attendees: Attendee[] = data.map(ticket => ({
+        ticket_id: ticket.id,
+        checked_in: ticket.checked_in,
+        checked_out: ticket.checked_out,
+        // @ts-ignore
+        first_name: ticket.profiles?.first_name || null,
+        // @ts-ignore
+        last_name: ticket.profiles?.last_name || null,
+        // @ts-ignore
+        email: ticket.profiles?.email || null,
+    }));
+
+    return { data: attendees, error: null };
 }
 
 

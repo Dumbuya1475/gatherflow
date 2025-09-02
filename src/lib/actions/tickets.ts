@@ -127,18 +127,18 @@ export async function unregisterAttendeeAction(formData: FormData) {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { error: 'You must be logged in.' };
+    throw new Error('You must be logged in.');
   }
 
   // Verify the user is the organizer of the event
   const { data: event, error: eventError } = await supabase
     .from('events')
     .select('organizer_id')
-    .eq('id', eventId)
+    .eq('id', parseInt(eventId, 10))
     .single();
   
   if (eventError || !event || event.organizer_id !== user.id) {
-    return { error: 'You are not authorized to perform this action.' };
+    throw new Error('You are not authorized to perform this action.');
   }
 
   const { error: deleteError } = await supabase
@@ -148,7 +148,7 @@ export async function unregisterAttendeeAction(formData: FormData) {
   
   if (deleteError) {
     console.error('Error unregistering attendee:', deleteError);
-    return { error: 'Could not unregister the attendee.' };
+    throw new Error('Could not unregister the attendee.');
   }
 
   revalidatePath(`/dashboard/events/${eventId}/manage`);
