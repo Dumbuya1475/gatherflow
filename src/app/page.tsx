@@ -11,8 +11,6 @@ import { CalendarDays, QrCode, Sparkles, Zap, Check, ArrowRight } from 'lucide-r
 import { createClient } from '@/lib/supabase/server';
 import type { EventWithAttendees } from '@/lib/types';
 import { EventCard } from '@/components/event-card';
-import FullLogo from "./GatherFlow_Logo.png";
-import HeroVideo from "./GatherFlow_Logo.mp4";
 
 const features = [
   {
@@ -146,7 +144,7 @@ export default async function LandingPage() {
                 </div>
               </div>
               <div className="mx-auto aspect-video overflow-hidden rounded-xl sm:w-full lg:order-last">
-                <video 
+                {/* <video 
                   className="w-full h-full object-contain"
                   src={HeroVideo} 
                   poster={FullLogo.src}
@@ -154,7 +152,10 @@ export default async function LandingPage() {
                   loop 
                   muted 
                   playsInline
-                />
+                /> */}
+                <video autoPlay muted loop>
+                  <source src="/GatherFlow_Logo.mp4" type="video/mp4"/>
+                  </video>
               </div>
             </div>
           </div>

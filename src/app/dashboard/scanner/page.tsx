@@ -16,7 +16,6 @@ function ScannerView({ event, onBack }: { event: EventWithAttendees, onBack: () 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-  const [scannedData, setScannedData] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(true);
   const { toast } = useToast();
 
@@ -41,7 +40,6 @@ function ScannerView({ event, onBack }: { event: EventWithAttendees, onBack: () 
     };
 
     getCameraPermission();
-     // Cleanup function to stop video stream
      return () => {
         if (videoRef.current && videoRef.current.srcObject) {
             const stream = videoRef.current.srcObject as MediaStream;
@@ -51,8 +49,9 @@ function ScannerView({ event, onBack }: { event: EventWithAttendees, onBack: () 
   }, [toast]);
 
   useEffect(() => {
+    if (!isScanning) return;
+    
     let animationFrameId: number;
-
     const tick = () => {
       if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA && canvasRef.current && isScanning) {
         const canvas = canvasRef.current;
@@ -69,12 +68,14 @@ function ScannerView({ event, onBack }: { event: EventWithAttendees, onBack: () 
             });
 
             if (code && code.data) {
-              setScannedData(code.data);
-              setIsScanning(false);
+                setIsScanning(false);
+                verifyScannedCode(code.data);
             }
         }
       }
-      animationFrameId = requestAnimationFrame(tick);
+      if(isScanning) {
+        animationFrameId = requestAnimationFrame(tick);
+      }
     };
 
     if (hasCameraPermission) {
@@ -84,35 +85,29 @@ function ScannerView({ event, onBack }: { event: EventWithAttendees, onBack: () 
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [hasCameraPermission, isScanning]);
-
-  useEffect(() => {
-    if(scannedData) {
-        const processScan = async () => {
-            const result = await verifyTicket(scannedData, event.id);
-            if(result.success) {
-                toast({
-                    title: 'Ticket Verified',
-                    description: result.message,
-                    className: 'bg-green-500 text-white',
-                });
-            } else {
-                toast({
-                    variant: 'destructive',
-                    title: 'Verification Failed',
-                    description: result.error,
-                })
-            }
-
-            // Resume scanning after a delay
-            setTimeout(() => {
-                setScannedData(null);
-                setIsScanning(true);
-            }, 3000);
-        }
-        processScan();
+  }, [hasCameraPermission, isScanning, event.id]);
+  
+  const verifyScannedCode = async (scannedData: string) => {
+    const result = await verifyTicket(scannedData, event.id);
+    if(result.success) {
+        toast({
+            title: 'Ticket Verified',
+            description: result.message,
+            className: 'bg-green-500 text-white',
+        });
+    } else {
+        toast({
+            variant: 'destructive',
+            title: 'Verification Failed',
+            description: result.error,
+        })
     }
-  }, [scannedData, toast, event.id]);
+
+    // Resume scanning after a delay
+    setTimeout(() => {
+        setIsScanning(true);
+    }, 3000);
+  }
 
   return (
     <div className="space-y-4">

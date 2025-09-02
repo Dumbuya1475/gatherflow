@@ -4,6 +4,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { z } from 'zod';
 
 export async function registerForEventAction(
   prevState: { error?: string; success?: boolean; ticketId?: number; } | undefined,
@@ -45,8 +46,7 @@ export async function registerForEventAction(
     .maybeSingle();
 
   if (existingTicket) {
-    // If they are already registered, just redirect them to success
-    return redirect(`/events/${eventId}/register/success?ticketId=${existingTicket.id}`);
+    return redirect(`/dashboard/tickets/${existingTicket.id}`);
   }
   
   const { data: ticket, error } = await supabase.from('tickets').insert({
@@ -65,7 +65,6 @@ export async function registerForEventAction(
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/events`);
   
-  // Return success state for client-side navigation
   return { success: true, ticketId: ticket.id };
 }
 
@@ -75,24 +74,11 @@ export async function unregisterForEventAction(
 ) {
   const supabase = createClient();
   const ticketId = parseInt(formData.get('ticketId') as string, 10);
+  const eventId = formData.get('eventId') as string;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { error: 'You must be logged in.' };
-  }
-
-  const { data: ticket, error: ticketError } = await supabase
-    .from('tickets')
-    .select('user_id, event_id')
-    .eq('id', ticketId)
-    .single();
-
-  if (ticketError || !ticket) {
-    return { error: 'Ticket not found.' };
-  }
-
-  if (ticket.user_id !== user.id) {
-    return { error: 'You are not authorized to perform this action.' };
   }
 
   const { error: deleteError } = await supabase
@@ -107,8 +93,10 @@ export async function unregisterForEventAction(
 
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/events');
-  revalidatePath(`/dashboard/events/${ticket.event_id}/manage`);
-  revalidatePath(`/events/${ticket.event_id}`);
+  if (eventId) {
+    revalidatePath(`/dashboard/events/${eventId}/manage`);
+    revalidatePath(`/events/${eventId}`);
+  }
   revalidatePath('/events');
 
   return { success: true };
@@ -148,7 +136,6 @@ export async function registerAndCreateTicket(
       return { error: 'This event has reached its maximum capacity.' };
     }
 
-    // Check if user already exists
     const { data: existingUser } = await supabase
       .from('profiles')
       .select('id')
@@ -242,12 +229,18 @@ export async function getTicketDetails(ticketId: number) {
 }
 
 export async function verifyTicket(qrToken: string, eventId: number) {
+    const uuidSchema = z.string().uuid();
+    const validation = uuidSchema.safeParse(qrToken);
+
+    if (!validation.success) {
+        return { success: false, error: 'Invalid QR Code format.' };
+    }
+    
     try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if(!user) return { success: false, error: 'Not authenticated. Please log in.' };
 
-        // 1. Find the ticket by its qr_token
         const { data: ticket, error: ticketError } = await supabase
             .from('tickets')
             .select('id, event_id, checked_in, user_id, events(organizer_id)')
@@ -259,17 +252,15 @@ export async function verifyTicket(qrToken: string, eventId: number) {
             return { success: false, error: 'Invalid QR Code. Ticket not found.' };
         }
 
-        // 2. Check if ticket is for the correct event
         if (ticket.event_id !== eventId) {
             return { success: false, error: 'This ticket is not for this event.' };
         }
         
-        // 3. Check if the current user is authorized to scan for this event
         const isOrganizer = ticket.events?.organizer_id === user.id;
         
-        const { data: scannerAssignment, error: scannerError } = await supabase
+        const { count: scannerCount, error: scannerError } = await supabase
             .from('event_scanners')
-            .select('event_id', { count: 'exact', head: true })
+            .select('*', { count: 'exact', head: true })
             .eq('event_id', ticket.event_id)
             .eq('user_id', user.id);
         
@@ -278,18 +269,16 @@ export async function verifyTicket(qrToken: string, eventId: number) {
             return { success: false, error: "Could not verify scanner permissions."};
         }
         
-        const isScanner = scannerAssignment && scannerAssignment.count > 0;
+        const isScanner = scannerCount > 0;
 
         if (!isOrganizer && !isScanner) {
             return { success: false, error: 'You are not authorized to check in tickets for this event.' };
         }
 
-        // 4. Check if ticket has already been used
         if(ticket.checked_in) {
-            return { success: false, error: `This ticket has already been checked in.`, status: 'already_in' };
+            return { success: false, error: `This ticket has already been checked in.` };
         }
 
-        // 5. Update the ticket to checked_in
         const { error: updateError } = await supabase
         .from('tickets')
         .update({ checked_in: true, checked_in_at: new Date().toISOString() })
@@ -313,9 +302,6 @@ export async function verifyTicket(qrToken: string, eventId: number) {
         return { success: true, message: `Successfully checked in ${attendeeName}.` };
     } catch (e) {
         console.error("Verification failed:", e);
-        if (e instanceof Error && e.message.includes('invalid input syntax for type uuid')) {
-            return { success: false, error: 'Invalid QR Code format.' };
-        }
         return { success: false, error: 'An unexpected error occurred during verification.' };
     }
 }
@@ -330,7 +316,6 @@ export async function checkoutAttendeeAction(formData: FormData) {
         throw new Error('Authentication required.');
     }
 
-    // Optional: Check if user is organizer/scanner
     const { error } = await supabase
         .from('tickets')
         .update({ checked_out: true, checked_out_at: new Date().toISOString() })
@@ -398,26 +383,4 @@ export async function getScannableEvents() {
     }));
 
     return { data: uniqueEvents, isLoggedIn: true, error: null };
-}
-
-export async function unregisterAttendeeAction(formData: FormData) {
-    const supabase = createClient();
-    const ticketId = formData.get('ticketId') as string;
-    const eventId = formData.get('eventId') as string;
-  
-    const { data: { user } } = await supabase.auth.getUser();
-  
-    if (!user) {
-      throw new Error('You must be logged in.');
-    }
-  
-    const { error } = await supabase.from('tickets').delete().eq('id', ticketId);
-  
-    if (error) {
-        console.error('Error unregistering attendee:', error);
-        throw new Error(`Failed to unregister attendee: ${error.message}`);
-    }
-  
-    revalidatePath(`/dashboard/events/${eventId}/manage`);
-    return { success: true };
 }

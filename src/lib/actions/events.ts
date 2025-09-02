@@ -200,6 +200,12 @@ export async function getEventDetails(eventId: number) {
 export async function getEventAttendees(eventId: number): Promise<{ data: Attendee[] | null, error: string | null }> {
     const supabase = createClient();
 
+    const { data: event } = await supabase.from('events').select('organizer_id').eq('id', eventId).single();
+
+    if (event?.organizer_id !== (await supabase.auth.getUser()).data.user?.id) {
+        return { data: null, error: 'You are not authorized to view these attendees.' };
+    }
+
     const { data, error } = await supabase.rpc('get_attendees_for_event', {
         event_id_param: eventId
     });
@@ -223,7 +229,7 @@ export async function deleteEventAction(formData: FormData) {
       throw new Error('You must be logged in to delete an event.');
     }
   
-    const { error } = await supabase.from('events').delete().eq('id', eventId);
+    const { error } = await supabase.from('events').delete().eq('id', eventId).eq('organizer_id', user.id);
   
     if (error) {
         console.error('Error deleting event:', error);
@@ -232,26 +238,4 @@ export async function deleteEventAction(formData: FormData) {
   
     revalidatePath('/dashboard/events');
     redirect('/dashboard/events');
-}
-
-export async function unregisterAttendeeAction(formData: FormData) {
-    const supabase = createClient();
-    const ticketId = formData.get('ticketId') as string;
-    const eventId = formData.get('eventId') as string;
-  
-    const { data: { user } } = await supabase.auth.getUser();
-  
-    if (!user) {
-      throw new Error('You must be logged in.');
-    }
-  
-    const { error } = await supabase.from('tickets').delete().eq('id', ticketId);
-  
-    if (error) {
-        console.error('Error unregistering attendee:', error);
-        throw new Error(`Failed to unregister attendee: ${error.message}`);
-    }
-  
-    revalidatePath(`/dashboard/events/${eventId}/manage`);
-    return { success: true };
 }
