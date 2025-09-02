@@ -77,9 +77,10 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
                 title: 'Registration Successful!',
                 description: "You've got a ticket for this event.",
             });
-            router.push(`/dashboard/tickets/${registerState.ticketId}`);
+            // Redirect to the success page with the ticketId
+            router.push(`/events/${event.id}/register/success?ticketId=${registerState.ticketId}`);
         }
-    }, [registerState, toast, router]);
+    }, [registerState, toast, router, event.id]);
 
     useEffect(() => {
       if (unregisterState?.error) {
