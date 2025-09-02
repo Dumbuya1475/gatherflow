@@ -54,7 +54,7 @@ export default async function ProfilePage() {
                     <CardDescription>Your current subscription plan and usage.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="flex justify-between items-center p-4 rounded-lg bg-gradient-to-r from-primary/5 to-secondary/10 border">
+                    <div className="flex sm:flex-col justify-between items-center p-4 rounded-lg bg-gradient-to-r from-primary/5 to-secondary/10 border">
                         <div>
                             <p className="font-bold text-lg flex items-center gap-2">Free Plan <Crown className="w-5 h-5 text-yellow-500" /></p>
                             <p className="text-sm text-muted-foreground">The essentials for getting started with event management.</p>
@@ -85,7 +85,7 @@ export default async function ProfilePage() {
                     <div className="text-center">
                         <p className="font-semibold text-xl">{profile.first_name} {profile.last_name}</p>
                         <p className="text-muted-foreground text-sm">{profile.email}</p>
-                         <p className="text-xs text-muted-foreground mt-1">Admin since {new Date().toLocaleDateString()}</p>
+                         <p className="text-xs text-muted-foreground mt-1">User since {new Date().toLocaleDateString()}</p>
                     </div>
                 </CardContent>
                 <CardContent className="grid grid-cols-2 gap-4">

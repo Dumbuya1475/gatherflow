@@ -39,9 +39,9 @@ const features = [
 ];
 
 const stats = [
-  { icon: <Users className="h-6 w-6" />, value: '50,000+', label: 'Active Users' },
-  { icon: <CalendarDays className="h-6 w-6" />, value: '10,000+', label: 'Events Created' },
-  { icon: <TrendingUp className="h-6 w-6" />, value: '98%', label: 'Customer Satisfaction' },
+  { icon: <Users className="h-6 w-6" />, value: '100+', label: 'Active Users' },
+  { icon: <CalendarDays className="h-6 w-6" />, value: '1000+', label: 'Events Created' },
+  { icon: <TrendingUp className="h-6 w-6" />, value: '58%', label: 'Customer Satisfaction' },
   { icon: <Star className="h-6 w-6" />, value: '4.9/5', label: 'Average Rating' }
 ];
 
@@ -98,7 +98,7 @@ export function LandingPageClient({ recentEvents, user }: LandingPageClientProps
       <PublicHeader />
       <main className="flex-1 overflow-hidden">
         {/* Hero Section with Enhanced Gradient */}
-        <section className="w-full pt-28 pb-20 md:pt-36 md:pb-32 lg:pt-48 lg:pb-40 relative">
+        <section className="w-full pt-28 pb-20 md:pt-36 md:pb-32 lg:pt-35 lg:pb-40 relative">
           {/* Animated Background Gradient */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/10"></div>
           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-primary/3 to-transparent animate-pulse duration-[4000ms]"></div>
