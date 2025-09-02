@@ -83,7 +83,7 @@ export async function createEventAction(formData: FormData) {
         return { success: false, error: 'Could not create event.' };
     }
 
-    const scannerEmails = scanners;
+    const scannerEmails = scanners.filter(email => email); // Filter out any empty emails
     if (scannerEmails && scannerEmails.length > 0) {
         const { data: profiles, error: profileError } = await supabase
             .from('profiles')
