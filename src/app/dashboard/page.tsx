@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, ArrowRight, Users, CalendarCheck, Activity, Calendar as CalendarIcon, TrendingUp, Clock, MapPin, Ticket, Info } from 'lucide-react';
 import type { EventWithAttendees } from '@/lib/types';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +36,7 @@ async function getDashboardStats(user: any) {
 
     if (activeEventsError) throw activeEventsError;
 
-    const { data: eventIds, error: eventIdsError } = await supabase
+    const { data: events, error: eventIdsError } = await supabase
       .from('events')
       .select('id')
       .eq('organizer_id', user.id);
@@ -44,14 +44,27 @@ async function getDashboardStats(user: any) {
     if (eventIdsError) throw eventIdsError;
     
     let totalAttendees = 0;
-    if (eventIds && eventIds.length > 0) {
-        const { count, error: ticketsCountError } = await supabase
-        .from('tickets')
-        .select('*', { count: 'exact', head: true })
-        .in('event_id', eventIds.map(e => e.id));
-        
+    let countsByEvent: Record<number, number> = {};
+
+    if (events && events.length > 0) {
+        const eventIds = events.map(e => e.id);
+        const supabaseAdmin = createServiceRoleClient();
+        const { data: counts, error: ticketsCountError } = await supabaseAdmin
+            .from('tickets')
+            .select('event_id')
+            .in('event_id', eventIds)
+            .in('status', ['approved', 'checked_in']);
+
         if (ticketsCountError) throw ticketsCountError;
-        totalAttendees = count || 0;
+
+        countsByEvent = (counts || []).reduce((acc, { event_id }) => {
+            if (event_id) {
+                acc[event_id] = (acc[event_id] || 0) + 1;
+            }
+            return acc;
+        }, {} as Record<number, number>);
+
+        totalAttendees = Object.values(countsByEvent).reduce((acc, count) => acc + count, 0);
     }
     
     // Placeholder for check-ins today
@@ -59,7 +72,7 @@ async function getDashboardStats(user: any) {
 
     const { data: recentEventsData, error: recentEventsError } = await supabase
       .from('events')
-      .select('*, tickets(count)')
+      .select('*')
       .eq('organizer_id', user.id)
       .order('created_at', { ascending: false })
       .limit(5);
@@ -68,7 +81,7 @@ async function getDashboardStats(user: any) {
 
     const recentEvents = (recentEventsData || []).map(event => ({
       ...event,
-      attendees: event.tickets[0]?.count || 0,
+      attendees: countsByEvent[event.id] || 0,
     }));
     
     const isOrganizer = totalEvents !== null && totalEvents > 0;
@@ -92,7 +105,7 @@ async function getAttendeeDashboardStats(user: any) {
   const supabase = createClient();
   const { data: tickets, error } = await supabase
     .from('tickets')
-    .select('events!inner(*, tickets(count)), id')
+    .select('events!inner(*), id')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
@@ -100,12 +113,43 @@ async function getAttendeeDashboardStats(user: any) {
     return { registeredEventsCount: 0, upcomingEvents: [], attendedEventsCount: 0 };
   }
 
-  const registeredEventsCount = tickets.length;
-  const upcomingEvents = tickets
+  const eventIds = tickets.map(t => t.events.id);
+  let countsByEvent: Record<number, number> = {};
+
+  if (eventIds.length > 0) {
+    const supabaseAdmin = createServiceRoleClient();
+    const { data: counts, error: countError } = await supabaseAdmin
+        .from('tickets')
+        .select('event_id')
+        .in('event_id', eventIds)
+        .in('status', ['approved', 'checked_in']);
+
+    if (countError) {
+        console.error('Error fetching attendee counts:', countError);
+    }
+
+    countsByEvent = (counts || []).reduce((acc, { event_id }) => {
+        if (event_id) {
+            acc[event_id] = (acc[event_id] || 0) + 1;
+        }
+        return acc;
+    }, {} as Record<number, number>);
+  }
+
+  const ticketsWithCounts = tickets.map(ticket => ({
+      ...ticket,
+      events: {
+          ...ticket.events,
+          attendees: countsByEvent[ticket.events.id] || 0,
+      }
+  }));
+
+  const registeredEventsCount = ticketsWithCounts.length;
+  const upcomingEvents = ticketsWithCounts
     .filter(t => t.events && new Date(t.events.date) > new Date())
-    .map(t => ({...t.events!, attendees: t.events!.tickets[0]?.count || 0, ticket_id: t.id }))
+    .map(t => ({...t.events!, ticket_id: t.id }))
     .slice(0, 5);
-  const attendedEventsCount = tickets.filter(t => t.events && new Date(t.events.date) <= new Date()).length;
+  const attendedEventsCount = ticketsWithCounts.filter(t => t.events && new Date(t.events.date) <= new Date()).length;
 
   return { registeredEventsCount, upcomingEvents, attendedEventsCount };
 }

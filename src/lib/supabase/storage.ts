@@ -1,28 +1,59 @@
-
-'use server';
-
-import { createClient } from "./server";
+// lib/supabase/storage.ts
+import { createClient } from '@/lib/supabase/server';
 
 export async function uploadFile(file: File, bucket: string): Promise<string> {
-    const supabase = createClient();
-    const filePath = `${bucket}/${Date.now()}-${file.name}`;
+  const supabase = createClient();
+  
+  if (!file) {
+    throw new Error('No file provided');
+  }
 
-    const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, file);
-    
-    if (uploadError) {
-        console.error("Supabase upload error:", uploadError);
-        throw new Error(`Failed to upload file: ${uploadError.message}`);
-    }
+  // Generate unique filename
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+  const filePath = fileName;
 
-    const { data } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(filePath);
+  console.log(`Uploading file to bucket: ${bucket}, path: ${filePath}`);
 
-    if (!data || !data.publicUrl) {
-         throw new Error("Failed to get public URL for the uploaded file.");
-    }
-    
-    return data.publicUrl;
+  // Upload file
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
+
+  if (error) {
+    console.error('Storage upload error:', error);
+    throw new Error(`Upload failed: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new Error('Upload failed: No data returned');
+  }
+
+  // Get public URL
+  const { data: urlData } = supabase.storage
+    .from(bucket)
+    .getPublicUrl(filePath);
+
+  if (!urlData || !urlData.publicUrl) {
+    throw new Error('Failed to get public URL');
+  }
+
+  console.log('File uploaded successfully:', urlData.publicUrl);
+  return urlData.publicUrl;
 }
+
+export async function deleteFile(bucket: string, filePath: string): Promise<void> {
+    const supabase = createClient();
+    const { error } = await supabase.storage
+      .from(bucket)
+      .remove([filePath]);
+  
+    if (error) {
+      console.error('Storage delete error:', error);
+      // We don't throw an error here because we don't want to fail the whole transaction
+      // if the old image fails to delete.
+    }
+  }

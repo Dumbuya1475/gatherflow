@@ -17,7 +17,7 @@ async function getAllPublicEvents(user: any) {
   const supabase = createClient();
   const { data: events, error } = await supabase
     .from('events')
-    .select('*, tickets(count)')
+    .select('*')
     .eq('is_public', true)
     .order('date', { ascending: true });
 
@@ -26,9 +26,23 @@ async function getAllPublicEvents(user: any) {
     return [];
   }
 
+  const eventIds = events.map(event => event.id);
+  const { data: counts, error: countError } = await supabase.rpc('get_event_attendee_counts', { event_ids: eventIds });
+
+  if (countError) {
+      console.error('Error fetching attendee counts:', countError);
+  }
+
+  const countMap = new Map(counts?.map(c => [c.event_id_out, c.attendee_count]));
+
+  const eventsWithCounts = events.map(event => ({
+      ...event,
+      attendees: countMap.get(event.id) || 0,
+  }));
+
   const organizerIds = events.map(event => event.organizer_id).filter(Boolean) as string[];
   if (organizerIds.length === 0) {
-    return events.map(event => ({ ...event, attendees: event.tickets[0]?.count || 0 }));
+    return eventsWithCounts;
   }
 
   const { data: profiles, error: profileError } = await supabase
@@ -42,9 +56,8 @@ async function getAllPublicEvents(user: any) {
 
   const profileMap = new Map(profiles?.map(p => [p.id, p]));
 
-  const eventsWithOrganizer = events.map(event => ({
+  const eventsWithOrganizer = eventsWithCounts.map(event => ({
     ...event,
-    attendees: event.tickets[0]?.count || 0,
     organizer: event.organizer_id ? profileMap.get(event.organizer_id) : null,
   }));
 

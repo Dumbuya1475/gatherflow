@@ -219,7 +219,7 @@ export function DashboardSheet() {
           <div className="mt-4 pt-3 border-t border-border/20">
             <div className="text-center">
               <div className="text-xs text-foreground/40">
-                GatherFlow Mobile
+                GatherFlow Powered by Tech Inspire SL
               </div>
             </div>
           </div>

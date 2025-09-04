@@ -98,6 +98,7 @@ export default function EventDetailsPage({ params }: { params: { id: string } })
     }
 
     const isOwner = user && user.id === event.organizer_id;
+    const isFull = event.capacity ? event.attendees >= event.capacity : false;
 
     return (
         <div className="bg-secondary min-h-screen">
@@ -187,9 +188,13 @@ export default function EventDetailsPage({ params }: { params: { id: string } })
                                         </Button>
                                     )}
                                      {!isOwner && !ticketId && (
-                                        <Button asChild className="w-full">
-                                            <Link href={`/events/${event.id}/register`}>Register Now</Link>
-                                        </Button>
+                                        isFull ? (
+                                            <Button className="w-full" disabled>Event Full</Button>
+                                        ) : (
+                                            <Button asChild className="w-full">
+                                                <Link href={`/events/${event.id}/register`}>Register Now</Link>
+                                            </Button>
+                                        )
                                     )}
                                  </CardContent>
                              </Card>

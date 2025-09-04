@@ -91,7 +91,7 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen bg-background">
+      <div className="full flex min-h-screen bg-background">
         {/* Enhanced Sidebar with better styling */}
         <Sidebar className="hidden md:flex md:flex-col border-r border-border/40 bg-card/50 backdrop-blur-sm">
           <SidebarHeader className="border-b border-border/40 px-6 py-4">
@@ -173,7 +173,7 @@ export default async function DashboardLayout({
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  <SidebarMenuItem>
+                  {/* <SidebarMenuItem>
                     <SidebarMenuButton asChild tooltip="Reports" className="group relative overflow-hidden">
                       <Link href="/dashboard/reports">
                         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
@@ -181,7 +181,7 @@ export default async function DashboardLayout({
                         <span className="relative z-10">Reports</span>
                       </Link>
                     </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  </SidebarMenuItem> */}
                 </div>
               </SidebarGroup>
             </SidebarMenu>
@@ -239,7 +239,7 @@ export default async function DashboardLayout({
             
             {/* Full-width Content Container */}
             <div className="relative z-10 h-full">
-              <div className="px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+              <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
                 <div className="min-h-[calc(100vh-12rem)] flex flex-col">
                   {/* Content wrapper with full width */}
                   <div className="flex-1">

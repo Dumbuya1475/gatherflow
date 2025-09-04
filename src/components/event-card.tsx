@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from 'next/image';
@@ -32,29 +31,6 @@ interface EventCardProps {
   isScannerMode?: boolean;
   isMyEvent?: boolean;
 }
-
-function RegisterButton({ eventId, isLoggedIn, isFull }: { eventId: number; isLoggedIn: boolean, isFull: boolean }) {
-    const { pending } = useFormStatus();
-    const router = useRouter();
-
-    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-        if (!isLoggedIn) {
-            e.preventDefault();
-            router.push(`/events/${eventId}/register`);
-        }
-    }
-
-    if(isFull) {
-        return <Button size="sm" className="flex-1" disabled>Event Full</Button>
-    }
-
-    return (
-        <Button type="submit" size="sm" className="flex-1" disabled={pending} onClick={handleClick}>
-            {pending ? 'Registering...' : 'Register'}
-        </Button>
-    )
-}
-
 
 export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent = false }: EventCardProps) {
     const { toast } = useToast();
@@ -134,6 +110,10 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
             fill
             data-ai-hint="event music"
             className="object-cover"
+            unoptimized={event.cover_image?.includes('supabase.co')}
+            onError={(e) => {
+            e.currentTarget.src = 'https://picsum.photos/600/400';
+          }}
           />
           <div className="absolute top-2 right-2 flex gap-2">
              <Badge variant="secondary" className="bg-secondary/80 backdrop-blur-sm">
@@ -158,7 +138,7 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
           </div>
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
-            <span className="truncate">{event.location}</span>
+            <span className="truncate leading-tight whitespace-normal font-headline">{event.location}</span>
           </div>
            <div className="flex items-center gap-2">
             <User className="h-4 w-4" />
@@ -207,7 +187,6 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
                  <Button asChild size="sm" variant="outline" className="flex-1">
                     <Link href={`/events/${event.id}`}>
                         <Eye className="mr-2 h-4 w-4" />
-                        Details
                     </Link>
                 </Button>
                 {event.ticket_id ? (
@@ -241,11 +220,12 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
                           </AlertDialogContent>
                         </AlertDialog>
                     </div>
+                ) : isFull ? (
+                    <Button size="sm" className="flex-1" disabled>Event Full</Button>
                 ) : (
-                    <form action={registerAction} className="flex-1">
-                        <input type="hidden" name="eventId" value={event.id} />
-                        <RegisterButton eventId={event.id} isLoggedIn={isLoggedIn} isFull={isFull} />
-                    </form>
+                    <Button asChild size="sm" className="flex-1">
+                        <Link href={`/events/${event.id}/register`}>Register</Link>
+                    </Button>
                 )}
             </div>
           )}

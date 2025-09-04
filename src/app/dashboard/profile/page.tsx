@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Progress } from '@/components/ui/progress';
 import { Crown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 function InfoCard({ title, value }: { title: string, value: string | number }) {
   return (
@@ -64,7 +65,10 @@ export default async function ProfilePage() {
                      <div>
                         <div className="flex justify-between items-center mb-1">
                            <p className="text-sm text-muted-foreground">Active Events</p>
-                           <p className="text-sm font-medium">{activeEventCount} of {eventLimit}</p>
+                           <p className={cn("text-sm font-medium", {
+                               'text-yellow-500': activeEventCount === 2,
+                               'text-red-500': activeEventCount === 3,
+                           })}>{activeEventCount} of {eventLimit}</p>
                         </div>
                         <Progress value={progressValue} className="h-2" />
                         <p className="text-xs text-muted-foreground mt-1">You can have up to {eventLimit} active events on the Free Plan.</p>
