@@ -396,9 +396,18 @@ export async function getEventDetails(eventId: number) {
         return { data: null, error: 'Event not found.' };
     }
 
+    const supabaseAdmin = createServiceRoleClient();
+    const { data: countData, error: countError } = await supabaseAdmin
+        .rpc('get_event_attendee_count', { event_id_param: eventId });
+
+    if (countError) {
+        console.error(`❌ Error fetching attendee count for event ${eventId}:`, countError);
+        // Don't fail the whole request, just default to 0
+    }
+
     const eventWithAttendees = {
         ...event,
-        attendees: 0, // Set attendees to 0
+        attendees: countData || 0,
         organizer: Array.isArray(event.organizer) ? event.organizer[0] : event.organizer,
     };
 

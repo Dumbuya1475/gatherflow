@@ -58,7 +58,7 @@ export function ReviewAttendeeModal({ attendee, isOpen, onClose, eventId }: Revi
           <form action={rejectAttendeeAction} className="inline-block">
             <input type="hidden" name="ticketId" value={attendee.ticket_id} />
             <input type="hidden" name="eventId" value={eventId} />
-            <Button type="submit" variant="destructive" onClick={onClose}>
+            <Button type="submit" variant="destructive">
               <Ban className="mr-2 h-4 w-4" />
               Reject
             </Button>
@@ -66,7 +66,7 @@ export function ReviewAttendeeModal({ attendee, isOpen, onClose, eventId }: Revi
           <form action={approveAttendeeAction} className="inline-block">
             <input type="hidden" name="ticketId" value={attendee.ticket_id} />
             <input type="hidden" name="eventId" value={eventId} />
-            <Button type="submit" variant="default" onClick={onClose}>
+            <Button type="submit" variant="default">
               <CheckCircle className="mr-2 h-4 w-4" />
               Approve
             </Button>

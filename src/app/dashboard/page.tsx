@@ -50,17 +50,12 @@ async function getDashboardStats(user: any) {
         const eventIds = events.map(e => e.id);
         const supabaseAdmin = createServiceRoleClient();
         const { data: counts, error: ticketsCountError } = await supabaseAdmin
-            .from('tickets')
-            .select('event_id')
-            .in('event_id', eventIds)
-            .in('status', ['approved', 'checked_in']);
+            .rpc('get_event_attendee_counts', { event_ids: eventIds });
 
         if (ticketsCountError) throw ticketsCountError;
 
-        countsByEvent = (counts || []).reduce((acc, { event_id }) => {
-            if (event_id) {
-                acc[event_id] = (acc[event_id] || 0) + 1;
-            }
+        countsByEvent = (counts || []).reduce((acc, { event_id_out, attendee_count }) => {
+            acc[event_id_out] = Number(attendee_count || 0);
             return acc;
         }, {} as Record<number, number>);
 
@@ -119,19 +114,14 @@ async function getAttendeeDashboardStats(user: any) {
   if (eventIds.length > 0) {
     const supabaseAdmin = createServiceRoleClient();
     const { data: counts, error: countError } = await supabaseAdmin
-        .from('tickets')
-        .select('event_id')
-        .in('event_id', eventIds)
-        .in('status', ['approved', 'checked_in']);
+        .rpc('get_event_attendee_counts', { event_ids: eventIds });
 
     if (countError) {
         console.error('Error fetching attendee counts:', countError);
     }
 
-    countsByEvent = (counts || []).reduce((acc, { event_id }) => {
-        if (event_id) {
-            acc[event_id] = (acc[event_id] || 0) + 1;
-        }
+    countsByEvent = (counts || []).reduce((acc, { event_id_out, attendee_count }) => {
+        acc[event_id_out] = Number(attendee_count || 0);
         return acc;
     }, {} as Record<number, number>);
   }

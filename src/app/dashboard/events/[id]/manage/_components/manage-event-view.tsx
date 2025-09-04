@@ -33,6 +33,34 @@ function EventInfo({ event }: { event: Event & { attendees: number } }) {
     )
 }
 
+function EventStats({ attendees }: { attendees: Attendee[] }) {
+    const approvedAttendees = attendees.filter(a => a.status === 'approved' || a.checked_in).length;
+    const checkedInCount = attendees.filter(a => a.checked_in).length;
+    const checkedOutCount = attendees.filter(a => a.checked_out).length;
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Event Stats</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Total Attendees</span>
+                    <span className="font-bold">{approvedAttendees}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Checked In</span>
+                    <span className="font-bold">{checkedInCount} / {approvedAttendees}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Checked Out</span>
+                    <span className="font-bold">{checkedOutCount} / {checkedInCount}</span>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
 function ApprovalsTab({ 
     event, 
     attendees,
@@ -219,7 +247,7 @@ export function ManageEventView({ event, initialAttendees }: ManageEventViewProp
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleViewAttendee = (attendee: Attendee) => {
-    setSelectedAttendee(attendee);
+    setSelectedAttendee( attendee);
     setIsModalOpen(true);
   };
 
@@ -239,8 +267,9 @@ export function ManageEventView({ event, initialAttendees }: ManageEventViewProp
             eventId={event.id}
         />
         <div className="grid gap-6 md:grid-cols-4">
-            <div className="md:col-span-1">
+            <div className="md:col-span-1 space-y-6">
                 <EventInfo event={event} />
+                <EventStats attendees={initialAttendees} />
             </div>
             <div className="md:col-span-3">
                 <Tabs defaultValue={defaultTab}>

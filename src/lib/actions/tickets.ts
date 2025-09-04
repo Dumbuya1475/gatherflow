@@ -667,6 +667,8 @@ export async function approveAttendeeAction(formData: FormData) {
   }
 
   revalidatePath(`/dashboard/events/${eventId}/manage`);
+  revalidatePath(`/dashboard/analytics`);
+  redirect(`/dashboard/events/${eventId}/manage`);
 }
 
 export async function rejectAttendeeAction(formData: FormData) {
@@ -700,4 +702,6 @@ export async function rejectAttendeeAction(formData: FormData) {
   }
 
   revalidatePath(`/dashboard/events/${eventId}/manage`);
+  revalidatePath(`/dashboard/analytics`);
+  redirect(`/dashboard/events/${eventId}/manage`);
 }
