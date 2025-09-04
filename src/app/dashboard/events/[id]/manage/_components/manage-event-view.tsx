@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { unregisterAttendeeAction } from "@/lib/actions/tickets";
 import { deleteEventAction } from "@/lib/actions/events";
-import { CheckCircle, XCircle, Trash2, Eye, Clock, Ban, UserSearch, UserPlus, Settings, Users } from "lucide-react";
+import { CheckCircle, XCircle, Trash2, Eye, Clock, Ban, UserPlus, Settings, Users, UserRoundCheck, UserRoundX, Ticket, Calendar, MapPin, UsersRound } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -21,13 +21,21 @@ function EventInfo({ event }: { event: Event & { attendees: number } }) {
             <CardHeader className="flex flex-row items-center justify-between">
                 <div className="space-y-1.5">
                     <CardTitle>{event.title}</CardTitle>
-                    <CardDescription>{event.description}</CardDescription>
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
-                <p><strong>Date:</strong> {new Date(event.date).toLocaleString()}</p>
-                <p><strong>Location:</strong> {event.location}</p>
-                <p><strong>Capacity:</strong> {event.capacity || 'Unlimited'}</p>
+                <div className="flex items-center text-sm text-muted-foreground">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    <span>{new Date(event.date).toLocaleString()}</span>
+                </div>
+                <div className="flex items-center text-sm text-muted-foreground">
+                    <MapPin className="mr-2 h-4 w-4" />
+                    <span>{event.location}</span>
+                </div>
+                <div className="flex items-center text-sm text-muted-foreground">
+                    <UsersRound className="mr-2 h-4 w-4" />
+                    <span>{event.capacity || 'Unlimited'} capacity</span>
+                </div>
             </CardContent>
         </Card>
     )
@@ -38,24 +46,44 @@ function EventStats({ attendees }: { attendees: Attendee[] }) {
     const checkedInCount = attendees.filter(a => a.checked_in).length;
     const checkedOutCount = attendees.filter(a => a.checked_out).length;
 
+    const stats = [
+        {
+            icon: <Users className="h-6 w-6 text-blue-500" />,
+            label: "Total Attendees",
+            value: approvedAttendees,
+            color: "text-blue-500"
+        },
+        {
+            icon: <UserRoundCheck className="h-6 w-6 text-green-500" />,
+            label: "Checked In",
+            value: `${checkedInCount} / ${approvedAttendees}`,
+            color: "text-green-500"
+        },
+        {
+            icon: <UserRoundX className="h-6 w-6 text-red-500" />,
+            label: "Checked Out",
+            value: `${checkedOutCount} / ${checkedInCount}`,
+            color: "text-red-500"
+        }
+    ];
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Event Stats</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Total Attendees</span>
-                    <span className="font-bold">{approvedAttendees}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Checked In</span>
-                    <span className="font-bold">{checkedInCount} / {approvedAttendees}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Checked Out</span>
-                    <span className="font-bold">{checkedOutCount} / {checkedInCount}</span>
-                </div>
+            <CardContent className="space-y-6">
+                {stats.map((stat, index) => (
+                    <div key={index} className="flex items-center">
+                        <div className={`p-2 rounded-full mr-4 ${stat.color.replace('text-', 'bg-')} bg-opacity-10`}>
+                            {stat.icon}
+                        </div>
+                        <div>
+                            <span className="text-muted-foreground">{stat.label}</span>
+                            <p className={`font-bold text-lg ${stat.color}`}>{stat.value}</p>
+                        </div>
+                    </div>
+                ))}
             </CardContent>
         </Card>
     )
@@ -76,7 +104,6 @@ function ApprovalsTab({
         <Card>
             <CardHeader>
                 <CardTitle>Pending Approvals</CardTitle>
-                <CardDescription>Review and approve or reject applicants.</CardDescription>
             </CardHeader>
             <CardContent>
                 {pendingAttendees.length > 0 ? (
@@ -131,6 +158,15 @@ function AttendeesTab({ event, attendees }: { event: Event, attendees: Attendee[
         }
     }, [unregisterState, toast]);
 
+    const statusConfig = {
+        approved: { text: 'Approved', className: 'bg-green-500', icon: <CheckCircle className="mr-2 h-4 w-4" /> },
+        pending: { text: 'Pending', className: 'bg-yellow-500', icon: <Clock className="mr-2 h-4 w-4" /> },
+        rejected: { text: 'Rejected', className: 'bg-red-500', icon: <Ban className="mr-2 h-4 w-4" /> },
+        checked_in: { text: 'Checked In', className: 'bg-blue-500', icon: <CheckCircle className="mr-2 h-4 w-4" /> },
+        checked_out: { text: 'Checked Out', className: 'bg-gray-700', icon: <XCircle className="mr-2 h-4 w-4" /> },
+        unknown: { text: 'Unknown', className: 'bg-gray-500', icon: <Users className="mr-2 h-4 w-4" /> }
+    };
+
     return (
         <Card>
             <CardHeader>
@@ -151,37 +187,23 @@ function AttendeesTab({ event, attendees }: { event: Event, attendees: Attendee[
                         </TableHeader>
                         <TableBody>
                             {attendees.map((attendee) => {
-                                let statusText = 'Unknown';
-                                let variant: 'default' | 'secondary' | 'destructive' | 'outline' = 'secondary';
+                                let statusKey: keyof typeof statusConfig = 'unknown';
+                                if (attendee.checked_out) statusKey = 'checked_out';
+                                else if (attendee.checked_in) statusKey = 'checked_in';
+                                else if (attendee.status === 'approved') statusKey = 'approved';
+                                else if (attendee.status === 'pending') statusKey = 'pending';
+                                else if (attendee.status === 'rejected') statusKey = 'rejected';
 
-                                if (attendee.status === 'approved') {
-                                    statusText = 'Approved';
-                                    variant = 'default';
-                                }
-                                if (attendee.status === 'pending') {
-                                    statusText = 'Pending';
-                                    variant = 'secondary';
-                                }
-                                if (attendee.status === 'rejected') {
-                                    statusText = 'Rejected';
-                                    variant = 'destructive';
-                                }
-                                if (attendee.checked_in) {
-                                    statusText = 'Checked In';
-                                    variant = 'default';
-                                }
-                                if (attendee.checked_out) {
-                                    statusText = 'Checked Out';
-                                    variant = 'secondary';
-                                }
+                                const { text, className, icon } = statusConfig[statusKey];
 
                                 return (
                                     <TableRow key={attendee.ticket_id}>
                                         <TableCell>{attendee.first_name} {attendee.last_name}</TableCell>
                                         <TableCell>{attendee.email}</TableCell>
                                         <TableCell>
-                                            <Badge variant={variant}>
-                                                {statusText}
+                                            <Badge className={`${className} text-white`}>
+                                                {icon}
+                                                {text}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-right space-x-2">
@@ -286,7 +308,7 @@ export function ManageEventView({ event, initialAttendees }: ManageEventViewProp
                     </TabsContent>
                     <TabsContent value="settings">
                         <SettingsTab event={event} />
-                    </TabsContent>
+                    </TabsCnotallow>
                 </Tabs>
             </div>
         </div>

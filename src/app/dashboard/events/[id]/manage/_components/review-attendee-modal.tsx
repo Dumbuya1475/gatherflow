@@ -4,7 +4,6 @@
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -12,7 +11,8 @@ import {
 import { Button } from "@/components/ui/button";
 import type { Attendee } from "@/lib/types";
 import { approveAttendeeAction, rejectAttendeeAction } from "@/lib/actions/tickets";
-import { CheckCircle, Ban } from "lucide-react";
+import { CheckCircle, Ban, Mail, User } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ReviewAttendeeModalProps {
   attendee: Attendee | null;
@@ -29,30 +29,39 @@ export function ReviewAttendeeModal({ attendee, isOpen, onClose, eventId }: Revi
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Review Application</DialogTitle>
-          <DialogDescription>
-            Review the attendee's details and form responses before making a decision.
-          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div>
-            <h4 className="font-semibold">{attendee.first_name} {attendee.last_name}</h4>
-            <p className="text-sm text-muted-foreground">{attendee.email}</p>
-          </div>
-          <div className="space-y-2">
-            <h5 className="font-semibold">Application Form Responses</h5>
-            {attendee.form_responses && attendee.form_responses.length > 0 ? (
-              <div className="space-y-2 rounded-md border p-4">
-                {attendee.form_responses.map((response, index) => (
-                  <div key={index}>
-                    <p className="font-medium text-sm">{response.field_name}</p>
-                    <p className="text-sm text-muted-foreground">{response.field_value}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No form responses submitted.</p>
-            )}
-          </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-lg">Attendee Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center">
+                        <User className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <span>{attendee.first_name} {attendee.last_name}</span>
+                    </div>
+                    <div className="flex items-center">
+                        <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <a href={`mailto:${attendee.email}`} className="text-blue-500 hover:underline">{attendee.email}</a>
+                    </div>
+                </CardContent>
+            </Card>
+          
+          {attendee.form_responses && attendee.form_responses.length > 0 && (
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-lg">Application Form</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {attendee.form_responses.map((response, index) => (
+                        <div key={index}>
+                            <p className="font-medium text-sm">{response.field_name}</p>
+                            <p className="text-sm text-muted-foreground">{response.field_value}</p>
+                        </div>
+                    ))}
+                </CardContent>
+            </Card>
+          )}
         </div>
         <DialogFooter>
           <form action={rejectAttendeeAction} className="inline-block">
