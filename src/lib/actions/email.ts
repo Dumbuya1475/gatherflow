@@ -1,7 +1,9 @@
-
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendEmailAction(eventId: number, subject: string, message: string, recipientSegment: string) {
     const supabase = createClient();
@@ -37,12 +39,18 @@ export async function sendEmailAction(eventId: number, subject: string, message:
         return { success: false, error: 'No recipients found for the selected segment.' };
     }
 
-    console.log('--- SIMULATING EMAIL SENDING ---');
-    console.log(`Event ID: ${eventId}`);
-    console.log(`Recipients: ${recipients.join(', ')}`);
-    console.log(`Subject: ${subject}`);
-    console.log(`Message: ${message}`);
-    console.log('----------------------------------');
+    try {
+        // IMPORTANT: Replace with your own verified domain on Resend.
+        await resend.emails.send({
+            from: process.env.RESEND_FROM_EMAIL || 'GatherFlow <noreply@gatherflow.com>',
+            to: recipients,
+            subject: subject,
+            html: message,
+        });
 
-    return { success: true };
+        return { success: true };
+    } catch (error) {
+        console.error('Error sending email:', error);
+        return { success: false, error: 'Could not send email.' };
+    }
 }

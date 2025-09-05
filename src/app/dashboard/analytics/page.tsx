@@ -80,7 +80,25 @@ export default async function AnalyticsPage() {
                     <CardDescription>Registrations over the last 30 days.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {/* Chart removed for debugging */}
+                    <ResponsiveContainer width="100%" height={350}>
+                        <RechartsBarChart data={chartData}>
+                            <CartesianGrid vertical={false} />
+                            <XAxis
+                                dataKey="date"
+                                tickLine={false}
+                                axisLine={false}
+                                tickMargin={8}
+                                tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            />
+                            <YAxis />
+                            <Tooltip
+                                cursor={false}
+                                content={<ChartTooltipContent hideLabel />}
+                            />
+                            <Legend />
+                            <Bar dataKey="registrations" fill="var(--color-registrations)" radius={8} />
+                        </RechartsBarChart>
+                    </ResponsiveContainer>
                 </CardContent>
             </Card>
 

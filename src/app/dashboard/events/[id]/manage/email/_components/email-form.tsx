@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { sendEmailAction } from '@/lib/actions/email';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useState } from 'react';
 
 const emailFormSchema = z.object({
   subject: z.string().min(2, { message: 'Subject must be at least 2 characters.' }),
@@ -33,6 +34,7 @@ interface EmailFormProps {
 }
 
 export function EmailForm({ eventId }: EmailFormProps) {
+  const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
   const form = useForm<EmailFormValues>({
     resolver: zodResolver(emailFormSchema),
@@ -44,6 +46,7 @@ export function EmailForm({ eventId }: EmailFormProps) {
   });
 
   async function onSubmit(data: EmailFormValues) {
+    setIsSending(true);
     const result = await sendEmailAction(eventId, data.subject, data.message, data.recipient_segment);
 
     if (result?.success) {
@@ -59,6 +62,7 @@ export function EmailForm({ eventId }: EmailFormProps) {
         description: result?.error || 'Could not send email.',
       });
     }
+    setIsSending(false);
   }
 
   return (
@@ -119,7 +123,9 @@ export function EmailForm({ eventId }: EmailFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit">Send Email</Button>
+        <Button type="submit" disabled={isSending}>
+          {isSending ? 'Sending...' : 'Send Email'}
+        </Button>
       </form>
     </Form>
   );

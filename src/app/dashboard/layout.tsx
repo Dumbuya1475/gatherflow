@@ -148,6 +148,15 @@ export default async function DashboardLayout({
                 </SidebarGroupLabel>
                 <div className="space-y-1">
                   <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Attendees" className="group relative overflow-hidden">
+                      <Link href="/dashboard/attendees">
+                        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
+                        <User className="relative z-10" />
+                        <span className="relative z-10">Attendees</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
                     <SidebarMenuButton asChild tooltip="Scanner" className="group relative overflow-hidden">
                       <Link href="/dashboard/scanner">
                         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>

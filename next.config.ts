@@ -1,4 +1,3 @@
-
 import type {NextConfig} from 'next';
 
 const withPWA = require('@ducanh2912/next-pwa').default({
@@ -30,8 +29,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  serverActions: {
-    bodySizeLimit: '20mb',
+  // Fix the serverActions configuration
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '20mb',
+    },
   },
   webpack: (config) => {
     config.module.rules.push({

@@ -131,6 +131,12 @@ export default function EventDetailsPage({ params }: { params: { id: string } })
                     </CardHeader>
                      <CardContent className="p-4 md:p-6 grid md:grid-cols-3 gap-6">
                         <div className="md:col-span-2 space-y-6">
+                            {event.welcome_message && (
+                                <div>
+                                    <h3 className="text-xl font-semibold mb-2">A Message from the Organizer</h3>
+                                    <p className="text-muted-foreground whitespace-pre-wrap">{event.welcome_message}</p>
+                                </div>
+                            )}
                             <div>
                                 <h3 className="text-xl font-semibold mb-2">About this event</h3>
                                 <p className="text-muted-foreground whitespace-pre-wrap">{event.description}</p>

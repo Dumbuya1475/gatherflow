@@ -64,21 +64,6 @@ const eventFormSchema = z.object({
     })
     .optional(),
   current_cover_image: z.string().url().optional(),
-  ticket_brand_logo_file: z
-    .any()
-    .refine((file) => file === undefined || file === null || (file instanceof File && ACCEPTED_IMAGE_TYPES.includes(file.type)), {
-        message: "Only .jpg, .jpeg, .png and .webp formats are supported.",
-    })
-    .optional(),
-  current_ticket_brand_logo: z.string().url().optional(),
-  ticket_background_image_file: z
-    .any()
-    .refine((file) => file === undefined || file === null || (file instanceof File && ACCEPTED_IMAGE_TYPES.includes(file.type)), {
-        message: "Only .jpg, .jpeg, .png and .webp formats are supported.",
-    })
-    .optional(),
-  current_ticket_background_image: z.string().url().optional(),
-  ticket_brand_color: z.string().optional(),
   is_paid: z.boolean().default(false),
   price: z.coerce.number().nonnegative().optional(),
   is_public: z.boolean().default(true),
@@ -110,9 +95,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [preview, setPreview] = useState<{[key: string]: string | null}>({
-    cover_image: defaultValues?.current_cover_image || null,
-    ticket_brand_logo: defaultValues?.current_ticket_brand_logo || null,
-    ticket_background_image: defaultValues?.current_ticket_background_image || null,
+    cover_image: event?.cover_image || null,
   });
   const { toast } = useToast();
   const router = useRouter();
@@ -131,6 +114,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
       price: defaultValues?.price || undefined,
       is_public: defaultValues?.is_public ?? true,
       requires_approval: defaultValues?.requires_approval || false,
+      current_cover_image: event?.cover_image,
     },
   });
 
@@ -188,17 +172,19 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
     setIsSubmitting(true);
   
     const formData = new FormData();
+
+    const { 
+        current_cover_image, 
+        ...restData 
+    } = data;
   
     // Append all form data safely
-    Object.entries(data).forEach(([key, value]) => {
+    Object.entries(restData).forEach(([key, value]) => {
       if (value === undefined || value === null) return;
   
       if (key === 'cover_image_file' && value instanceof File) {
         formData.append(key, value);
-      } else if (key === 'ticket_brand_logo_file' && value instanceof File) {
-        formData.append(key, value);
-      } else if (key === 'ticket_background_image_file' && value instanceof File) {
-        formData.append(key, value);
+      
       } else if (key === 'scanners' && Array.isArray(value)) {
         const filtered = value.map(s => s.email).filter(Boolean); // remove empty emails
         formData.append(key, JSON.stringify(filtered));
@@ -335,106 +321,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
               )}
             />
 
-            <div>
-              <h3 className="text-lg font-medium">Ticket Branding</h3>
-              <p className="text-sm text-muted-foreground">Customize the look of your event tickets.</p>
-            </div>
-
-            <FormField
-              control={form.control}
-              name="ticket_brand_logo_file"
-              render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Brand Logo (Optional)</FormLabel>
-                    <FormControl>
-                        <div className="flex items-center gap-4">
-                            <div className="w-32 h-20 rounded-md bg-muted flex items-center justify-center overflow-hidden">
-                                {preview?.ticket_brand_logo ? (
-                                    <Image src={preview.ticket_brand_logo} alt="Brand logo preview" width={128} height={80} className="object-contain w-full h-full" />
-                                ) : (
-                                    <Upload className="w-8 h-8 text-muted-foreground" />
-                                )}
-                            </div>
-                            <Input
-                                type="file"
-                                accept={ACCEPTED_IMAGE_TYPES.join(",")}
-                                onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                        field.onChange(file);
-                                        const reader = new FileReader();
-                                        reader.onloadend = () => {
-                                            setPreview(prev => ({...prev, ticket_brand_logo: reader.result as string}));
-                                        };
-                                        reader.readAsDataURL(file);
-                                    } else {
-                                        field.onChange(null);
-                                        setPreview(prev => ({...prev, ticket_brand_logo: null}));
-                                    }
-                                }}
-                                className="flex-1"
-                            />
-                        </div>
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="ticket_background_image_file"
-              render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Ticket Background Image (Optional)</FormLabel>
-                    <FormControl>
-                        <div className="flex items-center gap-4">
-                            <div className="w-32 h-20 rounded-md bg-muted flex items-center justify-center overflow-hidden">
-                                {preview?.ticket_background_image ? (
-                                    <Image src={preview.ticket_background_image} alt="Ticket background preview" width={128} height={80} className="object-cover w-full h-full" />
-                                ) : (
-                                    <Upload className="w-8 h-8 text-muted-foreground" />
-                                )}
-                            </div>
-                            <Input
-                                type="file"
-                                accept={ACCEPTED_IMAGE_TYPES.join(",")}
-                                onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                        field.onChange(file);
-                                        const reader = new FileReader();
-                                        reader.onloadend = () => {
-                                            setPreview(prev => ({...prev, ticket_background_image: reader.result as string}));
-                                        };
-                                        reader.readAsDataURL(file);
-                                    } else {
-                                        field.onChange(null);
-                                        setPreview(prev => ({...prev, ticket_background_image: null}));
-                                    }
-                                }}
-                                className="flex-1"
-                            />
-                        </div>
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="ticket_brand_color"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Ticket Brand Color (Optional)</FormLabel>
-                  <FormControl>
-                    <Input type="color" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <FormField
