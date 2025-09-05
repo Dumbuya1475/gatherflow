@@ -506,7 +506,7 @@ export async function getEventDetails(eventId: number) {
         .rpc('get_event_attendee_count', { event_id_param: eventId });
 
     if (countError) {
-        console.error(`❌ Error fetching attendee count for event ${eventId}:`, countError);
+        console.error(`❌ Error fetching attendee count for event ${eventId}:`, JSON.stringify(countError, null, 2));
         // Don't fail the whole request, just default to 0
     }
 

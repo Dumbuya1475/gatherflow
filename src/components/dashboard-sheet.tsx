@@ -136,6 +136,18 @@ export function DashboardSheet() {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    asChild 
+                    className="group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+                  >
+                    <Link href="/dashboard/attendees">
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
+                      <User className="relative z-10 group-hover:text-primary transition-colors duration-200" />
+                      <span className="relative z-10 group-hover:text-primary transition-colors duration-200">Attendees</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </div>
             </SidebarGroup>
 

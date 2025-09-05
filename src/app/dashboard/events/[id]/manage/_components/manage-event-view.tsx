@@ -265,7 +265,7 @@ function AttendeesTab({ event, attendees }: { event: Event, attendees: Attendee[
 }
 
 
-import { Pencil } from "lucide-react";
+import { Pencil, Mail } from "lucide-react";
 
 function SettingsTab({ event }: { event: { id: number }}) {
     return (
@@ -311,6 +311,27 @@ function SettingsTab({ event }: { event: { id: number }}) {
     )
 }
 
+function EmailTab({ event }: { event: { id: number }}) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Email Attendees</CardTitle>
+                <CardDescription>
+                    Send updates, reminders, or thank you notes to your attendees.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Link href={`/dashboard/events/${event.id}/manage/email`}>
+                    <Button>
+                        <Mail className="mr-2 h-4 w-4" />
+                        Compose Email
+                    </Button>
+                </Link>
+            </CardContent>
+        </Card>
+    )
+}
+
 interface ManageEventViewProps {
   event: Event & { attendees: number };
   initialAttendees: Attendee[];
@@ -350,6 +371,7 @@ export function ManageEventView({ event, initialAttendees }: ManageEventViewProp
                     <TabsList>
                         {event.requires_approval && <TabsTrigger value="approvals"><UserPlus className="mr-2 h-4 w-4" />Approvals</TabsTrigger>}
                         <TabsTrigger value="attendees"><Users className="mr-2 h-4 w-4" />Attendees</TabsTrigger>
+                        <TabsTrigger value="email"><Mail className="mr-2 h-4 w-4" />Email</TabsTrigger>
                         <TabsTrigger value="settings"><Settings className="mr-2 h-4 w-4" />Settings</TabsTrigger>
                     </TabsList>
                     <TabsContent value="approvals">
@@ -357,6 +379,9 @@ export function ManageEventView({ event, initialAttendees }: ManageEventViewProp
                     </TabsContent>
                     <TabsContent value="attendees">
                         <AttendeesTab event={event} attendees={initialAttendees} />
+                    </TabsContent>
+                    <TabsContent value="email">
+                        <EmailTab event={event} />
                     </TabsContent>
                     <TabsContent value="settings">
                         <SettingsTab event={event} />

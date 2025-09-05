@@ -30,6 +30,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  serverActions: {
+    bodySizeLimit: '20mb',
+  },
   webpack: (config) => {
     config.module.rules.push({
       test: /\.(mp4|webm)$/i,
