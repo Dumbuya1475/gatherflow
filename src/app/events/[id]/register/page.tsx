@@ -35,10 +35,19 @@ export default async function RegisterForEventPage({ params }: { params: { id: s
         )
     }
 
+    const isEventFull = event.capacity ? event.attendees >= event.capacity : false;
+
     return (
         <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
             <div className="flex items-center justify-center p-6 sm:p-12">
-               <RegisterForEventForm event={event} formFields={formFields} user={userData} />
+                {isEventFull ? (
+                    <div className="text-center">
+                        <h2 className="text-2xl font-bold">Event Full</h2>
+                        <p className="text-muted-foreground">This event has reached its maximum capacity.</p>
+                    </div>
+                ) : (
+                    <RegisterForEventForm event={event} formFields={formFields} user={userData} />
+                )}
             </div>
             <div className="hidden lg:flex items-center justify-center bg-secondary p-12">
                 <EventDetailsCard event={event} />

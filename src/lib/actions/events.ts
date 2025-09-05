@@ -243,7 +243,7 @@ export async function updateEventAction(eventId: number, formData: FormData) {
     const price = formData.get('price') ? Number(formData.get('price')) : null;
     const is_public = formData.get('is_public') === 'true';
     const requires_approval = formData.get('requires_approval') === 'true';
-    const customFields = JSON.parse(formData.get('customFields') as string || '[]') as { field_name: string; field_type: string; is_required: boolean }[];
+    const customFields = JSON.parse(formData.get('customFields') as string || '[]') as { id?: number; field_name: string; field_type: string; is_required: boolean }[];
 
     let finalCoverImage = currentEvent.cover_image;
     const oldCoverImage = currentEvent.cover_image;
@@ -337,29 +337,56 @@ export async function updateEventAction(eventId: number, formData: FormData) {
     }
 
     // Update custom form fields
-    const { error: deleteFieldsError } = await supabase
+    const { data: existingFields, error: existingFieldsError } = await supabase
         .from('event_form_fields')
-        .delete()
+        .select('id')
         .eq('event_id', eventId);
 
-    if (deleteFieldsError) {
-        console.error('⚠️ Error deleting old form fields:', deleteFieldsError);
+    if (existingFieldsError) {
+        console.error('⚠️ Error fetching existing form fields:', existingFieldsError);
+        return { success: false, error: 'Could not update event form.' };
     }
 
-    if (customFields.length > 0) {
-        const formFieldsToInsert = customFields.map((field, index) => ({
+    const existingFieldIds = existingFields.map(f => f.id);
+    const incomingFieldIds = customFields.filter(f => f.id).map(f => f.id);
+
+    const fieldsToInsert = customFields.filter(f => !f.id);
+    const fieldsToUpdate = customFields.filter(f => f.id && existingFieldIds.includes(f.id));
+    const fieldsToDelete = existingFieldIds.filter(id => !incomingFieldIds.includes(id));
+
+    // Delete fields that are no longer present
+    if (fieldsToDelete.length > 0) {
+        const { error: deleteError } = await supabase
+            .from('event_form_fields')
+            .delete()
+            .in('id', fieldsToDelete);
+        if (deleteError) console.error('⚠️ Error deleting form fields:', deleteError);
+    }
+
+    // Update existing fields
+    for (const field of fieldsToUpdate) {
+        const { error: updateError } = await supabase
+            .from('event_form_fields')
+            .update({ 
+                field_name: field.field_name, 
+                field_type: field.field_type, 
+                is_required: field.is_required 
+            })
+            .eq('id', field.id);
+        if (updateError) console.error(`⚠️ Error updating form field ${field.id}:`, updateError);
+    }
+
+    // Insert new fields
+    if (fieldsToInsert.length > 0) {
+        const newFields = fieldsToInsert.map((field, index) => ({
             ...field,
             event_id: eventId,
-            order: index,
+            order: (existingFields.length - fieldsToDelete.length + index),
         }));
-
-        const { error: formFieldsError } = await supabase
+        const { error: insertError } = await supabase
             .from('event_form_fields')
-            .insert(formFieldsToInsert);
-
-        if (formFieldsError) {
-            console.error('⚠️ Error inserting new form fields:', formFieldsError);
-        }
+            .insert(newFields);
+        if (insertError) console.error('⚠️ Error inserting new form fields:', insertError);
     }
 
     // Revalidate paths

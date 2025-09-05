@@ -54,9 +54,9 @@ export async function getAnalytics() {
         const attendance = registered > 0 ? (checkedIn / registered) * 100 : 0;
         return {
             ...event,
-            registered,
-            checkedIn,
-            attendance,
+            registrations: registered,
+            check_ins: checkedIn,
+            attendance_rate: attendance,
         };
     });
 

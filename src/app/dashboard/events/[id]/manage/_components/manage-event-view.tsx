@@ -138,9 +138,12 @@ function ApprovalsTab({
     )
 }
 
+import { Input } from "@/components/ui/input";
+
 function AttendeesTab({ event, attendees }: { event: Event, attendees: Attendee[] }) {
     const { toast } = useToast();
     const [unregisterState, unregisterAction] = useActionState(unregisterAttendeeAction, undefined);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         if (unregisterState?.error) {
@@ -167,15 +170,28 @@ function AttendeesTab({ event, attendees }: { event: Event, attendees: Attendee[
         unknown: { text: 'Unknown', className: 'bg-gray-500', icon: <Users className="mr-2 h-4 w-4" /> }
     };
 
+    const filteredAttendees = attendees.filter(attendee => 
+        `${attendee.first_name} ${attendee.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        attendee.email.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Attendees</CardTitle>
                 <CardDescription>View and manage your event attendees.</CardDescription>
             </CardHeader>
-            <RefreshButton eventId={event.id} />
+            <div className="flex justify-between items-center p-4 border-b">
+                <Input 
+                    placeholder="Search attendees..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="max-w-sm"
+                />
+                <RefreshButton eventId={event.id} />
+            </div>
             <CardContent>
-                {attendees.length > 0 ? (
+                {filteredAttendees.length > 0 ? (
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -186,7 +202,7 @@ function AttendeesTab({ event, attendees }: { event: Event, attendees: Attendee[
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {attendees.map((attendee) => {
+                            {filteredAttendees.map((attendee) => {
                                 let statusKey: keyof typeof statusConfig = 'unknown';
                                 if (attendee.checked_out) statusKey = 'checked_out';
                                 else if (attendee.checked_in) statusKey = 'checked_in';
@@ -226,36 +242,57 @@ function AttendeesTab({ event, attendees }: { event: Event, attendees: Attendee[
                         </TableBody>
                     </Table>
                 ) : (
-                    <div className="text-center text-muted-foreground p-8">No attendees yet.</div>
+                    <div className="text-center text-muted-foreground p-8">No attendees found.</div>
                 )}
             </CardContent>
         </Card>
     )
 }
 
+
+import { Pencil } from "lucide-react";
+
 function SettingsTab({ event }: { event: { id: number }}) {
     return (
-        <Card className="border-destructive">
-            <CardHeader>
-                <CardTitle>Danger Zone</CardTitle>
-                <CardDescription>
-                These actions are irreversible. Please proceed with caution.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-between items-center">
-                <div>
-                    <p className="font-semibold">Delete this event</p>
-                    <p className="text-sm text-muted-foreground">Once you delete an event, all associated data including tickets will be permanently removed.</p>
-                </div>
-                <form action={deleteEventAction} className="inline-block">
-                    <input type="hidden" name="eventId" value={event.id} />
-                    <Button type="submit" variant="destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete Event
-                    </Button>
-                </form>
-            </CardContent>
-        </Card>
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>General</CardTitle>
+                    <CardDescription>
+                        Manage your event settings.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Link href={`/dashboard/events/${event.id}/edit`}>
+                        <Button variant="outline">
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit Event
+                        </Button>
+                    </Link>
+                </CardContent>
+            </Card>
+            <Card className="border-destructive">
+                <CardHeader>
+                    <CardTitle>Danger Zone</CardTitle>
+                    <CardDescription>
+                    These actions are irreversible. Please proceed with caution.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex justify-between items-center">
+                    <div>
+                        <p className="font-semibold">Delete this event</p>
+                        <p className="text-sm text-muted-foreground">Once you delete an event, all associated data including tickets will be permanently removed.</p>
+                    </div>
+                    <form action={deleteEventAction} className="inline-block">
+                        <input type="hidden" name="eventId" value={event.id} />
+                        <Button type="submit" variant="destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Event
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
+        </div>
     )
 }
 
@@ -308,7 +345,7 @@ export function ManageEventView({ event, initialAttendees }: ManageEventViewProp
                     </TabsContent>
                     <TabsContent value="settings">
                         <SettingsTab event={event} />
-                    </TabsCnotallow>
+                    </TabsContent>
                 </Tabs>
             </div>
         </div>
