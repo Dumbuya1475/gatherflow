@@ -82,6 +82,9 @@ export async function createEventAction(formData: FormData) {
     const is_public = formData.get('is_public') === 'true';
     const requires_approval = formData.get('requires_approval') === 'true';
     const customFields = JSON.parse(formData.get('customFields') as string || '[]') as { field_name: string; field_type: string; is_required: boolean }[];
+    const ticket_brand_logo_file = formData.get('ticket_brand_logo_file') as File | null;
+    const ticket_background_image_file = formData.get('ticket_background_image_file') as File | null;
+    const ticket_brand_color = formData.get('ticket_brand_color') as string | null;
 
     console.log('📋 Form data extracted:', { title, date, location, is_paid, is_public, requires_approval });
 
@@ -108,6 +111,30 @@ export async function createEventAction(formData: FormData) {
         console.log('🖼️ Using placeholder image:', finalCoverImage);
     }
 
+    let finalTicketBrandLogo: string | null = null;
+    if (ticket_brand_logo_file && ticket_brand_logo_file.size > 0) {
+        console.log('📸 Uploading ticket brand logo...');
+        try {
+            finalTicketBrandLogo = await uploadFile(ticket_brand_logo_file, 'event-logos');
+            console.log('✅ Ticket brand logo uploaded:', finalTicketBrandLogo);
+        } catch (uploadError: any) {
+            console.error('❌ Image upload failed:', uploadError);
+            return { success: false, error: `Failed to upload ticket brand logo: ${uploadError.message || 'Unknown error'}` };
+        }
+    }
+
+    let finalTicketBackgroundImage: string | null = null;
+    if (ticket_background_image_file && ticket_background_image_file.size > 0) {
+        console.log('📸 Uploading ticket background image...');
+        try {
+            finalTicketBackgroundImage = await uploadFile(ticket_background_image_file, 'event-backgrounds');
+            console.log('✅ Ticket background image uploaded:', finalTicketBackgroundImage);
+        } catch (uploadError: any) {
+            console.error('❌ Image upload failed:', uploadError);
+            return { success: false, error: `Failed to upload ticket background image: ${uploadError.message || 'Unknown error'}` };
+        }
+    }
+
     // Create the event
     console.log('🎪 Inserting event into database...');
     const { data: eventData, error: eventCreateError } = await supabase
@@ -125,6 +152,9 @@ export async function createEventAction(formData: FormData) {
             price,
             is_public,
             requires_approval,
+            ticket_brand_color,
+            ticket_brand_logo: finalTicketBrandLogo,
+            ticket_background_image: finalTicketBackgroundImage,
         })
         .select('id')
         .single();
@@ -217,7 +247,7 @@ export async function updateEventAction(eventId: number, formData: FormData) {
     // Verify ownership
     const { data: currentEvent, error: fetchError } = await supabase
         .from('events')
-        .select('organizer_id, cover_image')
+        .select('organizer_id, cover_image, ticket_brand_logo, ticket_background_image')
         .eq('id', eventId)
         .single();
 
@@ -244,6 +274,9 @@ export async function updateEventAction(eventId: number, formData: FormData) {
     const is_public = formData.get('is_public') === 'true';
     const requires_approval = formData.get('requires_approval') === 'true';
     const customFields = JSON.parse(formData.get('customFields') as string || '[]') as { id?: number; field_name: string; field_type: string; is_required: boolean }[];
+    const ticket_brand_logo_file = formData.get('ticket_brand_logo_file') as File | null;
+    const ticket_background_image_file = formData.get('ticket_background_image_file') as File | null;
+    const ticket_brand_color = formData.get('ticket_brand_color') as string | null;
 
     let finalCoverImage = currentEvent.cover_image;
     const oldCoverImage = currentEvent.cover_image;
@@ -267,6 +300,48 @@ export async function updateEventAction(eventId: number, formData: FormData) {
         }
     }
 
+    let finalTicketBrandLogo = currentEvent.ticket_brand_logo;
+    const oldTicketBrandLogo = currentEvent.ticket_brand_logo;
+
+    if (ticket_brand_logo_file && ticket_brand_logo_file.size > 0) {
+        console.log('📸 Uploading new ticket brand logo...');
+        try {
+            finalTicketBrandLogo = await uploadFile(ticket_brand_logo_file, 'event-logos');
+            console.log('✅ New ticket brand logo uploaded');
+            if (oldTicketBrandLogo) {
+                const oldImageKey = oldTicketBrandLogo.split('/').pop();
+                if (oldImageKey) {
+                    await deleteFile('event-logos', oldImageKey);
+                    console.log('✅ Old ticket brand logo deleted');
+                }
+            }
+        } catch (uploadError: any) {
+            console.error('❌ Ticket brand logo upload failed:', uploadError);
+            return { success: false, error: `Failed to upload new ticket brand logo: ${uploadError.message || 'Unknown error'}` };
+        }
+    }
+
+    let finalTicketBackgroundImage = currentEvent.ticket_background_image;
+    const oldTicketBackgroundImage = currentEvent.ticket_background_image;
+
+    if (ticket_background_image_file && ticket_background_image_file.size > 0) {
+        console.log('📸 Uploading new ticket background image...');
+        try {
+            finalTicketBackgroundImage = await uploadFile(ticket_background_image_file, 'event-backgrounds');
+            console.log('✅ New ticket background image uploaded');
+            if (oldTicketBackgroundImage) {
+                const oldImageKey = oldTicketBackgroundImage.split('/').pop();
+                if (oldImageKey) {
+                    await deleteFile('event-backgrounds', oldImageKey);
+                    console.log('✅ Old ticket background image deleted');
+                }
+            }
+        } catch (uploadError: any) {
+            console.error('❌ Ticket background image upload failed:', uploadError);
+            return { success: false, error: `Failed to upload new ticket background image: ${uploadError.message || 'Unknown error'}` };
+        }
+    }
+
     // Update the event
     const { error: updateError } = await supabase
         .from('events')
@@ -282,6 +357,9 @@ export async function updateEventAction(eventId: number, formData: FormData) {
             price,
             is_public,
             requires_approval,
+            ticket_brand_color,
+            ticket_brand_logo: finalTicketBrandLogo,
+            ticket_background_image: finalTicketBackgroundImage,
         })
         .eq('id', eventId);
 

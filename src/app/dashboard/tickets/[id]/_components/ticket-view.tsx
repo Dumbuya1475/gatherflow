@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -7,15 +6,63 @@ import { QrCodeGenerator } from "./qr-code-generator";
 import { Calendar, MapPin, Clock, Ban } from "lucide-react";
 import Link from "next/link";
 import type { Ticket, Event } from "@/lib/types";
+import Image from 'next/image';
 
 interface TicketWithEvent extends Ticket {
     events: Event & { organizer?: { first_name: string | null, last_name: string | null } | null } | null;
+}
+
+const BrandedTicket = ({ ticket }: { ticket: TicketWithEvent }) => {
+    const { events } = ticket;
+    if (!events) return null;
+
+    const brandColor = events.ticket_brand_color || '#000000';
+
+    return (
+        <div 
+            className="relative rounded-lg shadow-lg overflow-hidden bg-cover bg-center" 
+            style={{ backgroundColor: brandColor, backgroundImage: `url(${events.ticket_background_image || ''})` }}
+        >
+            <div className="bg-black bg-opacity-50 p-8">
+                <div className="text-center mb-8">
+                    {events.ticket_brand_logo && (
+                        <Image src={events.ticket_brand_logo} alt="Brand Logo" width={120} height={120} className="mx-auto mb-4 rounded-full" />
+                    )}
+                    <h1 className="text-4xl font-bold text-white font-headline">{events.title}</h1>
+                    <p className="text-lg text-gray-200">{events.description}</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div className="text-white">
+                        <div className="flex items-center gap-4 mb-4">
+                            <Calendar className="h-6 w-6" />
+                            <span className="font-medium text-lg">{new Date(events.date).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <MapPin className="h-6 w-6" />
+                            <span className="font-medium text-lg">{events.location}</span>
+                        </div>
+                    </div>
+                    <div className="flex flex-col items-center justify-center bg-white rounded-lg p-6">
+                        <QrCodeGenerator qrToken={ticket.qr_token} />
+                        <p className="text-xs text-muted-foreground mt-4">Ticket ID: {ticket.id}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 export function TicketView({ ticket }: { ticket: TicketWithEvent }) {
 
     if (!ticket.events) {
         return <div className="text-center text-red-500 p-8">Error: Event details are missing for this ticket.</div>
+    }
+
+    const hasBranding = ticket.events.ticket_brand_logo || ticket.events.ticket_background_image || ticket.events.ticket_brand_color;
+
+    if (hasBranding) {
+        return <BrandedTicket ticket={ticket} />;
     }
 
     const StatusDisplay = () => {

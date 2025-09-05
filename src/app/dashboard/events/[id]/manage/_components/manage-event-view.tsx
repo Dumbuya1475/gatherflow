@@ -98,15 +98,30 @@ function ApprovalsTab({
     attendees: Attendee[],
     onViewAttendee: (attendee: Attendee) => void;
 }) {
+    const [searchQuery, setSearchQuery] = useState('');
     const pendingAttendees = attendees.filter(a => a.status === 'pending');
+
+    const filteredAttendees = pendingAttendees.filter(attendee => 
+        `${attendee.first_name} ${attendee.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        attendee.email.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Pending Approvals</CardTitle>
             </CardHeader>
+            <div className="flex justify-between items-center p-4 border-b">
+                <Input 
+                    placeholder="Search attendees..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="max-w-sm"
+                />
+                <RefreshButton eventId={event.id} />
+            </div>
             <CardContent>
-                {pendingAttendees.length > 0 ? (
+                {filteredAttendees.length > 0 ? (
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -116,7 +131,7 @@ function ApprovalsTab({
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {pendingAttendees.map((attendee) => (
+                            {filteredAttendees.map((attendee) => (
                                 <TableRow key={attendee.ticket_id}>
                                     <TableCell>{attendee.first_name} {attendee.last_name}</TableCell>
                                     <TableCell>{attendee.email}</TableCell>
