@@ -54,12 +54,13 @@ async function getDashboardStats(user: any) {
 
         if (ticketsCountError) throw ticketsCountError;
 
-        countsByEvent = (counts || []).reduce((acc, { event_id_out, attendee_count }) => {
-            acc[event_id_out] = Number(attendee_count || 0);
-            return acc;
-        }, {} as Record<number, number>);
-
-        totalAttendees = Object.values(countsByEvent).reduce((acc, count) => acc + count, 0);
+        if (counts) {
+            countsByEvent = counts.reduce((acc, { event_id_out, attendee_count }) => {
+                acc[event_id_out] = Number(attendee_count || 0);
+                return acc;
+            }, {} as Record<number, number>);
+            totalAttendees = Object.values(countsByEvent).reduce((acc, count) => acc + count, 0);
+        }
     }
     
     // Placeholder for check-ins today
@@ -104,7 +105,7 @@ async function getAttendeeDashboardStats(user: any) {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
-  if (error) {
+  if (error || !tickets || tickets.length === 0) {
     return { registeredEventsCount: 0, upcomingEvents: [], attendedEventsCount: 0 };
   }
 
@@ -118,12 +119,12 @@ async function getAttendeeDashboardStats(user: any) {
 
     if (countError) {
         console.error('Error fetching attendee counts:', countError);
+    } else if (counts) {
+      countsByEvent = counts.reduce((acc, { event_id_out, attendee_count }) => {
+          acc[event_id_out] = Number(attendee_count || 0);
+          return acc;
+      }, {} as Record<number, number>);
     }
-
-    countsByEvent = (counts || []).reduce((acc, { event_id_out, attendee_count }) => {
-        acc[event_id_out] = Number(attendee_count || 0);
-        return acc;
-    }, {} as Record<number, number>);
   }
 
   const ticketsWithCounts = tickets.map(ticket => ({
