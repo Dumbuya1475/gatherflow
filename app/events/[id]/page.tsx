@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { getEventDetails } from "@/lib/actions/events";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, MapPin, Users, Ticket, ArrowLeft, Eye, DollarSign, Share2, Globe, Lock } from "lucide-react";
@@ -27,9 +27,9 @@ async function getTicketId(eventId: number, userId?: string) {
 }
 
 
-export default async function EventDetailsPage({ params }: { params: { id: string } }) {
-    const resolvedParams = React.use(params);
-    const eventId = parseInt(resolvedParams.id, 10);
+export default async function EventDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    const eventId = parseInt(id, 10);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 

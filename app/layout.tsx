@@ -1,7 +1,7 @@
 
 import type {Metadata} from 'next';
 import './globals.css';
-import { Toaster } from "../src/components/ui/toaster"
+import { Toaster } from "@/components/ui/toaster";
 
 const APP_NAME = "GatherFlow";
 const APP_DEFAULT_TITLE = "GatherFlow";

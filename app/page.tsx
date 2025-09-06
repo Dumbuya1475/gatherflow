@@ -1,9 +1,9 @@
 
 'use server';
 
-import { createClient } from '../src/lib/supabase/server';
-import type { EventWithAttendees } from '../src/lib/types';
-import { LandingPageClient } from '../src/components/landing-page-client';
+import { createClient } from '@/lib/supabase/server';
+import type { EventWithAttendees } from '@/lib/types';
+import { LandingPageClient } from '@/components/landing-page-client';
 
 async function getRecentEvents() {
   const supabase = createClient();

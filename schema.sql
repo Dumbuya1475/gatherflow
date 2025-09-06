@@ -262,3 +262,31 @@ USING (
     bucket_id IN ('event-covers', 'event-images')
     AND auth.role() = 'authenticated'
 );
+
+-- Function to get attendee counts for multiple events
+CREATE OR REPLACE FUNCTION public.get_event_attendee_counts(event_ids int[])
+RETURNS TABLE(event_id_out int, attendee_count int)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT t.event_id, count(t.id)::int
+  FROM public.tickets t
+  WHERE t.event_id = ANY(event_ids)
+  GROUP BY t.event_id;
+END;
+$$;
+
+-- Function to get attendee count for a single event
+CREATE OR REPLACE FUNCTION public.get_event_attendee_count(event_id_param int)
+RETURNS int
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN (
+    SELECT count(id)::int
+    FROM public.tickets
+    WHERE event_id = event_id_param
+  );
+END;
+$$;
