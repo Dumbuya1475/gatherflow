@@ -82,7 +82,9 @@ export default async function AnalyticsPage() {
                     <CardDescription>Registrations over the last 30 days.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <RegistrationChart chartData={chartData} />
+                    <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                        <RegistrationChart chartData={chartData} />
+                    </ChartContainer>
                 </CardContent>
             </Card>
 
