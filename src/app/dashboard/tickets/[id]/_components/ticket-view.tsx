@@ -1,12 +1,14 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { QrCodeGenerator } from "./qr-code-generator";
-import { Calendar, MapPin, Clock, Ban } from "lucide-react";
+import { Calendar, MapPin, Clock, Ban, UserRoundCheck, UserRoundX } from "lucide-react";
 import Link from "next/link";
 import type { Ticket, Event } from "@/lib/types";
 import Image from 'next/image';
+import { Badge } from "@/components/ui/badge";
 
 interface TicketWithEvent extends Ticket {
     events: Event & { organizer?: { first_name: string | null, last_name: string | null } | null } | null;
@@ -96,7 +98,21 @@ export function TicketView({ ticket }: { ticket: TicketWithEvent }) {
                     <CardTitle>Scan QR Code</CardTitle>
                     <CardDescription>This is your unique ticket</CardDescription>
                 </CardHeader>
-                <CardContent className="p-4 flex-1 flex items-center justify-center">
+                <CardContent className="p-4 flex-1 flex flex-col items-center justify-center">
+                    <div className="space-y-4 mb-4 text-center">
+                        {ticket.checked_out && ticket.checked_out_at && (
+                            <Badge className="bg-gray-700 text-white">
+                                <UserRoundX className="mr-2 h-4 w-4" />
+                                Checked Out at {new Date(ticket.checked_out_at).toLocaleTimeString()}
+                            </Badge>
+                        )}
+                        {ticket.checked_in && !ticket.checked_out && ticket.checked_in_at && (
+                             <Badge className="bg-blue-500 text-white">
+                                <UserRoundCheck className="mr-2 h-4 w-4" />
+                                Checked In at {new Date(ticket.checked_in_at).toLocaleTimeString()}
+                            </Badge>
+                        )}
+                    </div>
                     <QrCodeGenerator qrToken={ticket.qr_token} />
                 </CardContent>
                  <CardContent className="p-0">
