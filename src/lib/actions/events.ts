@@ -496,7 +496,10 @@ export async function getEventDetails(eventId: number) {
     
     console.log('🔍 Fetching event details for:', eventId);
     
-    const supabase = await createClient(); // Add await here
+    const supabase = await createClient();
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    console.log('👤 Current user in getEventDetails:', currentUser?.id);
+
     const { data: event, error } = await supabase
         .from('events')
         .select(`
@@ -510,7 +513,7 @@ export async function getEventDetails(eventId: number) {
         .single();
     
     if (error) {
-        console.error(`❌ Error fetching event ${eventId}:`, error);
+        console.error(`❌ Error fetching event ${eventId}:`, JSON.stringify(error, null, 2));
         return { data: null, error: 'Event not found.' };
     }
 
