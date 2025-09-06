@@ -1,11 +1,10 @@
+
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+  let supabaseResponse = NextResponse.next({
+    request,
   });
 
   const supabase = createServerClient(
@@ -17,34 +16,14 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.get(name)?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({
+          supabaseResponse.cookies.set({
             name,
             value,
             ...options,
           });
         },
         remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: "",
-            ...options,
-          });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({
+          supabaseResponse.cookies.set({
             name,
             value: "",
             ...options,
@@ -55,7 +34,13 @@ export async function updateSession(request: NextRequest) {
   );
 
   // refreshing the session before loading server components
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  return response;
+  // IMPORTANT: Avoid writing any logic that depends on the user being logged in here.
+  // This middleware is designed to refresh the session and nothing more.
+  // It will run on every request, so adding heavy logic here will impact performance.
+
+  return supabaseResponse;
 }
