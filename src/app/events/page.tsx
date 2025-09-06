@@ -26,6 +26,10 @@ async function getAllPublicEvents(user: any) {
     return [];
   }
 
+  if (events.length === 0) {
+    return [];
+  }
+
   const eventIds = events.map(event => event.id);
   const { data: counts, error: countError } = await supabase.rpc('get_event_attendee_counts', { event_ids: eventIds });
 
@@ -221,5 +225,3 @@ export default function AllEventsPage() {
     </div>
   );
 }
-
-    
