@@ -1,5 +1,7 @@
+
 'use server';
 
+import React from 'react';
 import { getEventDetails } from "@/lib/actions/events";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,7 +12,6 @@ import Link from "next/link";
 import { format } from 'date-fns';
 import { EventWithAttendees } from "@/lib/types";
 import { ShareButton } from "./_components/share-button";
-import { use } from 'react';
 
 
 async function getTicketId(eventId: number, userId?: string) {
@@ -27,7 +28,7 @@ async function getTicketId(eventId: number, userId?: string) {
 
 
 export default async function EventDetailsPage({ params }: { params: { id: string } }) {
-    const resolvedParams = use(params);
+    const resolvedParams = React.use(params);
     const eventId = parseInt(resolvedParams.id, 10);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -74,12 +75,7 @@ export default async function EventDetailsPage({ params }: { params: { id: strin
                     </CardHeader>
                      <CardContent className="p-4 md:p-6 grid md:grid-cols-3 gap-6">
                         <div className="md:col-span-2 space-y-6">
-                            {event.welcome_message && (
-                                <div>
-                                    <h3 className="text-xl font-semibold mb-2">A Message from the Organizer</h3>
-                                    <p className="text-muted-foreground whitespace-pre-wrap">{event.welcome_message}</p>
-                                </div>
-                            )}
+                            
                             <div>
                                 <h3 className="text-xl font-semibold mb-2">About this event</h3>
                                 <p className="text-muted-foreground whitespace-pre-wrap">{event.description}</p>
