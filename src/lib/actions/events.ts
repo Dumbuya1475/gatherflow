@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
@@ -12,7 +13,7 @@ export async function createEventAction(formData: FormData) {
     try {
         console.log('🎪 Creating new event...');
         
-        const supabase = await createClient(); // Add await here
+        const supabase = createClient();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
         if (authError) {
@@ -249,7 +250,7 @@ export async function createEventAction(formData: FormData) {
 export async function updateEventAction(eventId: number, formData: FormData) {
     console.log('✏️ Updating event:', eventId);
     
-    const supabase = await createClient(); // Add await here
+    const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -496,15 +497,14 @@ export async function getEventDetails(eventId: number) {
     
     console.log('🔍 Fetching event details for:', eventId);
     
-    const supabase = await createClient();
+    const supabase = createClient();
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     console.log('👤 Current user in getEventDetails:', currentUser?.id);
 
     const { data: event, error } = await supabase
         .from('events')
         .select(`
-            *, 
-            welcome_message,
+            *,
             organizer:profiles(first_name, last_name), 
             scanners:event_scanners(profiles(email)), 
             event_form_fields(*)
@@ -517,7 +517,7 @@ export async function getEventDetails(eventId: number) {
         return { data: null, error: 'Event not found.' };
     }
 
-    const supabaseAdmin = await createServiceRoleClient(); // Add await here
+    const supabaseAdmin = createServiceRoleClient();
     const { data: countData, error: countError } = await supabaseAdmin
         .rpc('get_event_attendee_count', { event_id_param: eventId });
 
@@ -541,7 +541,7 @@ export async function getEventAttendees(eventId: number) {
         return { data: null, error: 'Invalid event ID.' };
     }
 
-    const supabase = await createClient(); // Add await here
+    const supabase = createClient();
     const { data, error } = await supabase
         .from('tickets')
         .select(`
@@ -586,7 +586,7 @@ export async function getEventAttendees(eventId: number) {
 }
 
 export async function deleteEventAction(formData: FormData) {
-    const supabase = await createClient(); // Add await here
+    const supabase = createClient();
     const eventId = formData.get('eventId') as string;
 
     if (!eventId) {
@@ -627,7 +627,7 @@ export async function deleteEventAction(formData: FormData) {
 }
 
 export async function getEventFormFields(eventId: number) {
-    const supabase = await createClient(); // Add await here
+    const supabase = createClient();
     const { data, error } = await supabase
         .from('event_form_fields')
         .select('*')
@@ -645,7 +645,7 @@ export async function getEventFormFields(eventId: number) {
 export async function updateEventTicketBrandingAction(eventId: number, formData: FormData) {
     console.log('🎨 Updating ticket branding for event:', eventId);
     
-    const supabase = await createClient();
+    const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {

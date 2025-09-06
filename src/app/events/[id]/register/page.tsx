@@ -6,6 +6,7 @@ import { RegisterForEventForm } from "./_components/register-event-form";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { EventDetailsCard } from "./_components/event-details-card";
+import { use } from "react";
 
 export default async function RegisterForEventPage({ params }: { params: { id: string } }) {
     const { data: { user } } = await createClient().auth.getUser();
@@ -22,8 +23,8 @@ export default async function RegisterForEventPage({ params }: { params: { id: s
     }
 
     
-
-    const eventId = parseInt(params.id, 10);
+    const resolvedParams = use(params);
+    const eventId = parseInt(resolvedParams.id, 10);
     const { data: event, error } = await getEventDetails(eventId);
     const { data: formFields } = await getEventFormFields(eventId);
 
