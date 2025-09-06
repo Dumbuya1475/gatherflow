@@ -1,4 +1,3 @@
-
 'use server';
 
 import { getEventDetails } from "@/lib/actions/events";
@@ -11,6 +10,7 @@ import Link from "next/link";
 import { format } from 'date-fns';
 import { EventWithAttendees } from "@/lib/types";
 import { ShareButton } from "./_components/share-button";
+import { use } from 'react';
 
 
 async function getTicketId(eventId: number, userId?: string) {
@@ -27,7 +27,8 @@ async function getTicketId(eventId: number, userId?: string) {
 
 
 export default async function EventDetailsPage({ params }: { params: { id: string } }) {
-    const eventId = parseInt(params.id, 10);
+    const resolvedParams = use(params);
+    const eventId = parseInt(resolvedParams.id, 10);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
