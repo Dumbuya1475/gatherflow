@@ -1,11 +1,7 @@
 
-'use server';
-
-import React from 'react';
 import { getEventDetails, getEventFormFields } from "@/lib/actions/events";
 import { RegisterForEventForm } from "./_components/register-event-form";
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { EventDetailsCard } from "./_components/event-details-card";
 
 export default async function RegisterForEventPage({ params }: { params: { id: string } }) {
@@ -22,9 +18,8 @@ export default async function RegisterForEventPage({ params }: { params: { id: s
         userData = { ...user, ...profile };
     }
 
-    
-    const resolvedParams = React.use(params);
-    const eventId = parseInt(resolvedParams.id, 10);
+
+    const eventId = parseInt(params.id, 10);
     const { data: event, error } = await getEventDetails(eventId);
     const { data: formFields } = await getEventFormFields(eventId);
 
