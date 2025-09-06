@@ -1,5 +1,5 @@
 
-'use client';
+'use server';
 
 import { getEventDetails } from "@/lib/actions/events";
 import { createClient } from "@/lib/supabase/client";
@@ -9,9 +9,8 @@ import { Calendar, MapPin, Users, Ticket, ArrowLeft, Eye, DollarSign, Share2, Gl
 import Image from "next/image";
 import Link from "next/link";
 import { format } from 'date-fns';
-import { useEffect, useState } from "react";
 import { EventWithAttendees } from "@/lib/types";
-import { useToast } from "@/hooks/use-toast";
+import { ShareButton } from "./_components/share-button";
 
 
 async function getTicketId(eventId: number, userId?: string) {
@@ -27,76 +26,22 @@ async function getTicketId(eventId: number, userId?: string) {
 }
 
 
-export default function EventDetailsPage({ params }: { params: { id: string } }) {
-    const { toast } = useToast();
-    const [event, setEvent] = useState<EventWithAttendees | null>(null);
-    const [user, setUser] = useState<any>(null);
-    const [ticketId, setTicketId] = useState<number | null>(null);
-    const [loading, setLoading] = useState(true);
+export default async function EventDetailsPage({ params }: { params: { id: string } }) {
     const eventId = parseInt(params.id, 10);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    useEffect(() => {
-        const fetchInitialData = async () => {
-            const supabase = createClient();
-            const { data: { user: currentUser } } = await supabase.auth.getUser();
-            setUser(currentUser);
+    const { data: event, error } = await getEventDetails(eventId);
 
-            const { data: eventData, error } = await getEventDetails(eventId);
-            if (error || !eventData) {
-                toast({ variant: 'destructive', title: 'Error', description: error || 'Event not found.' });
-                setLoading(false);
-                return;
-            }
-            
-            if (!eventData.is_public && eventData.organizer_id !== currentUser?.id) {
-                 toast({ variant: 'destructive', title: 'Private Event', description: 'This event is private and can only be viewed by the organizer.' });
-                 setEvent(null);
-            } else {
-                setEvent(eventData);
-            }
+    if (error || !event) {
+        return <div className="flex items-center justify-center min-h-screen text-center text-red-500 p-8">Error: {error || 'This event could not be found.'}</div>
+    }
 
-            if (currentUser && eventData) {
-                const fetchedTicketId = await getTicketId(eventData.id, currentUser.id);
-                setTicketId(fetchedTicketId);
-            }
-            setLoading(false);
-        };
-
-        fetchInitialData();
-    }, [eventId, toast]);
-
-    const handleShare = async () => {
-        if (navigator.share && event) {
-            try {
-                await navigator.share({
-                    title: event.title,
-                    text: event.description || '',
-                    url: window.location.href,
-                });
-                toast({ title: 'Event Shared!', description: 'The event link has been copied to your clipboard.' });
-            } catch (error) {
-                console.error('Error sharing:', error);
-                toast({ variant: 'destructive', title: 'Error', description: 'Could not share the event.' });
-            }
-        } else {
-            // Fallback for browsers that do not support the Web Share API
-            navigator.clipboard.writeText(window.location.href);
-            toast({ title: 'Link Copied!', description: 'The event link has been copied to your clipboard.' });
-        }
-    };
+    if (!event.is_public && event.organizer_id !== user?.id) {
+        return <div className="flex items-center justify-center min-h-screen text-center text-red-500 p-8">Error: This event is private and can only be viewed by the organizer.</div>
+    }
     
-    if (loading) {
-        return (
-             <div className="bg-secondary min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
-             </div>
-        )
-    }
-
-    if (!event) {
-        return <div className="flex items-center justify-center min-h-screen text-center text-red-500 p-8">Error: This event is private or does not exist.</div>
-    }
-
+    const ticketId = await getTicketId(event.id, user?.id);
     const isOwner = user && user.id === event.organizer_id;
     const isFull = event.capacity ? event.attendees >= event.capacity : false;
 
@@ -110,10 +55,7 @@ export default function EventDetailsPage({ params }: { params: { id: string } })
                             Back to Events
                         </Link>
                     </Button>
-                     <Button variant="outline" onClick={handleShare}>
-                        <Share2 className="mr-2 h-4 w-4" />
-                        Share Event
-                    </Button>
+                    <ShareButton event={event} />
                 </div>
                 <Card className="overflow-hidden">
                     <div className="relative h-64 md:h-96 w-full">
@@ -211,5 +153,3 @@ export default function EventDetailsPage({ params }: { params: { id: string } })
         </div>
     )
 }
-
-    
