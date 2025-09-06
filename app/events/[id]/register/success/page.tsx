@@ -13,11 +13,12 @@ export default async function RegistrationSuccessPage({
     searchParams,
 }: {
     params: { id: string };
-    searchParams: { ticketId?: string };
+    searchParams: Promise<{ ticketId?: string }>;
 }) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    const ticketId = searchParams.ticketId ? parseInt(searchParams.ticketId, 10) : null;
+    const { ticketId: ticketIdString } = await searchParams;
+    const ticketId = ticketIdString ? parseInt(ticketIdString, 10) : null;
 
     if (!user || !ticketId) {
         // If user is somehow not logged in, or ticketId is missing, redirect to login
