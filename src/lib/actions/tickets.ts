@@ -348,7 +348,7 @@ export async function getTicketDetails(ticketId: number) {
 
     const { data: ticket, error } = await supabase
         .from('tickets')
-        .select('*, events(*, tickets(count))')
+        .select('*, checked_in_at, checked_out_at, status, events(*, tickets(count))')
         .eq('id', ticketId)
         .single();
     
@@ -357,19 +357,7 @@ export async function getTicketDetails(ticketId: number) {
         return { data: null, error: 'Ticket not found.' };
     }
 
-    // Manually add status to the selection
-    const { data: ticketWithStatus, error: statusError } = await supabase
-        .from('tickets')
-        .select('status')
-        .eq('id', ticketId)
-        .single();
-
-    if (statusError) {
-        console.error('Error fetching ticket status:', statusError);
-        return { data: null, error: 'Could not fetch ticket status.' };
-    }
-
-    const finalTicket = { ...ticket, status: ticketWithStatus?.status || 'approved' };
+    const finalTicket = ticket;
 
     const isOwner = finalTicket.user_id === user.id;
     

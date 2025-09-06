@@ -182,7 +182,7 @@ export default async function DashboardLayout({
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  {/* <SidebarMenuItem>
+                  <SidebarMenuItem>
                     <SidebarMenuButton asChild tooltip="Reports" className="group relative overflow-hidden">
                       <Link href="/dashboard/reports">
                         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
@@ -190,7 +190,7 @@ export default async function DashboardLayout({
                         <span className="relative z-10">Reports</span>
                       </Link>
                     </SidebarMenuButton>
-                  </SidebarMenuItem> */}
+                  </SidebarMenuItem>
                 </div>
               </SidebarGroup>
             </SidebarMenu>
