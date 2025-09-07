@@ -4,8 +4,14 @@
 import { getEventAttendees, getEventDetails } from "@/lib/actions/events";
 import { ManageEventView } from "./_components/manage-event-view";
 
-export default async function ManageEventPage({ params }: { params: { id: string } }) {
-  const eventId = parseInt(params.id, 10);
+interface ManageEventPageProps {
+  params: { id: string };
+}
+
+export default async function ManageEventPage({ params }: ManageEventPageProps) {
+  // Explicitly await params as a workaround for a persistent Next.js static analysis issue.
+  const resolvedParams = await Promise.resolve(params);
+  const eventId = parseInt(resolvedParams.id, 10);
   
   // Fetch data in parallel
   const [

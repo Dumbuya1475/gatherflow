@@ -26,11 +26,13 @@ type Profile = {
   last_name: string;
 };
 
+// Updated ticket registration functions with proper QR workflow
+
 export async function registerForEventAction(
   prevState: { error?: string; success?: boolean; ticketId?: number; } | undefined,
   formData: FormData
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const eventId = parseInt(formData.get('eventId') as string, 10);
 
   const {
@@ -71,7 +73,7 @@ export async function registerForEventAction(
   const capacity = eventData.capacity;
 
   if (capacity !== null) {
-    const supabaseAdmin = createServiceRoleClient();
+    const supabaseAdmin = await createServiceRoleClient();
     const { count, error: countError } = await supabaseAdmin
         .from('tickets')
         .select('*', { count: 'exact', head: true })
@@ -89,8 +91,6 @@ export async function registerForEventAction(
     }
   }
 
-
-
   const { data: existingTicket } = await supabase
     .from('tickets')
     .select('id')
@@ -102,17 +102,22 @@ export async function registerForEventAction(
     return redirect(`/dashboard/tickets/${existingTicket.id}`);
   }
   
-  // Generate QR token when creating ticket
-  const qrToken = crypto.randomUUID();
-  
   const initialStatus = eventData.requires_approval ? 'pending' : 'approved';
-
-  const { data: ticket, error } = await supabase.from('tickets').insert({
+  
+  // Create ticket data - QR token will be handled by trigger if approved
+  const ticketData: any = {
     event_id: eventId,
     user_id: user.id,
-    qr_token: qrToken,
     status: initialStatus,
-  }).select('id').single();
+  };
+
+  // Only generate QR token for automatically approved tickets
+  if (initialStatus === 'approved') {
+    ticketData.qr_token = crypto.randomUUID();
+  }
+  // For pending tickets, qr_token will be NULL
+
+  const { data: ticket, error } = await supabase.from('tickets').insert(ticketData).select('id').single();
 
   if (error || !ticket) {
     console.error('Error registering for event:', error);
@@ -126,6 +131,172 @@ export async function registerForEventAction(
   revalidatePath(`/events`);
   
   return { success: true, ticketId: ticket.id };
+}
+
+export async function registerAndCreateTicket(
+    prevState: { error: string | undefined } | undefined,
+    formData: FormData
+) {
+    const supabase = await createClient();
+    const eventId = parseInt(formData.get('eventId') as string, 10);
+    const userId = formData.get('userId') as string | null;
+
+    // Fetch custom form fields and validate them
+    const { data: formFields } = await getEventFormFields(eventId);
+    for (const field of formFields) {
+      if (field.is_required && !formData.get(`custom_field_${field.id}`)) {
+        return { error: `${field.field_name} is required.` };
+      }
+    }
+
+    let finalUserId = userId;
+
+    if (!userId) {
+        const email = formData.get('email') as string;
+        const password = formData.get('password') as string;
+        const confirmPassword = formData.get('confirmPassword') as string;
+        const firstName = formData.get('firstName') as string;
+        const lastName = formData.get('lastName') as string;
+
+        if (password !== confirmPassword) {
+            return { error: "Passwords do not match." };
+        }
+
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    first_name: firstName,
+                    last_name: lastName,
+                },
+            },
+        });
+
+        if (signUpError || !signUpData.user) {
+            return { error: signUpError?.message || "Could not sign up user." };
+        }
+        finalUserId = signUpData.user.id;
+    }
+
+    if (!finalUserId) {
+        return { error: "Could not determine user." };
+    }
+    
+    const { data: eventData, error: eventError } = await supabase
+        .from('events')
+        .select('requires_approval, capacity')
+        .eq('id', eventId)
+        .single();
+
+    if (eventError || !eventData) {
+        return { error: "Could not find the specified event." };
+    }
+
+    const capacity = eventData.capacity;
+
+    if (capacity !== null) {
+        const supabaseAdmin = await createServiceRoleClient();
+        const { count, error: countError } = await supabaseAdmin
+            .from('tickets')
+            .select('*', { count: 'exact', head: true })
+            .eq('event_id', eventId)
+            .in('status', ['approved', 'pending']);
+
+        if (countError) {
+            console.error('Error counting tickets:', countError);
+            return { error: 'Could not verify event capacity.' };
+        }
+
+        const currentAttendees = count || 0;
+        if (currentAttendees >= capacity) {
+            return { error: 'This event has reached its maximum capacity.' };
+        }
+    }
+
+    const initialStatus = eventData.requires_approval ? 'pending' : 'approved';
+    
+    // Create ticket data - QR token will be handled by trigger if approved
+    const ticketData: any = {
+        event_id: eventId,
+        user_id: finalUserId,
+        status: initialStatus,
+    };
+
+    // Only generate QR token for automatically approved tickets
+    if (initialStatus === 'approved') {
+        ticketData.qr_token = crypto.randomUUID();
+    }
+    // For pending tickets, qr_token will be NULL
+
+    const { data: ticketResult, error: ticketError } = await supabase.from('tickets').insert(ticketData).select('id').single();
+
+    if (ticketError || !ticketResult) {
+        return { error: ticketError?.message || "You are registered as a user, but we failed to create your ticket. Please contact support." };
+    }
+
+    // Save custom form responses
+    if (formFields.length > 0) {
+      const responsesToInsert = formFields.map(field => ({
+        ticket_id: ticketResult.id,
+        form_field_id: field.id,
+        field_value: formData.get(`custom_field_${field.id}`) as string,
+      }));
+
+      const { error: responsesError } = await supabase
+        .from('attendee_form_responses')
+        .insert(responsesToInsert);
+
+      if (responsesError) {
+        console.error('Error inserting form responses:', responsesError);
+        // Don't fail the whole action, just log the error
+      }
+    }
+    
+    revalidatePath(`/dashboard/events`);
+    revalidatePath(`/events`);
+
+    if (initialStatus === 'pending') {
+        redirect(`/events/${eventId}/register/pending`);
+    } else {
+        redirect(`/events/${eventId}/register/success?ticketId=${ticketResult.id}`);
+    }
+}
+
+export async function rejectAttendeeAction(formData: FormData) {
+  const supabase = await createClient();
+  const ticketId = formData.get('ticketId') as string;
+  const eventId = formData.get('eventId') as string;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('You must be logged in.');
+  }
+
+  const { data: event, error: eventError } = await supabase
+    .from('events')
+    .select('organizer_id')
+    .eq('id', parseInt(eventId, 10))
+    .single();
+  
+  if (eventError || !event || event.organizer_id !== user.id) {
+    throw new Error('You are not authorized to perform this action.');
+  }
+
+  // Update status to rejected - the trigger will automatically remove QR token
+  const { error: updateError } = await supabase
+    .from('tickets')
+    .update({ status: 'rejected' })
+    .eq('id', parseInt(ticketId, 10));
+  
+  if (updateError) {
+    console.error('Error rejecting attendee:', updateError);
+    throw new Error('Could not reject the attendee.');
+  }
+
+  revalidatePath(`/dashboard/events/${eventId}/manage`);
+  revalidatePath(`/dashboard/analytics`);
+  redirect(`/dashboard/events/${eventId}/manage`);
 }
 
 export async function unregisterForEventAction(
@@ -210,141 +381,6 @@ export async function unregisterAttendeeAction(formData: FormData) {
   revalidatePath('/events');
   
   redirect(`/dashboard/events/${eventId}/manage`);
-}
-
-export async function registerAndCreateTicket(
-    prevState: { error: string | undefined } | undefined,
-    formData: FormData
-) {
-    const supabase = createClient();
-    const eventId = parseInt(formData.get('eventId') as string, 10);
-    const userId = formData.get('userId') as string | null;
-
-    // Fetch custom form fields and validate them
-    const { data: formFields } = await getEventFormFields(eventId);
-    for (const field of formFields) {
-      if (field.is_required && !formData.get(`custom_field_${field.id}`)) {
-        return { error: `${field.field_name} is required.` };
-      }
-    }
-
-    let finalUserId = userId;
-
-    if (!userId) {
-        const email = formData.get('email') as string;
-        const password = formData.get('password') as string;
-        const confirmPassword = formData.get('confirmPassword') as string;
-        const firstName = formData.get('firstName') as string;
-        const lastName = formData.get('lastName') as string;
-
-        if (password !== confirmPassword) {
-            return { error: "Passwords do not match." };
-        }
-
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    first_name: firstName,
-                    last_name: lastName,
-                },
-            },
-        });
-
-        if (signUpError || !signUpData.user) {
-            return { error: signUpError?.message || "Could not sign up user." };
-        }
-        finalUserId = signUpData.user.id;
-    }
-
-    if (!finalUserId) {
-        return { error: "Could not determine user." };
-    }
-    
-    const { data: eventData, error: eventError } = await supabase
-        .from('events')
-        .select('requires_approval, capacity')
-        .eq('id', eventId)
-        .single();
-
-    if (eventError || !eventData) {
-        return { error: "Could not find the specified event." };
-    }
-
-    const capacity = eventData.capacity;
-
-    if (capacity !== null) {
-        const supabaseAdmin = createServiceRoleClient();
-        const { count, error: countError } = await supabaseAdmin
-            .from('tickets')
-            .select('*', { count: 'exact', head: true })
-            .eq('event_id', eventId)
-            .in('status', ['approved', 'pending']);
-
-        if (countError) {
-            console.error('Error counting tickets:', countError);
-            return { error: 'Could not verify event capacity.' };
-        }
-
-        const currentAttendees = count || 0;
-        if (currentAttendees >= capacity) {
-            return { error: 'This event has reached its maximum capacity.' };
-        }
-    }
-
-    
-
-    // Generate QR token when creating ticket
-    const qrToken = crypto.randomUUID();
-    
-    const initialStatus = eventData.requires_approval ? 'pending' : 'approved';
-
-    const { data: ticketData, error: ticketError } = await supabase.from('tickets').insert({
-        event_id: eventId,
-        user_id: finalUserId,
-        qr_token: qrToken,
-        status: initialStatus,
-    }).select('id').single();
-
-    if (ticketError || !ticketData) {
-        return { error: ticketError?.message || "You are registered as a user, but we failed to create your ticket. Please contact support." };
-    }
-
-    // Save custom form responses
-    if (formFields.length > 0) {
-      const responsesToInsert = formFields.map(field => {
-        let value;
-        if (field.field_type === 'checkboxes') {
-          value = JSON.stringify(formData.getAll(`custom_field_${field.id}`));
-        } else {
-          value = formData.get(`custom_field_${field.id}`) as string;
-        }
-        return {
-          ticket_id: ticketData.id,
-          form_field_id: field.id,
-          field_value: value,
-        };
-      });
-
-      const { error: responsesError } = await supabase
-        .from('attendee_form_responses')
-        .insert(responsesToInsert);
-
-      if (responsesError) {
-        console.error('Error inserting form responses:', responsesError);
-        // Don't fail the whole action, just log the error
-      }
-    }
-    
-    revalidatePath(`/dashboard/events`);
-    revalidatePath(`/events`);
-
-    if (initialStatus === 'pending') {
-        redirect(`/events/${eventId}/register/pending`);
-    } else {
-        redirect(`/events/${eventId}/register/success?ticketId=${ticketData.id}`);
-    }
 }
 
 export async function getTicketDetails(ticketId: number) {
@@ -654,47 +690,12 @@ export async function approveAttendeeAction(formData: FormData) {
 
   const { error: updateError } = await supabase
     .from('tickets')
-    .update({ status: 'approved' })
+    .update({ status: 'approved', qr_token: crypto.randomUUID() })
     .eq('id', parseInt(ticketId, 10));
   
   if (updateError) {
     console.error('Error approving attendee:', updateError);
     throw new Error('Could not approve the attendee.');
-  }
-
-  revalidatePath(`/dashboard/events/${eventId}/manage`);
-  revalidatePath(`/dashboard/analytics`);
-  redirect(`/dashboard/events/${eventId}/manage`);
-}
-
-export async function rejectAttendeeAction(formData: FormData) {
-  const supabase = createClient();
-  const ticketId = formData.get('ticketId') as string;
-  const eventId = formData.get('eventId') as string;
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error('You must be logged in.');
-  }
-
-  const { data: event, error: eventError } = await supabase
-    .from('events')
-    .select('organizer_id')
-    .eq('id', parseInt(eventId, 10))
-    .single();
-  
-  if (eventError || !event || event.organizer_id !== user.id) {
-    throw new Error('You are not authorized to perform this action.');
-  }
-
-  const { error: updateError } = await supabase
-    .from('tickets')
-    .update({ status: 'rejected' })
-    .eq('id', parseInt(ticketId, 10));
-  
-  if (updateError) {
-    console.error('Error rejecting attendee:', updateError);
-    throw new Error('Could not reject the attendee.');
   }
 
   revalidatePath(`/dashboard/events/${eventId}/manage`);

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import Link from "next/link";
 import type { Ticket, Event } from "@/lib/types";
 import Image from 'next/image';
 import { Badge } from "@/components/ui/badge";
+import { format } from 'date-fns';
 
 interface TicketWithEvent extends Ticket {
     events: Event & { organizer?: { first_name: string | null, last_name: string | null } | null } | null;
@@ -38,7 +38,7 @@ const BrandedTicket = ({ ticket }: { ticket: TicketWithEvent }) => {
                     <div className="text-white">
                         <div className="flex items-center gap-4 mb-4">
                             <Calendar className="h-6 w-6" />
-                            <span className="font-medium text-lg">{new Date(events.date).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}</span>
+                            <span className="font-medium text-lg">{format(new Date(events.date), 'PPP p')}</span>
                         </div>
                         <div className="flex items-center gap-4">
                             <MapPin className="h-6 w-6" />
@@ -52,24 +52,6 @@ const BrandedTicket = ({ ticket }: { ticket: TicketWithEvent }) => {
                     </div>
                     <div className="flex flex-col items-center justify-center bg-white rounded-lg p-6">
                         <div className="space-y-4 mb-4 text-center">
-                            {ticket.checked_out && ticket.checked_out_at && (
-                                <Badge className="bg-gray-700 text-white">
-                                    <UserRoundX className="mr-2 h-4 w-4" />
-                                    Checked Out at {new Date(ticket.checked_out_at).toLocaleTimeString()}
-                                </Badge>
-                            )}
-                            {ticket.checked_in && !ticket.checked_out && ticket.checked_in_at && (
-                                <Badge className="bg-blue-500 text-white">
-                                    <UserRoundCheck className="mr-2 h-4 w-4" />
-                                    Checked In at {new Date(ticket.checked_in_at).toLocaleTimeString()}
-                                </Badge>
-                            )}
-                            {!ticket.checked_in && !ticket.checked_out && ticket.status === 'approved' && (
-                                <Badge className="bg-green-500 text-white">
-                                    <UserRoundCheck className="mr-2 h-4 w-4" />
-                                    Approved
-                                </Badge>
-                            )}
                             {ticket.status === 'pending' && (
                                 <Badge className="bg-yellow-500 text-white">
                                     <Clock className="mr-2 h-4 w-4" />
@@ -82,9 +64,38 @@ const BrandedTicket = ({ ticket }: { ticket: TicketWithEvent }) => {
                                     Rejected
                                 </Badge>
                             )}
+                            {ticket.status === 'approved' && ticket.checked_out && ticket.checked_out_at && (
+                                <Badge className="bg-gray-700 text-white">
+                                    <UserRoundX className="mr-2 h-4 w-4" />
+                                    Checked Out at {new Date(ticket.checked_out_at).toLocaleTimeString()}
+                                </Badge>
+                            )}
+                            {ticket.status === 'approved' && ticket.checked_in && !ticket.checked_out && ticket.checked_in_at && (
+                                <Badge className="bg-blue-500 text-white">
+                                    <UserRoundCheck className="mr-2 h-4 w-4" />
+                                    Checked In at {new Date(ticket.checked_in_at).toLocaleTimeString()}
+                                </Badge>
+                            )}
+                            {ticket.status === 'approved' && !ticket.checked_in && !ticket.checked_out && (
+                                <Badge className="bg-green-500 text-white">
+                                    <UserRoundCheck className="mr-2 h-4 w-4" />
+                                    Approved
+                                </Badge>
+                            )}
                         </div>
-                        <QrCodeGenerator qrToken={ticket.qr_token} />
-                        <p className="text-xs text-muted-foreground mt-4">Ticket ID: {ticket.id}</p>
+                        
+                        {/* Only show QR code for approved tickets with QR token */}
+                        {ticket.status === 'approved' && ticket.qr_token ? (
+                            <>
+                                <QrCodeGenerator qrToken={ticket.qr_token} />
+                                <p className="text-xs text-muted-foreground mt-4">Ticket ID: {ticket.id}</p>
+                            </>
+                        ) : (
+                            <div className="text-center text-gray-500 p-4">
+                                {ticket.status === 'pending' && "QR Code will appear once approved"}
+                                {ticket.status === 'rejected' && "Access denied"}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -113,6 +124,9 @@ export function TicketView({ ticket }: { ticket: TicketWithEvent }) {
                     <p className="text-yellow-600 dark:text-yellow-300 mt-2">
                         Your registration is awaiting approval from the event organizer. You will be notified once it's confirmed.
                     </p>
+                    <p className="text-sm text-yellow-600 dark:text-yellow-300 mt-4">
+                        Your QR code will appear here once approved.
+                    </p>
                 </div>
             );
         }
@@ -125,10 +139,14 @@ export function TicketView({ ticket }: { ticket: TicketWithEvent }) {
                     <p className="text-red-600 dark:text-red-300 mt-2">
                         Unfortunately, your registration for this event has been rejected.
                     </p>
+                    <p className="text-sm text-red-600 dark:text-red-300 mt-4">
+                        No QR code is available for rejected tickets.
+                    </p>
                 </div>
             );
         }
 
+        // Approved ticket
         return (
             <Card className="flex flex-col items-center justify-center p-6">
                 <CardHeader className="p-0 text-center">
@@ -149,8 +167,27 @@ export function TicketView({ ticket }: { ticket: TicketWithEvent }) {
                                 Checked In at {new Date(ticket.checked_in_at).toLocaleTimeString()}
                             </Badge>
                         )}
+                        {!ticket.checked_in && !ticket.checked_out && (
+                            <Badge className="bg-green-500 text-white">
+                                <UserRoundCheck className="mr-2 h-4 w-4" />
+                                Ready for Check-in
+                            </Badge>
+                        )}
                     </div>
-                    <QrCodeGenerator qrToken={ticket.qr_token} />
+                    
+                    {/* Only show QR code if ticket is approved AND has qr_token */}
+                    {ticket.qr_token ? (
+                        <QrCodeGenerator qrToken={ticket.qr_token} />
+                    ) : (
+                        <div className="text-center text-gray-500 p-8 border-2 border-dashed border-gray-300 rounded-lg">
+                            <div className="text-lg font-medium">QR Code Unavailable</div>
+                            <div className="text-sm mt-2">
+                                {ticket.status === 'pending' && "Waiting for approval"}
+                                {ticket.status === 'rejected' && "Access denied"}
+                                {ticket.status === 'approved' && "QR code generation failed"}
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
                  <CardContent className="p-0">
                      <p className="text-xs text-muted-foreground">Ticket ID: {ticket.id}</p>
@@ -167,7 +204,14 @@ export function TicketView({ ticket }: { ticket: TicketWithEvent }) {
                         Your Ticket
                     </h1>
                     <p className="text-muted-foreground">
-                        {ticket.status === 'approved' ? 'Present this QR code at the event entrance.' : 'Your ticket status is shown below.'}
+                        {ticket.status === 'approved' && ticket.qr_token 
+                            ? 'Present this QR code at the event entrance.' 
+                            : ticket.status === 'pending'
+                            ? 'Your registration is pending approval.'
+                            : ticket.status === 'rejected'
+                            ? 'Your registration was not approved.'
+                            : 'Your ticket status is shown below.'
+                        }
                     </p>
                 </div>
 
@@ -180,11 +224,35 @@ export function TicketView({ ticket }: { ticket: TicketWithEvent }) {
                         <CardContent className="space-y-4">
                             <div className="flex items-center gap-2">
                                 <Calendar className="h-5 w-5 text-muted-foreground" />
-                                <span className="font-medium">{new Date(ticket.events.date).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}</span>
+                                <span className="font-medium">{format(new Date(ticket.events.date), 'PPP p')}</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <MapPin className="h-5 w-5 text-muted-foreground" />
                                 <span className="font-medium">{ticket.events.location}</span>
+                            </div>
+                            
+                            {/* Status indicator in event card */}
+                            <div className="pt-4 border-t">
+                                <div className="flex items-center gap-2">
+                                    {ticket.status === 'pending' && (
+                                        <>
+                                            <Clock className="h-4 w-4 text-yellow-500" />
+                                            <span className="text-sm text-yellow-600 font-medium">Pending Approval</span>
+                                        </>
+                                    )}
+                                    {ticket.status === 'approved' && (
+                                        <>
+                                            <UserRoundCheck className="h-4 w-4 text-green-500" />
+                                            <span className="text-sm text-green-600 font-medium">Approved</span>
+                                        </>
+                                    )}
+                                    {ticket.status === 'rejected' && (
+                                        <>
+                                            <Ban className="h-4 w-4 text-red-500" />
+                                            <span className="text-sm text-red-600 font-medium">Rejected</span>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </CardContent>
                         <CardFooter>

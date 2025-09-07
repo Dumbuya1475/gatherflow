@@ -10,7 +10,8 @@ import type { Event } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Calendar, MapPin } from 'lucide-react';
-import { Badge } from '@/components/ui/badge'; // Import Badge
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns'; // Import format from date-fns
 
 interface TicketCustomizerProps {
   event: Event;
@@ -42,9 +43,9 @@ export function TicketCustomizer({ event }: TicketCustomizerProps) {
     const result = await updateTicketAppearance(event.id, formData);
     if (result?.success) {
       if (result.logoUrl) {
-        // Append a cache-busting query parameter to force image reload
-        const newLogoUrl = `${result.logoUrl}?t=${Date.now()}`;
-        setPreview(prev => ({ ...prev, brandLogo: newLogoUrl }));
+        // Rely on Next.js image optimization and unique Supabase URLs.
+        // Avoid client-side Date.now() for hydration consistency.
+        setPreview(prev => ({ ...prev, brandLogo: result.logoUrl }));
       }
       toast({ title: 'Success', description: 'Ticket appearance updated successfully.' });
     } else {
@@ -112,7 +113,7 @@ export function TicketCustomizer({ event }: TicketCustomizerProps) {
                         <p className="text-lg text-gray-200">{event.description || 'No description provided.'}</p>
                         <div className="flex items-center gap-4 mt-4">
                             <Calendar className="h-6 w-6" />
-                            <span className="font-medium text-lg">{new Date(event.date).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}</span>
+                            <span className="font-medium text-lg">{format(new Date(event.date), 'PPP p')}</span>
                         </div>
                         <div className="flex items-center gap-4">
                             <MapPin className="h-6 w-6" />

@@ -76,7 +76,7 @@ CREATE TABLE public.tickets (
     created_at timestamp with time zone DEFAULT now(),
     event_id bigint REFERENCES public.events(id) ON DELETE CASCADE,
     user_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
-    qr_token uuid DEFAULT gen_random_uuid() NOT NULL UNIQUE,
+    qr_token uuid UNIQUE,
     checked_in boolean DEFAULT false NOT NULL,
     checked_in_at timestamp with time zone,
     checked_out boolean DEFAULT false NOT NULL,
@@ -86,14 +86,6 @@ CREATE TABLE public.tickets (
 );
 
 ALTER TABLE public.tickets ENABLE ROW LEVEL SECURITY;
-
--- Drop potentially conflicting old policies before creating new ones.
-DROP POLICY IF EXISTS "Users can view their own tickets." ON public.tickets;
-DROP POLICY IF EXISTS "Organizers can view tickets for their events." ON public.tickets;
-DROP POLICY IF EXISTS "Organizers can update tickets for their events (check-in)." ON public.tickets;
-DROP POLICY IF EXISTS "Users can delete their own tickets (unregister)." ON public.tickets;
-DROP POLICY IF EXISTS "Scanners can update tickets for their assigned events." ON public.tickets;
-DROP POLICY IF EXISTS "Organizers or scanners can view tickets." ON public.tickets;
 
 -- RLS Policies for Tickets Table
 CREATE POLICY "Organizers, scanners or attendees can view tickets"
@@ -206,7 +198,8 @@ RETURNS TABLE(
     first_name TEXT,
     last_name TEXT,
     email TEXT,
-    avatar_url TEXT
+    avatar_url TEXT,
+    form_responses JSON
 )
 LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = public
@@ -222,13 +215,23 @@ BEGIN
         p.first_name,
         p.last_name,
         p.email,
-        p.avatar_url
+        p.avatar_url,
+        json_agg(json_build_object(
+            'field_name', f.field_name,
+            'field_value', fr.field_value
+        )) FILTER (WHERE fr.id IS NOT NULL) AS form_responses
     FROM
         public.tickets t
     JOIN
         public.profiles p ON t.user_id = p.id
+    LEFT JOIN
+        public.attendee_form_responses fr ON fr.ticket_id = t.id
+    LEFT JOIN
+        public.event_form_fields f ON fr.form_field_id = f.id
     WHERE
-        t.event_id = event_id_param;
+        t.event_id = event_id_param
+    GROUP BY
+        t.id, p.id;
   END IF;
 END;
 $$;
@@ -255,16 +258,6 @@ ON CONFLICT (id) DO UPDATE SET
     public = EXCLUDED.public,
     file_size_limit = EXCLUDED.file_size_limit,
     allowed_mime_types = EXCLUDED.allowed_mime_types;
-
--- Drop old policies to avoid conflicts
-DROP POLICY IF EXISTS "Avatar images are publicly accessible." ON storage.objects;
-DROP POLICY IF EXISTS "Anyone can upload an avatar." ON storage.objects;
-DROP POLICY IF EXISTS "Event cover images are publicly accessible" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated users can upload event covers" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated users can upload event images" ON storage.objects;
-DROP POLICY IF EXISTS "Event images are publicly accessible" ON storage.objects;
-DROP POLICY IF EXISTS "Users can manage event images" ON storage.objects;
-DROP POLICY IF EXISTS "Users can delete event images" ON storage.objects;
 
 -- Avatar Policies
 CREATE POLICY "Avatar images are publicly accessible." ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
