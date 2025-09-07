@@ -313,11 +313,19 @@ export async function registerAndCreateTicket(
 
     // Save custom form responses
     if (formFields.length > 0) {
-      const responsesToInsert = formFields.map(field => ({
-        ticket_id: ticketData.id,
-        form_field_id: field.id,
-        field_value: formData.get(`custom_field_${field.id}`) as string,
-      }));
+      const responsesToInsert = formFields.map(field => {
+        let value;
+        if (field.field_type === 'checkboxes') {
+          value = JSON.stringify(formData.getAll(`custom_field_${field.id}`));
+        } else {
+          value = formData.get(`custom_field_${field.id}`) as string;
+        }
+        return {
+          ticket_id: ticketData.id,
+          form_field_id: field.id,
+          field_value: value,
+        };
+      });
 
       const { error: responsesError } = await supabase
         .from('attendee_form_responses')

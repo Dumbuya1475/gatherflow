@@ -99,6 +99,8 @@ function ApprovalsTab({
     onViewAttendee: (attendee: Attendee) => void;
 }) {
     const [searchQuery, setSearchQuery] = useState('');
+    // IMPORTANT: Ensure the Supabase RPC 'get_attendees_for_event' returns the 'status' field correctly.
+    // If pending attendees are not showing, verify the RPC output for the 'status' field.
     const pendingAttendees = attendees.filter(a => a.status === 'pending');
 
     const filteredAttendees = pendingAttendees.filter(attendee => 
@@ -218,12 +220,17 @@ function AttendeesTab({ event, attendees }: { event: Event, attendees: Attendee[
                         </TableHeader>
                         <TableBody>
                             {filteredAttendees.map((attendee) => {
-                                let statusKey: keyof typeof statusConfig = 'unknown';
-                                if (attendee.checked_out) statusKey = 'checked_out';
-                                else if (attendee.checked_in) statusKey = 'checked_in';
-                                else if (attendee.status === 'approved') statusKey = 'approved';
-                                else if (attendee.status === 'pending') statusKey = 'pending';
-                                else if (attendee.status === 'rejected') statusKey = 'rejected';
+                                let statusKey: Attendee['status'] = 'unknown';
+                                if (attendee.checked_out) {
+                                    statusKey = 'checked_out';
+                                } else if (attendee.checked_in) {
+                                    statusKey = 'checked_in';
+                                } else if (attendee.status) {
+                                    statusKey = attendee.status;
+                                } else if (!event.requires_approval) {
+                                    // If event does not require approval and no other status is set, assume approved
+                                    statusKey = 'approved';
+                                }
 
                                 const { text, className, icon } = statusConfig[statusKey];
 
@@ -274,14 +281,20 @@ function SettingsTab({ event }: { event: { id: number }}) {
                 <CardHeader>
                     <CardTitle>General</CardTitle>
                     <CardDescription>
-                        Manage your event settings.
+                        Manage your event settings and appearance.
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex items-center gap-4">
                     <Link href={`/dashboard/events/${event.id}/edit`}>
                         <Button variant="outline">
                             <Pencil className="mr-2 h-4 w-4" />
-                            Edit Event
+                            Edit Event Details
+                        </Button>
+                    </Link>
+                    <Link href={`/dashboard/events/${event.id}/manage/ticket`}>
+                        <Button variant="outline">
+                            <Ticket className="mr-2 h-4 w-4" />
+                            Customize Ticket
                         </Button>
                     </Link>
                 </CardContent>
@@ -340,6 +353,9 @@ interface ManageEventViewProps {
 export function ManageEventView({ event, initialAttendees }: ManageEventViewProps) {
   const [selectedAttendee, setSelectedAttendee] = useState<Attendee | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Log initialAttendees to inspect their status
+  console.log("Initial Attendees in ManageEventView:", initialAttendees);
 
   const handleViewAttendee = (attendee: Attendee) => {
     setSelectedAttendee( attendee);

@@ -1,67 +1,137 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { updateTicketAppearance } from '@/lib/actions/events';
+import type { Event } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
+import Image from 'next/image';
+import { Calendar, MapPin } from 'lucide-react';
+import { Badge } from '@/components/ui/badge'; // Import Badge
 
-export function TicketCustomizer() {
-  const [logo, setLogo] = useState<string | null>(null);
-  const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
-  const [brandColor, setBrandColor] = useState('#000000');
+interface TicketCustomizerProps {
+  event: Event;
+}
 
-  // TODO: Fetch event data and set initial values
+export function TicketCustomizer({ event }: TicketCustomizerProps) {
+  const { toast } = useToast();
+  const [preview, setPreview] = useState({
+    brandColor: event.ticket_brand_color || '#000000',
+    brandLogo: event.ticket_brand_logo || null,
+  });
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setBrandColor(e.target.value);
+  console.log("TicketCustomizer initialized with event:", event);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'brandLogo' | 'backgroundImage') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(prev => ({ ...prev, [field]: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = async (formData: FormData) => {
+    setIsSaving(true);
+    const result = await updateTicketAppearance(event.id, formData);
+    if (result?.success) {
+      if (result.logoUrl) {
+        // Append a cache-busting query parameter to force image reload
+        const newLogoUrl = `${result.logoUrl}?t=${Date.now()}`;
+        setPreview(prev => ({ ...prev, brandLogo: newLogoUrl }));
+      }
+      toast({ title: 'Success', description: 'Ticket appearance updated successfully.' });
+    } else {
+      toast({ title: 'Error', description: result?.error || 'Failed to update ticket appearance.', variant: 'destructive' });
+    }
+    setIsSaving(false);
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div className="grid md:grid-cols-2 gap-8">
       <Card>
         <CardHeader>
-          <CardTitle>Customization Options</CardTitle>
+          <CardTitle>Customize Ticket</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="logo">Logo</Label>
-            <Input id="logo" type="file" onChange={(e) => setLogo(e.target.files?.[0] ? URL.createObjectURL(e.target.files[0]) : null)} />
-          </div>
-          <div>
-            <Label htmlFor="background-image">Background Image</Label>
-            <Input id="background-image" type="file" onChange={(e) => setBackgroundImage(e.target.files?.[0] ? URL.createObjectURL(e.target.files[0]) : null)} />
-          </div>
-          <div>
-            <Label htmlFor="brand-color">Brand Color</Label>
-            <Input id="brand-color" type="color" value={brandColor} onChange={handleColorChange} />
-          </div>
-          <Button>Save Changes</Button>
+        <CardContent>
+          <form action={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="ticket_brand_color">Brand Color</Label>
+              <Input
+                id="ticket_brand_color"
+                name="ticket_brand_color"
+                type="color"
+                defaultValue={preview.brandColor}
+                onChange={(e) => setPreview(prev => ({ ...prev, brandColor: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ticket_brand_logo">Brand Logo</Label>
+              <Input
+                id="ticket_brand_logo"
+                name="ticket_brand_logo"
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleFileChange(e, 'brandLogo')}
+              />
+            </div>
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </form>
         </CardContent>
       </Card>
-      <div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Live Ticket Preview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="relative w-full h-64 bg-gray-200 rounded-lg overflow-hidden">
-              {backgroundImage && <img src={backgroundImage} alt="Background" className="absolute inset-0 w-full h-full object-cover" />}
-              <div className="absolute inset-0 bg-black bg-opacity-20" />
-              <div className="relative p-4 h-full flex flex-col justify-between">
-                <div className="flex justify-between items-start">
-                  {logo && <img src={logo} alt="Logo" className="w-16 h-16 object-contain" />}
-                  <div style={{ backgroundColor: brandColor }} className="w-8 h-8 rounded-full" />
+
+      {/* Ticket Preview */}
+      <Card className="flex flex-col items-center justify-center p-6">
+        <CardHeader>
+          <CardTitle>Ticket Preview</CardTitle>
+        </CardHeader>
+        <CardContent className="w-full">
+          <div 
+            className="relative rounded-lg shadow-lg overflow-hidden bg-cover bg-center"
+            style={{
+              backgroundColor: preview.brandColor,
+            }}
+          >
+            <div className="bg-black bg-opacity-50 p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div className="text-white">
+                        {preview.brandLogo ? (
+                            <Image src={preview.brandLogo} alt="Brand Logo" width={120} height={120} className="mx-auto mb-4 rounded-full" />
+                        ) : (
+                            <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gray-300 flex items-center justify-center text-black text-sm font-bold">Logo</div>
+                        )}
+                        <h1 className="text-4xl font-bold text-white font-headline">{event.title}</h1>
+                        <p className="text-lg text-gray-200">{event.description || 'No description provided.'}</p>
+                        <div className="flex items-center gap-4 mt-4">
+                            <Calendar className="h-6 w-6" />
+                            <span className="font-medium text-lg">{new Date(event.date).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <MapPin className="h-6 w-6" />
+                            <span className="font-medium text-lg">{event.location}</span>
+                        </div>
+                        <Button variant="outline" className="mt-6">View Event (Placeholder)</Button>
+                    </div>
+                    <div className="flex flex-col items-center justify-center bg-white rounded-lg p-6">
+                        <div className="w-32 h-32 bg-gray-200 flex items-center justify-center text-gray-600">QR Code Placeholder</div>
+                        <p className="text-xs text-muted-foreground mt-4">Ticket ID: [ID Placeholder]</p>
+                        <div className="mt-4">
+                            <Badge className="bg-blue-500 text-white">Status: Checked In (Placeholder)</Badge>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                  <h3 className="text-white text-xl font-bold">Event Title</h3>
-                  <p className="text-white">John Doe</p>
-                </div>
-              </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

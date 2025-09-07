@@ -33,6 +33,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'jhqvuwwqevhxotlhbfnl.supabase.co',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
   // Fix the serverActions configuration

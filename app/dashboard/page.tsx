@@ -91,7 +91,7 @@ async function getDashboardStats(user: any) {
       recentEvents
     };
   } catch (error) {
-      console.error("Error fetching dashboard stats:", error);
+      console.error("Error fetching dashboard stats:", JSON.stringify(error, null, 2));
       // Return a default state in case of any error
       return { isOrganizer: false, totalEvents: 0, activeEvents: 0, totalAttendees: 0, checkInsToday: 0, recentEvents: [] };
   }

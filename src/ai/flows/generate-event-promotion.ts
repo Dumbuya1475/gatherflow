@@ -59,6 +59,7 @@ const generateEventPromotionFlow = ai.defineFlow(
     if (!output) {
       throw new Error('The AI model did not return any output.');
     }
+
     return output;
   }
 );

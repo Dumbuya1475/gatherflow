@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { registerAndCreateTicket } from '@/lib/actions/tickets';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { EventWithAttendees, EventFormField } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { User } from '@supabase/supabase-js';
@@ -87,6 +89,38 @@ export function RegisterForEventForm({ event, formFields, user }: { event: Event
                     {field.field_type === 'number' && <Input id={`custom-field-${field.id}`} name={`custom_field_${field.id}`} type="number" required={field.is_required} />}
                     {field.field_type === 'date' && <Input id={`custom-field-${field.id}`} name={`custom_field_${field.id}`} type="date" required={field.is_required} />}
                     {field.field_type === 'boolean' && <Checkbox id={`custom-field-${field.id}`} name={`custom_field_${field.id}`} required={field.is_required} />}
+                    {field.field_type === 'dropdown' && (
+                      <Select name={`custom_field_${field.id}`} required={field.is_required}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select an option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {field.options?.map(option => (
+                            <SelectItem key={option.id} value={option.value}>{option.value}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {field.field_type === 'multiple-choice' && (
+                      <RadioGroup name={`custom_field_${field.id}`} required={field.is_required}>
+                        {field.options?.map(option => (
+                          <div key={option.id} className="flex items-center space-x-2">
+                            <RadioGroupItem value={option.value} id={`option-${option.id}`} />
+                            <Label htmlFor={`option-${option.id}`}>{option.value}</Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    )}
+                    {field.field_type === 'checkboxes' && (
+                        <div>
+                            {field.options?.map(option => (
+                                <div key={option.id} className="flex items-center space-x-2">
+                                    <Checkbox id={`option-${option.id}`} name={`custom_field_${field.id}`} value={option.value} />
+                                    <Label htmlFor={`option-${option.id}`}>{option.value}</Label>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                   </div>
                 ))}
 

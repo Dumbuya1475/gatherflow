@@ -44,8 +44,45 @@ const BrandedTicket = ({ ticket }: { ticket: TicketWithEvent }) => {
                             <MapPin className="h-6 w-6" />
                             <span className="font-medium text-lg">{events.location}</span>
                         </div>
+                        <div className="mt-6">
+                            <Button asChild variant="outline">
+                                <Link href={`/events/${ticket.event_id}`}>View Event</Link>
+                            </Button>
+                        </div>
                     </div>
                     <div className="flex flex-col items-center justify-center bg-white rounded-lg p-6">
+                        <div className="space-y-4 mb-4 text-center">
+                            {ticket.checked_out && ticket.checked_out_at && (
+                                <Badge className="bg-gray-700 text-white">
+                                    <UserRoundX className="mr-2 h-4 w-4" />
+                                    Checked Out at {new Date(ticket.checked_out_at).toLocaleTimeString()}
+                                </Badge>
+                            )}
+                            {ticket.checked_in && !ticket.checked_out && ticket.checked_in_at && (
+                                <Badge className="bg-blue-500 text-white">
+                                    <UserRoundCheck className="mr-2 h-4 w-4" />
+                                    Checked In at {new Date(ticket.checked_in_at).toLocaleTimeString()}
+                                </Badge>
+                            )}
+                            {!ticket.checked_in && !ticket.checked_out && ticket.status === 'approved' && (
+                                <Badge className="bg-green-500 text-white">
+                                    <UserRoundCheck className="mr-2 h-4 w-4" />
+                                    Approved
+                                </Badge>
+                            )}
+                            {ticket.status === 'pending' && (
+                                <Badge className="bg-yellow-500 text-white">
+                                    <Clock className="mr-2 h-4 w-4" />
+                                    Pending Approval
+                                </Badge>
+                            )}
+                            {ticket.status === 'rejected' && (
+                                <Badge className="bg-red-500 text-white">
+                                    <Ban className="mr-2 h-4 w-4" />
+                                    Rejected
+                                </Badge>
+                            )}
+                        </div>
                         <QrCodeGenerator qrToken={ticket.qr_token} />
                         <p className="text-xs text-muted-foreground mt-4">Ticket ID: {ticket.id}</p>
                     </div>

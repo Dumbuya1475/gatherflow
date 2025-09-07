@@ -1,11 +1,11 @@
 // lib/supabase/storage.ts
 import { createClient } from '@/lib/supabase/server';
 
-export async function uploadFile(file: File, bucket: string): Promise<string> {
+export async function uploadFile(file: File, bucket: string): Promise<{ publicUrl: string | null, error: { message: string } | null }> {
   const supabase = createClient();
   
   if (!file) {
-    throw new Error('No file provided');
+    return { publicUrl: null, error: { message: 'No file provided' } };
   }
 
   // Generate unique filename
@@ -25,11 +25,11 @@ export async function uploadFile(file: File, bucket: string): Promise<string> {
 
   if (error) {
     console.error('Storage upload error:', error);
-    throw new Error(`Upload failed: ${error.message}`);
+    return { publicUrl: null, error: { message: `Upload failed: ${error.message}` } };
   }
 
   if (!data) {
-    throw new Error('Upload failed: No data returned');
+    return { publicUrl: null, error: { message: 'Upload failed: No data returned' } };
   }
 
   // Get public URL
@@ -38,11 +38,11 @@ export async function uploadFile(file: File, bucket: string): Promise<string> {
     .getPublicUrl(filePath);
 
   if (!urlData || !urlData.publicUrl) {
-    throw new Error('Failed to get public URL');
+    return { publicUrl: null, error: { message: 'Failed to get public URL' } };
   }
 
   console.log('File uploaded successfully:', urlData.publicUrl);
-  return urlData.publicUrl;
+  return { publicUrl: urlData.publicUrl, error: null };
 }
 
 export async function deleteFile(bucket: string, filePath: string): Promise<void> {

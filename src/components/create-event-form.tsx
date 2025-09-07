@@ -70,8 +70,9 @@ const eventFormSchema = z.object({
   requires_approval: z.boolean().default(false),
   customFields: z.array(z.object({
     field_name: z.string().min(1, { message: "Field name is required." }),
-    field_type: z.enum(['text', 'number', 'date', 'boolean']),
+    field_type: z.enum(['text', 'number', 'date', 'boolean', 'multiple-choice', 'checkboxes', 'dropdown']),
     is_required: z.boolean().default(false),
+    options: z.array(z.object({ value: z.string().min(1, { message: "Option value is required." }) })).optional(),
   })).optional(),
 }).refine(data => {
     if (data.is_paid) {
@@ -91,9 +92,61 @@ interface CreateEventFormProps {
     defaultValues?: Partial<EventFormValues>;
 }
 
+function CustomFieldOptions({ nestIndex, form }: { nestIndex: number, form: any }) {
+  const { control, watch } = form;
+  const fieldType = watch(`customFields.${nestIndex}.field_type`);
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: `customFields.${nestIndex}.options`,
+  });
+
+  if (!['multiple-choice', 'checkboxes', 'dropdown'].includes(fieldType)) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-2">
+      <FormLabel>Options</FormLabel>
+      {fields.map((item, k) => (
+        <div key={item.id} className="flex items-center gap-2">
+          <FormField
+            control={control}
+            name={`customFields.${nestIndex}.options.${k}.value`}
+            render={({ field }) => (
+              <FormItem className="flex-1">
+                <FormControl>
+                  <Input {...field} placeholder={`Option ${k + 1}`} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => remove(k)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ))}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => append({ value: '' })}
+      >
+        <PlusCircle className="mr-2 h-4 w-4" />
+        Add Option
+      </Button>
+    </div>
+  );
+}
+
 export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [preview, setPreview] = useState<{[key: string]: string | null}>({
     cover_image: event?.cover_image || null,
   });
@@ -169,8 +222,6 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
   }
 
   async function onSubmit(data: EventFormValues) {
-    setIsSubmitting(true);
-  
     const formData = new FormData();
 
     const { 
@@ -203,26 +254,28 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
   
     const action = event ? updateEventAction.bind(null, event.id) : createEventAction;
   
-    const result = await action(formData);
-  
-    if (result?.success) {
-      toast({
-        title: event ? "Event Updated!" : "Event Created!",
-        description: `Your event has been ${event ? 'updated' : 'saved'}.`,
-      });
-      // Redirect is now handled by the server action on create
-      if (event) {
-          router.push('/dashboard/events');
+    try {
+      const result = await action(formData);
+    
+      // If the action redirects, this client-side success toast will not be shown.
+      // The redirect itself indicates success.
+      if (result?.error) {
+        toast({
+          variant: 'destructive',
+          title: event ? 'Update Failed' : 'Creation Failed',
+          description: result.error,
+        });
       }
-    } else if (result?.error) {
+    } catch (error) {
+      console.error("Form submission error:", error);
       toast({
         variant: 'destructive',
         title: event ? 'Update Failed' : 'Creation Failed',
-        description: result.error,
+        description: "An unexpected error occurred.",
       });
+    } finally {
+      // react-hook-form's handleSubmit usually manages isSubmitting, but this is a safeguard.
     }
-  
-    setIsSubmitting(false);
   }
   
 
@@ -609,8 +662,8 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
               </FormDescription>
               <div className="space-y-4 mt-4">
                 {customFields.map((field, index) => (
-                  <div key={field.id} className="flex items-center gap-4 p-4 border rounded-lg">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+                  <div key={field.id} className="flex flex-col md:flex-row items-start md:items-center gap-4 p-4 border rounded-lg">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 flex-1 w-full">
                       <FormField
                         control={form.control}
                         name={`customFields.${index}.field_name`}
@@ -627,10 +680,10 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                       <FormField
                         control={form.control}
                         name={`customFields.${index}.field_type`}
-                        render={({ field }) => (
+                        render={({ field: fieldType }) => (
                           <FormItem>
                             <FormLabel>Field Type</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={fieldType.onChange} defaultValue={fieldType.value}>
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select a type" />
@@ -641,6 +694,9 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                                 <SelectItem value="number">Number</SelectItem>
                                 <SelectItem value="date">Date</SelectItem>
                                 <SelectItem value="boolean">Yes/No</SelectItem>
+                                <SelectItem value="multiple-choice">Multiple Choice</SelectItem>
+                                <SelectItem value="checkboxes">Checkboxes</SelectItem>
+                                <SelectItem value="dropdown">Dropdown</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -665,6 +721,9 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                         )}
                       />
                     </div>
+                    <div className="col-span-1 md:col-span-3">
+                      <CustomFieldOptions nestIndex={index} form={form} />
+                    </div>
                     <Button
                       type="button"
                       variant="ghost"
@@ -674,14 +733,14 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
-                ))}
+                ))}`
               </div>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 className="mt-4"
-                onClick={() => appendCustomField({ field_name: '', field_type: 'text', is_required: false })}
+                onClick={() => appendCustomField({ field_name: '', field_type: 'text', is_required: false, options: [] })}
               >
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Add Custom Field
@@ -689,8 +748,8 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
             </div>
             
             <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (event ? 'Updating...' : 'Creating...') : (event ? 'Update Event' : 'Create Event')}
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? (event ? 'Updating...' : 'Creating...') : (event ? 'Update Event' : 'Create Event')}
               </Button>
             </div>
           </form>
