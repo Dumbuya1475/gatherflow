@@ -44,3 +44,6 @@ pnpm-debug.log*
 # TypeScript
 *.tsbuildinfo
 node_modules
+
+# UniGuide-SL project (separate repository)
+uniguide-sl/
