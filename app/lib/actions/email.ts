@@ -54,3 +54,18 @@ export async function sendEmailAction(eventId: number, subject: string, message:
         return { success: false, error: 'Could not send email.' };
     }
 }
+
+export async function sendTicketEmail(to: string, subject: string, html: string) {
+  try {
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'GatherFlow <noreply@gatherflow.com>',
+      to,
+      subject,
+      html,
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending email:', error);
+    return { success: false, error: 'Could not send email.' };
+  }
+}

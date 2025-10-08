@@ -1,6 +1,3 @@
-
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { getTicketDetails } from "@/lib/actions/tickets";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,14 +12,11 @@ export default async function RegistrationSuccessPage({
     params: { id: string };
     searchParams: Promise<{ ticketId?: string }>;
 }) {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
     const { ticketId: ticketIdString } = await searchParams;
     const ticketId = ticketIdString ? parseInt(ticketIdString, 10) : null;
 
-    if (!user || !ticketId) {
-        // If user is somehow not logged in, or ticketId is missing, redirect to login
-        redirect('/login');
+    if (!ticketId) {
+        return <div className="text-center text-red-500 p-8">Error: Ticket ID not found</div>
     }
 
     const { data: ticket, error } = await getTicketDetails(ticketId);
@@ -30,6 +24,8 @@ export default async function RegistrationSuccessPage({
     if (error || !ticket || !ticket.events) {
         return <div className="text-center text-red-500 p-8">Error: {error || 'Ticket not found'}</div>
     }
+
+    const userEmail = ticket.profiles?.email;
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-secondary p-4 sm:p-6 md:p-8">
@@ -48,9 +44,11 @@ export default async function RegistrationSuccessPage({
                         <p className="text-sm text-muted-foreground">
                             {new Date(ticket.events.date).toLocaleDateString()} at {ticket.events.location}
                         </p>
-                        <p className="text-sm mt-2">
-                            A confirmation email has been sent to <span className="font-semibold">{user.email}</span>.
-                        </p>
+                        {userEmail && (
+                            <p className="text-sm mt-2">
+                                A confirmation email has been sent to <span className="font-semibold">{userEmail}</span>.
+                            </p>
+                        )}
                     </div>
 
                     <Card className="flex flex-col items-center justify-center p-6 text-center">
@@ -71,15 +69,16 @@ export default async function RegistrationSuccessPage({
                         <ul className="list-disc list-inside space-y-1">
                             <li>Keep your QR code safe and accessible on your mobile device.</li>
                             <li>Present this QR code at the event entrance for quick check-in.</li>
-                            <li>You can always access your QR code from your dashboard.</li>
                             <li>Contact event organizers if you have any questions.</li>
                         </ul>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <Button asChild className="w-full"><Link href="/dashboard/events">View My Events</Link></Button>
-                        <Button asChild variant="outline" className="w-full"><Link href="/events">Browse More Events</Link></Button>
-                    </div>
+                    {ticket.profiles && !ticket.profiles.is_guest && (
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <Button asChild className="w-full"><Link href="/dashboard/events">View My Events</Link></Button>
+                            <Button asChild variant="outline" className="w-full"><Link href="/events">Browse More Events</Link></Button>
+                        </div>
+                    )}
 
                 </CardContent>
             </Card>
