@@ -101,7 +101,7 @@ export function LandingPageClient({ recentEvents, user }: LandingPageClientProps
         <section className="w-full pt-28 pb-20 md:pt-36 md:pb-32 lg:pt-35 lg:pb-40 relative">
           {/* Animated Background Gradient */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/10"></div>
-          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-primary/3 to-transparent animate-pulse duration-[4000ms]"></div>
+          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-primary/10 to-transparent animate-pulse duration-[4000ms]"></div>
           
           {/* Floating Elements */}
           <div className="absolute top-20 left-10 w-20 h-20 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full blur-xl animate-bounce duration-[3000ms]"></div>
@@ -111,12 +111,12 @@ export function LandingPageClient({ recentEvents, user }: LandingPageClientProps
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12">
               <div className="flex flex-col justify-center space-y-6 animate-in fade-in-0 slide-in-from-left-4 duration-1000">
                 <div className="space-y-4">
-                  <div className="inline-flex items-center rounded-full border px-4 py-2 text-sm bg-gradient-to-r from-primary/10 to-secondary/10 backdrop-blur-sm animate-in fade-in-0 slide-in-from-left-2 duration-700 delay-200">
+                  <div className="inline-flex items-center rounded-full border px-4 py-2 text-sm bg-background/50 backdrop-blur-sm animate-in fade-in-0 slide-in-from-left-2 duration-700 delay-200">
                     <Sparkles className="mr-2 h-4 w-4 text-primary animate-pulse" />
                     New: AI-Powered Event Promotions
                   </div>
                   <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none font-headline bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
-                    Organize Events That <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent animate-gradient">Inspire</span>
+                    Organize Events That <span className="bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent animate-gradient">Inspire</span>
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl leading-relaxed">
                     GatherFlow is the all-in-one platform to manage, promote, and execute your events flawlessly. From ticketing to check-in, we provide the tools you need to create memorable experiences.
@@ -171,15 +171,15 @@ export function LandingPageClient({ recentEvents, user }: LandingPageClientProps
         
         {/* Events Section with Enhanced Design */}
         <section id="events" className="w-full py-20 md:py-32 relative">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-secondary/30 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-secondary/5 to-transparent"></div>
           <div className="container mx-auto px-4 md:px-6 relative z-10">
             <div className="flex flex-col items-center justify-center space-y-6 text-center animate-in fade-in-0 slide-in-from-bottom-4 duration-700">
                 <div className="space-y-4">
-                    <div className="inline-block rounded-lg bg-gradient-to-r from-primary/10 to-secondary/10 px-4 py-2 text-sm font-medium backdrop-blur-sm border border-primary/20">
+                    <div className="inline-block rounded-lg bg-background/50 px-4 py-2 text-sm font-medium backdrop-blur-sm border border-primary/20">
                       Featured Events
                     </div>
                     <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">
-                      Upcoming <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Events</span>
+                      Upcoming <span className="bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">Events</span>
                     </h2>
                     <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                         Check out some of the exciting events happening soon.
@@ -211,7 +211,7 @@ export function LandingPageClient({ recentEvents, user }: LandingPageClientProps
                     </div>
                 </>
             ) : (
-                <div className="mt-16 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center bg-gradient-to-br from-secondary/20 to-transparent animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-300">
+                <div className="mt-16 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center bg-background/30 backdrop-blur-sm animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-300">
                     <div className="mb-4 p-4 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full">
                       <CalendarDays className="h-12 w-12 text-muted-foreground/50" />
                     </div>
@@ -224,15 +224,15 @@ export function LandingPageClient({ recentEvents, user }: LandingPageClientProps
 
         {/* Features Section with Staggered Animations */}
         <section id="features" className="w-full py-20 md:py-32 relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/3 via-transparent to-secondary/3"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5"></div>
           <div className="container mx-auto px-4 md:px-6 relative z-10">
             <div className="flex flex-col items-center justify-center space-y-6 text-center animate-in fade-in-0 slide-in-from-bottom-4 duration-700">
               <div className="space-y-4">
-                <div className="inline-block rounded-lg bg-gradient-to-r from-secondary/10 to-primary/10 px-4 py-2 text-sm font-medium backdrop-blur-sm border border-secondary/20">
+                <div className="inline-block rounded-lg bg-background/50 px-4 py-2 text-sm font-medium backdrop-blur-sm border border-secondary/20">
                   Key Features
                 </div>
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">
-                  Everything You Need to <span className="bg-gradient-to-r from-secondary to-primary bg-clip-text text-transparent">Succeed</span>
+                  Everything You Need to <span className="bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">Succeed</span>
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                   Our platform is packed with powerful features designed to make your event management process as smooth as possible.
@@ -243,7 +243,7 @@ export function LandingPageClient({ recentEvents, user }: LandingPageClientProps
               {features.map((feature, index) => (
                 <Card 
                   key={index} 
-                  className="h-full group cursor-pointer relative overflow-hidden border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur-sm animate-in fade-in-0 slide-in-from-bottom-4 duration-700 hover:shadow-2xl transition-all duration-500"
+                  className="h-full group cursor-pointer relative overflow-hidden border-0 bg-card/80 backdrop-blur-sm animate-in fade-in-0 slide-in-from-bottom-4 duration-700 hover:shadow-2xl transition-all duration-500"
                   style={{ animationDelay: feature.delay }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -265,15 +265,15 @@ export function LandingPageClient({ recentEvents, user }: LandingPageClientProps
         
         {/* Pricing Section with Enhanced Cards */}
         <section id="pricing" className="w-full py-20 md:py-32 relative">
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-secondary/20 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-secondary/5 to-transparent"></div>
             <div className="container mx-auto px-4 md:px-6 relative z-10">
                 <div className="flex flex-col items-center justify-center space-y-6 text-center animate-in fade-in-0 slide-in-from-bottom-4 duration-700">
                     <div className="space-y-4">
-                         <div className="inline-block rounded-lg bg-gradient-to-r from-primary/10 to-secondary/10 px-4 py-2 text-sm font-medium backdrop-blur-sm border border-primary/20">
+                         <div className="inline-block rounded-lg bg-background/50 px-4 py-2 text-sm font-medium backdrop-blur-sm border border-primary/20">
                            Pricing Plans
                          </div>
                         <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">
-                          Simple, <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Transparent</span> Pricing
+                          Simple, <span className="bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">Transparent</span> Pricing
                         </h2>
                         <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                             Choose the plan that's right for you. No hidden fees, just straightforward value.
@@ -286,14 +286,14 @@ export function LandingPageClient({ recentEvents, user }: LandingPageClientProps
                           key={tier.name} 
                           className={`flex flex-col relative overflow-hidden group cursor-pointer transition-all duration-500 hover:shadow-2xl animate-in fade-in-0 slide-in-from-bottom-4 duration-700 ${
                             tier.isPopular 
-                              ? 'border-primary shadow-lg scale-105 bg-gradient-to-br from-card to-primary/5' 
-                              : 'hover:scale-105 bg-gradient-to-br from-card to-card/80 backdrop-blur-sm'
+                              ? 'border-primary shadow-lg scale-105 bg-card/95' 
+                              : 'hover:scale-105 bg-card/80 backdrop-blur-sm'
                           }`}
                           style={{ animationDelay: `${300 + index * 150}ms` }}
                         >
                              {tier.isPopular && (
-                                <div className="bg-gradient-to-r from-primary to-secondary text-primary-foreground text-sm font-semibold text-center py-2 relative overflow-hidden">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-primary/90 to-secondary/90"></div>
+                                <div className="bg-gradient-to-r from-primary to-blue-400 text-primary-foreground text-sm font-semibold text-center py-2 relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-primary/90 to-blue-400/90"></div>
                                     <span className="relative z-10 flex items-center justify-center">
                                       <Star className="mr-2 h-4 w-4" />
                                       Most Popular
@@ -321,7 +321,7 @@ export function LandingPageClient({ recentEvents, user }: LandingPageClientProps
                             <CardFooter className="relative z-10">
                                 <Button className={`w-full group relative overflow-hidden transition-all duration-300 ${
                                   tier.isPopular 
-                                    ? 'bg-gradient-to-r from-primary to-secondary hover:shadow-lg' 
+                                    ? 'bg-gradient-to-r from-primary to-blue-400 hover:shadow-lg' 
                                     : ''
                                 }`} variant={tier.isPopular ? 'default' : 'outline'}>
                                     <span className="relative z-10">
@@ -350,14 +350,14 @@ export function LandingPageClient({ recentEvents, user }: LandingPageClientProps
           <div className="container mx-auto grid items-center justify-center gap-6 px-4 text-center md:px-6 relative z-10">
             <div className="space-y-6 animate-in fade-in-0 slide-in-from-bottom-4 duration-700">
               <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight font-headline">
-                Ready to Create <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Amazing Events?</span>
+                Ready to Create <span className="bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">Amazing Events?</span>
               </h2>
               <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed leading-relaxed">
                 Join thousands of event organizers who trust GatherFlow. Sign up today and experience the difference.
               </p>
             </div>
             <div className="mx-auto w-full max-w-sm space-y-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-700 delay-300">
-              <Button asChild size="lg" className="w-full font-semibold group relative overflow-hidden bg-gradient-to-r from-primary to-secondary hover:shadow-xl transition-all duration-300">
+              <Button asChild size="lg" className="w-full font-semibold group relative overflow-hidden bg-gradient-to-r from-primary to-blue-400 hover:shadow-xl transition-all duration-300">
                 <Link href="/signup">
                   <span className="relative z-10 flex items-center justify-center">
                     Sign Up Now

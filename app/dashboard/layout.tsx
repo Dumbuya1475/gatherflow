@@ -224,7 +224,7 @@ export default async function DashboardLayout({
         </Sidebar>
         
         {/* Enhanced Main Content Area */}
-        <div className="flex flex-1 flex-col min-w-0 bg-gradient-to-br from-background to-secondary/5">
+        <div className="flex flex-1 flex-col min-w-0 bg-background/90">
           {/* Enhanced Header */}
           <div className="sticky top-0 z-10 border-b border-border/40 bg-background/80 backdrop-blur-md">
             <DashboardHeader />

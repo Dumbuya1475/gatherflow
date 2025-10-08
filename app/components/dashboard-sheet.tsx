@@ -48,7 +48,7 @@ export function DashboardSheet() {
       </SheetTrigger>
       <SheetContent 
         side="left" 
-        className="sm:max-w-xs bg-gradient-to-br from-card/95 to-card/90 backdrop-blur-xl border-r border-border/40"
+        className="sm:max-w-xs bg-background/80 backdrop-blur-xl border-r border-border/40"
       >
         {/* Enhanced Header */}
         <SidebarHeader className="mb-6 border-b border-border/40 pb-4">
@@ -77,7 +77,7 @@ export function DashboardSheet() {
             <SidebarMenuItem>
               <SidebarMenuButton 
                 asChild 
-                className="group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+                className="group relative overflow-hidden transition-all duration-300 hover:bg-accent/50"
               >
                 <Link href="/dashboard">
                   <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
@@ -95,7 +95,7 @@ export function DashboardSheet() {
                 <SidebarMenuItem>
                   <SidebarMenuButton 
                     asChild 
-                    className="group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+                    className="group relative overflow-hidden transition-all duration-300 hover:bg-accent/50"
                   >
                     <Link href="/dashboard/events">
                       <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
@@ -107,7 +107,7 @@ export function DashboardSheet() {
                 <SidebarMenuItem>
                   <SidebarMenuButton 
                     asChild 
-                    className="group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+                    className="group relative overflow-hidden transition-all duration-300 hover:bg-accent/50"
                   >
                     <Link href="/dashboard/events/create">
                       <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
@@ -127,7 +127,7 @@ export function DashboardSheet() {
                 <SidebarMenuItem>
                   <SidebarMenuButton 
                     asChild 
-                    className="group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+                    className="group relative overflow-hidden transition-all duration-300 hover:bg-accent/50"
                   >
                     <Link href="/dashboard/scanner">
                       <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
@@ -139,7 +139,7 @@ export function DashboardSheet() {
                 <SidebarMenuItem>
                   <SidebarMenuButton 
                     asChild 
-                    className="group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+                    className="group relative overflow-hidden transition-all duration-300 hover:bg-accent/50"
                   >
                     <Link href="/dashboard/attendees">
                       <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
@@ -159,7 +159,7 @@ export function DashboardSheet() {
                 <SidebarMenuItem>
                   <SidebarMenuButton 
                     asChild 
-                    className="group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+                    className="group relative overflow-hidden transition-all duration-300 hover:bg-accent/50"
                   >
                     <Link href="/dashboard/analytics">
                       <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
@@ -171,7 +171,7 @@ export function DashboardSheet() {
                 <SidebarMenuItem>
                   <SidebarMenuButton 
                     asChild 
-                    className="group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+                    className="group relative overflow-hidden transition-all duration-300 hover:bg-accent/50"
                   >
                     <Link href="/dashboard/reports">
                       <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
@@ -191,7 +191,7 @@ export function DashboardSheet() {
             <SidebarMenuItem>
               <SidebarMenuButton 
                 asChild 
-                className="group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+                className="group relative overflow-hidden transition-all duration-300 hover:bg-accent/50"
               >
                 <Link href="/dashboard/profile">
                   <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
@@ -203,7 +203,7 @@ export function DashboardSheet() {
             <SidebarMenuItem>
               <SidebarMenuButton 
                 asChild 
-                className="group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+                className="group relative overflow-hidden transition-all duration-300 hover:bg-accent/50"
               >
                 <Link href="/dashboard/settings">
                   <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
@@ -219,7 +219,7 @@ export function DashboardSheet() {
             <Button 
               type="submit" 
               variant="ghost" 
-              className="w-full justify-start gap-2 text-foreground/70 hover:text-foreground group relative overflow-hidden transition-all duration-300 hover:bg-transparent"
+              className="w-full justify-start gap-2 text-foreground/70 hover:text-foreground group relative overflow-hidden transition-all duration-300 hover:bg-destructive/10"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-destructive/5 to-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
               <LogOut className="relative z-10 h-4 w-4 group-hover:text-destructive transition-colors duration-200" />
