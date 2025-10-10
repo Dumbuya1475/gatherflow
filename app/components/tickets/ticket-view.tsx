@@ -1,8 +1,9 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { QrCodeGenerator } from "./qr-code-generator";
+import { QrCodeGenerator } from "@/components/tickets/qr-code-generator";
 import { Calendar, MapPin, Clock, Ban, UserRoundCheck, UserRoundX } from "lucide-react";
 import Link from "next/link";
 import type { Ticket, Event } from "@/lib/types";
@@ -10,8 +11,11 @@ import Image from 'next/image';
 import { Badge } from "@/components/ui/badge";
 import { format } from 'date-fns';
 
+import { UpgradeAccountForm } from "./upgrade-account-form";
+
 interface TicketWithEvent extends Ticket {
     events: Event & { organizer?: { first_name: string | null, last_name: string | null } | null } | null;
+    profiles: { is_guest?: boolean, id?: string, email?: string } | null;
 }
 
 const BrandedTicket = ({ ticket }: { ticket: TicketWithEvent }) => {
@@ -263,7 +267,12 @@ export function TicketView({ ticket }: { ticket: TicketWithEvent }) {
                     </Card>
                     <StatusDisplay />
                 </div>
+                {ticket.profiles?.is_guest && (
+                    <UpgradeAccountForm userId={ticket.profiles.id!} />
+                )}
             </div>
         </div>
     )
 }
+
+    

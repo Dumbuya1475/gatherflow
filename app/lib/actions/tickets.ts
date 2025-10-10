@@ -813,10 +813,11 @@ export async function registerGuestForEvent(
   }
 
   if (initialStatus === 'approved') {
+    const ticketUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/tickets/view?ticketId=${ticket.id}&email=${email}`;
     await sendTicketEmail(
       email,
       `Your ticket for ${eventData.title}`,
-      `<h1>Here is your ticket</h1><p>QR Code: ${ticketData.qr_token}</p>`
+      `<h1>Here is your ticket</h1><p>You can view your ticket and QR code here: <a href="${ticketUrl}">${ticketUrl}</a></p>`
     );
   }
 
@@ -825,6 +826,6 @@ export async function registerGuestForEvent(
   if (initialStatus === 'pending') {
     redirect(`/events/${eventId}/register/pending`);
   } else {
-    redirect(`/events/${eventId}/register/success?ticketId=${ticket.id}`);
+    redirect(`/tickets/view?ticketId=${ticket.id}&email=${email}`);
   }
 }

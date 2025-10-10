@@ -12,7 +12,48 @@ export async function middleware(request: NextRequest) {
     );
     return NextResponse.next();
   }
-  return await updateSession(request);
+  const supabaseResponse = await updateSession(request);
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          supabaseResponse.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+        },
+        remove(name: string, options: CookieOptions) {
+          supabaseResponse.cookies.set({
+            name,
+            value: "",
+            ...options,
+          });
+        },
+      },
+    }
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (user && request.nextUrl.pathname.startsWith('/dashboard')) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_guest')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.is_guest) {
+      return NextResponse.redirect(new URL('/login?message=Please create an account to access the dashboard.', request.url));
+    }
+  }
+
+  return supabaseResponse;
 }
 
 export const config = {

@@ -104,5 +104,30 @@ export async function getScanners() {
       return { data: null, error: 'Could not fetch scanners.' };
     }
   
-    return { data, error: null };
+    
+export async function upgradeGuestAccount(userId: string, password: string): Promise<{ error?: string; success?: boolean; }> {
+  const supabase = await createServiceRoleClient();
+
+  const { error: authError } = await supabase.auth.admin.updateUserById(
+    userId,
+    { password: password }
+  );
+
+  if (authError) {
+    console.error('Error updating user password:', authError);
+    return { error: 'Could not update user password.' };
+  }
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ is_guest: false })
+    .eq('id', userId);
+
+  if (profileError) {
+    console.error('Error updating profile:', profileError);
+    return { error: 'Could not update profile.' };
+  }
+
+  revalidatePath('/dashboard');
+  return { success: true };
 }

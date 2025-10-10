@@ -1,7 +1,7 @@
 
 
 import { getTicketDetails } from "@/lib/actions/tickets";
-import { TicketView } from "./_components/ticket-view";
+import { TicketView } from "@/components/tickets/ticket-view";
 
 export default async function TicketPage({ params }: { params: { id: string } }) {
     const ticketId = parseInt(params.id, 10);
