@@ -3,7 +3,17 @@
 import { createClient } from '@/lib/supabase/server';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resend: Resend | undefined;
+
+function getResend() {
+  if (!resend) {
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY is not set');
+    }
+    resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resend;
+}
 
 export async function sendEmailAction(eventId: number, subject: string, message: string, recipientSegment: string) {
     const supabase = createClient();
@@ -41,7 +51,7 @@ export async function sendEmailAction(eventId: number, subject: string, message:
 
     try {
         // IMPORTANT: Replace with your own verified domain on Resend.
-        await resend.emails.send({
+        await getResend().emails.send({
             from: process.env.RESEND_FROM_EMAIL || 'GatherFlow <noreply@gatherflow.com>',
             to: recipients,
             subject: subject,
@@ -57,7 +67,7 @@ export async function sendEmailAction(eventId: number, subject: string, message:
 
 export async function sendTicketEmail(to: string, subject: string, html: string) {
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: process.env.RESEND_FROM_EMAIL || 'GatherFlow <noreply@gatherflow.com>',
       to,
       subject,

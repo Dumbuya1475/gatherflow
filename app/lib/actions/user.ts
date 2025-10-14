@@ -104,6 +104,8 @@ export async function getScanners() {
       return { data: null, error: 'Could not fetch scanners.' };
     }
   
+    return { data, error: null };
+}
     
 export async function upgradeGuestAccount(userId: string, password: string): Promise<{ error?: string; success?: boolean; }> {
   const supabase = await createServiceRoleClient();

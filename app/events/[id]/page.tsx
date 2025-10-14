@@ -12,6 +12,7 @@ import Link from "next/link";
 import { format } from 'date-fns';
 import { EventWithAttendees } from "@/lib/types";
 import { ShareButton } from "./_components/share-button";
+import { ResendTicketForm } from "./_components/resend-ticket-form";
 
 
 async function getTicketId(eventId: number, userId?: string) {
@@ -146,6 +147,9 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
                         </div>
                     </CardContent>
                 </Card>
+                <div className="mt-8">
+                    <ResendTicketForm eventId={event.id} />
+                </div>
             </div>
         </div>
     )

@@ -429,13 +429,23 @@ export async function getTicketDetails(ticketId: number) {
         console.error("Error fetching organizer profile for ticket", profileError);
     }
 
+    const { data: formResponses, error: formResponsesError } = await supabase
+        .from('attendee_form_responses')
+        .select('field_value, event_form_fields(field_name)')
+        .eq('ticket_id', ticket.id);
+
+    if (formResponsesError) {
+        console.error("Error fetching form responses for ticket", formResponsesError);
+    }
+
     const ticketWithOrganizer = {
         ...ticket,
         events: {
             ...ticket.events!,
             attendees: ticket.events!.tickets[0]?.count || 0,
             organizer: organizerProfile,
-        }
+        },
+        form_responses: formResponses || [],
     }
 
     return { data: ticketWithOrganizer, error: null };
@@ -828,4 +838,49 @@ export async function registerGuestForEvent(
   } else {
     redirect(`/tickets/view?ticketId=${ticket.id}&email=${email}`);
   }
+}
+
+export async function resendTicketLinkAction(
+  prevState: { error?: string; success?: boolean } | undefined,
+  formData: FormData
+) {
+  const supabase = createServiceRoleClient();
+  const eventId = parseInt(formData.get('eventId') as string, 10);
+  const email = formData.get('email') as string;
+
+  if (!email) {
+    return { error: 'Please provide an email address.' };
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', email)
+    .single();
+
+  if (profileError || !profile) {
+    return { error: 'No registration found for this email address.' };
+  }
+
+  const { data: ticket, error: ticketError } = await supabase
+    .from('tickets')
+    .select('id, events(title)')
+    .eq('event_id', eventId)
+    .eq('user_id', profile.id)
+    .single();
+
+  if (ticketError || !ticket) {
+    return { error: 'No ticket found for this email address and event.' };
+  }
+
+  const ticketUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/tickets/view?ticketId=${ticket.id}&email=${email}`;
+  const eventTitle = ticket.events?.title || 'the event';
+
+  await sendTicketEmail(
+    email,
+    `Your ticket for ${eventTitle}`,
+    `<h1>Here is your ticket</h1><p>You can view your ticket and QR code here: <a href="${ticketUrl}">${ticketUrl}</a></p>`
+  );
+
+  return { success: true };
 }

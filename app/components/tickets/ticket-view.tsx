@@ -11,11 +11,12 @@ import Image from 'next/image';
 import { Badge } from "@/components/ui/badge";
 import { format } from 'date-fns';
 
-import { UpgradeAccountForm } from "./upgrade-account-form";
+import { UpgradeAccountPrompt } from "./upgrade-account-prompt";
 
 interface TicketWithEvent extends Ticket {
     events: Event & { organizer?: { first_name: string | null, last_name: string | null } | null } | null;
-    profiles: { is_guest?: boolean, id?: string, email?: string } | null;
+    profiles: { first_name?: string, last_name?: string, is_guest?: boolean, id?: string, email?: string } | null;
+    form_responses: { field_value: string, event_form_fields: { field_name: string } }[];
 }
 
 const BrandedTicket = ({ ticket }: { ticket: TicketWithEvent }) => {
@@ -52,6 +53,25 @@ const BrandedTicket = ({ ticket }: { ticket: TicketWithEvent }) => {
                             <Button asChild variant="outline">
                                 <Link href={`/events/${ticket.event_id}`}>View Event</Link>
                             </Button>
+                        </div>
+                        <div className="mt-6 text-white">
+                            <h3 className="text-xl font-bold mb-4">Attendee Details</h3>
+                            <div className="flex items-center gap-2">
+                                <span className="font-medium">{ticket.profiles?.first_name} {ticket.profiles?.last_name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="font-medium">{ticket.profiles?.email}</span>
+                            </div>
+                            {ticket.form_responses && ticket.form_responses.length > 0 && (
+                                <div className="pt-4 mt-4 border-t border-gray-600">
+                                    {ticket.form_responses.map((response, index) => (
+                                        <div key={index} className="flex items-center gap-2">
+                                            <span className="font-medium">{response.event_form_fields.field_name}:</span>
+                                            <span>{response.field_value}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                     <div className="flex flex-col items-center justify-center bg-white rounded-lg p-6">
@@ -267,8 +287,31 @@ export function TicketView({ ticket }: { ticket: TicketWithEvent }) {
                     </Card>
                     <StatusDisplay />
                 </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Attendee Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex items-center gap-2">
+                            <span className="font-medium">{ticket.profiles?.first_name} {ticket.profiles?.last_name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="font-medium">{ticket.profiles?.email}</span>
+                        </div>
+                        {ticket.form_responses && ticket.form_responses.length > 0 && (
+                            <div className="pt-4 border-t">
+                                {ticket.form_responses.map((response, index) => (
+                                    <div key={index} className="flex items-center gap-2">
+                                        <span className="font-medium">{response.event_form_fields.field_name}:</span>
+                                        <span>{response.field_value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
                 {ticket.profiles?.is_guest && (
-                    <UpgradeAccountForm userId={ticket.profiles.id!} />
+                    <UpgradeAccountPrompt userId={ticket.profiles.id!} />
                 )}
             </div>
         </div>
