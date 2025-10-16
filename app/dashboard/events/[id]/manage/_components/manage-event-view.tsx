@@ -5,7 +5,7 @@ import type { Attendee, Event } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { unregisterAttendeeAction } from "@/lib/actions/tickets";
+import { unregisterAttendeeAction } from "@/lib/actions/tickets.tsx";
 import { deleteEventAction } from "@/lib/actions/events";
 import { CheckCircle, XCircle, Trash2, Eye, Clock, Ban, UserPlus, Settings, Users, UserRoundCheck, UserRoundX, Ticket, Calendar, MapPin, UsersRound } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

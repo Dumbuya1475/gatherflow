@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import type { Attendee } from "@/lib/types";
-import { approveAttendeeAction, rejectAttendeeAction } from "@/lib/actions/tickets";
+import { approveAttendeeAction, rejectAttendeeAction } from "@/lib/actions/tickets.tsx";
 import { CheckCircle, Ban, Mail, User } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 

@@ -7,7 +7,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye, Eye, Pencil, DollarSign, Timer, User, X, Clock } from 'lucide-react';
 import type { EventWithAttendees } from '@/lib/types';
-import { registerForEventAction, unregisterForEventAction } from '@/lib/actions/tickets';
+import { registerForEventAction, unregisterForEventAction } from '@/lib/actions/tickets.tsx';
 import { useToast } from '@/hooks/use-toast';
 import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';

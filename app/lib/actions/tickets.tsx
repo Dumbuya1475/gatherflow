@@ -6,25 +6,11 @@ import { redirect } from 'next/navigation';
 import { getEventFormFields } from './events';
 import { sendTicketEmail } from './email';
 
-type Ticket = {
-  id: number;
+type TicketData = {
   event_id: number;
   user_id: string;
-  checked_in: boolean;
-  checked_out: boolean;
-  checked_in_at?: string;
-  checked_out_at?: string;
+  status: string;
   qr_token?: string;
-  events?: {
-    id: number;
-    organizer_id: string;
-    title?: string;
-  };
-};
-
-type Profile = {
-  first_name: string;
-  last_name: string;
 };
 
 // Updated ticket registration functions with proper QR workflow
@@ -126,11 +112,18 @@ export async function registerForEventAction(
   }
 
   if (initialStatus === 'approved') {
-    await sendTicketEmail(
-      user.email!,
-      `Your ticket for ${eventData.title}`,
-      `<h1>Here is your ticket</h1><p>QR Code: ${ticketData.qr_token}</p>`
-    );
+    const { data: ticketDetails } = await getTicketDetails(ticket.id);
+    if (ticketDetails) {
+      const { renderToStaticMarkup } = await import('react-dom/server');
+      const { TicketEmail } = await import('@/components/emails/ticket-email');
+      const emailHtml = renderToStaticMarkup(<TicketEmail ticket={ticketDetails} />);
+
+      await sendTicketEmail(
+        user.email!,
+        `Your ticket for ${eventData.title}`,
+        emailHtml
+      );
+    }
   }
 
   revalidatePath('/dashboard');
@@ -250,11 +243,18 @@ export async function registerAndCreateTicket(
     }
 
     if (initialStatus === 'approved') {
-        await sendTicketEmail(
-            userEmail,
-            `Your ticket for ${eventData.title}`,
-            `<h1>Here is your ticket</h1><p>QR Code: ${ticketData.qr_token}</p>`
-        );
+        const { data: ticketDetails } = await getTicketDetails(ticketResult.id);
+        if (ticketDetails) {
+            const { renderToStaticMarkup } = await import('react-dom/server');
+            const { TicketEmail } = await import('@/components/emails/ticket-email');
+            const emailHtml = renderToStaticMarkup(<TicketEmail ticket={ticketDetails} />);
+
+            await sendTicketEmail(
+                userEmail,
+                `Your ticket for ${eventData.title}`,
+                emailHtml
+            );
+        }
     }
 
     // Save custom form responses
@@ -823,12 +823,19 @@ export async function registerGuestForEvent(
   }
 
   if (initialStatus === 'approved') {
-    const ticketUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/tickets/view?ticketId=${ticket.id}&email=${email}`;
-    await sendTicketEmail(
-      email,
-      `Your ticket for ${eventData.title}`,
-      `<h1>Here is your ticket</h1><p>You can view your ticket and QR code here: <a href="${ticketUrl}">${ticketUrl}</a></p>`
-    );
+    // Fetch the full ticket details to provide to the email template
+    const { data: ticketDetails } = await getTicketDetails(ticket.id);
+    if (ticketDetails) {
+      const { renderToStaticMarkup } = await import('react-dom/server');
+      const { TicketEmail } = await import('@/components/emails/ticket-email');
+      const emailHtml = renderToStaticMarkup(<TicketEmail ticket={ticketDetails} />);
+      
+      await sendTicketEmail(
+        email,
+        `Your ticket for ${eventData.title}`,
+        emailHtml
+      );
+    }
   }
 
   revalidatePath(`/events/${eventId}`);

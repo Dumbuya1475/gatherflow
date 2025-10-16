@@ -1,6 +1,6 @@
 
 
-import { getTicketDetails } from "@/lib/actions/tickets";
+import { getTicketDetails } from "@/lib/actions/tickets.tsx";
 import { TicketView } from "@/components/tickets/ticket-view";
 
 export default async function TicketPage({ params }: { params: { id: string } }) {

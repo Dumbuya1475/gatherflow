@@ -1,5 +1,5 @@
 
-import { getTicketDetails } from '@/lib/actions/tickets';
+import { getTicketDetails } from '@/lib/actions/tickets.tsx';
 import { TicketView } from '@/components/tickets/ticket-view';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
