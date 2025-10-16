@@ -36,7 +36,7 @@ export function ResendTicketForm({ eventId }: { eventId: number }) {
           </div>
           <SubmitButton />
           {state?.error && <p className="text-red-500">{state.error}</p>}
-          {state?.success && <p className="text-green-500">If a ticket is found for this email, it has been resent.</p>}
+          {state?.success && <p className="text-green-500">If an account with that email exists for this event, a new ticket link has been sent.</p>}
         </form>
       </CardContent>
     </Card>

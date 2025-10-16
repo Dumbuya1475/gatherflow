@@ -859,7 +859,8 @@ export async function resendTicketLinkAction(
     .single();
 
   if (profileError || !profile) {
-    return { error: 'No registration found for this email address.' };
+    // Return a generic success message to prevent email enumeration
+    return { success: true };
   }
 
   const { data: ticket, error: ticketError } = await supabase
@@ -870,7 +871,8 @@ export async function resendTicketLinkAction(
     .single();
 
   if (ticketError || !ticket) {
-    return { error: 'No ticket found for this email address and event.' };
+    // Return a generic success message to prevent email enumeration
+    return { success: true };
   }
 
   const ticketUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/tickets/view?ticketId=${ticket.id}&email=${email}`;
