@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { registerAndCreateTicket, registerGuestForEvent } from '@/lib/actions/tickets.tsx';
+import { createPaymentIntent } from '@/lib/actions/payments';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,27 +14,32 @@ import type { EventWithAttendees, EventFormField } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { User } from '@supabase/supabase-js';
 
-function SubmitButton({ isFull }: { isFull: boolean }) {
+function SubmitButton({ isFull, isPaid }: { isFull: boolean, isPaid: boolean }) {
     const { pending } = useFormStatus();
     return (
         <Button type="submit" className="w-full" disabled={pending || isFull}>
-            {isFull ? 'Event is Full' : (pending ? 'Registering...' : 'Register for Event')}
+            {isFull ? 'Event is Full' : (pending ? (isPaid ? 'Processing...' : 'Registering...') : (isPaid ? 'Proceed to Payment' : 'Register for Event'))}
         </Button>
     )
 }
 
 export function RegisterForEventForm({ event, formFields, user }: { event: EventWithAttendees, formFields: EventFormField[], user: User | null }) {
   const [isGuest, setIsGuest] = useState(false);
-  const [state, action] = useActionState(isGuest ? registerGuestForEvent : registerAndCreateTicket, undefined);
+  const [ticketState, ticketAction] = useActionState(isGuest ? registerGuestForEvent : registerAndCreateTicket, undefined);
+  const [paymentState, paymentAction] = useActionState(createPaymentIntent.bind(null, event.id, user?.id ?? ''), undefined);
+
   const isFull = event.capacity ? event.attendees >= event.capacity : false;
-  
-  // No redirect here, success page will be rendered by the server action
+  const isPaid = event.is_paid && event.price > 0;
+
+  const action = isPaid ? paymentAction : ticketAction;
+  const state = isPaid ? paymentState : ticketState;
   
   return (
     <Card className="w-full max-w-md">
         <CardHeader className="text-center">
             <CardTitle className="text-2xl">Register for Event</CardTitle>
             <CardDescription>Fill in your details to register for {event.title}</CardDescription>
+            {isPaid && <p className="text-2xl font-bold">Price: {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'SLE' }).format(event.price)}</p>}
         </CardHeader>
         <CardContent>
             <form action={action} className="grid gap-4">
@@ -134,7 +140,7 @@ export function RegisterForEventForm({ event, formFields, user }: { event: Event
                 ))}
 
                 {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
-                <SubmitButton isFull={isFull} />
+                <SubmitButton isFull={isFull} isPaid={isPaid} />
                 <p className="text-xs text-center text-muted-foreground px-4">
                     By registering, you agree to receive event updates and your unique QR code via email.
                 </p>
