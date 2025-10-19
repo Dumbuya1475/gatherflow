@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendTicketEmail } from "@/lib/actions/email";
 import { getTicketDetails } from "@/lib/actions/tickets";
 import { TicketEmail } from "@/components/emails/ticket-email";
-import { renderToStaticMarkup } from "react-dom/server";
+
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -51,13 +51,10 @@ export async function GET(request: NextRequest) {
 
     const { data: ticketDetails } = await getTicketDetails(payment.ticket_id);
     if (ticketDetails) {
-      const emailHtml = renderToStaticMarkup(
-        <TicketEmail ticket={ticketDetails} />
-      );
       await sendTicketEmail(
         ticketDetails.profiles.email!,
         `Your ticket for ${ticketDetails.events.title}`,
-        emailHtml
+        <TicketEmail ticket={ticketDetails} />
       );
     }
 

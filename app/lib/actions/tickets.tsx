@@ -108,20 +108,17 @@ export async function registerForEventAction(
 
   if (error || !ticket) {
     console.error('Error registering for event:', error);
-    return { error: 'Could not register for the event.' };
+    return { error: error?.message || 'Could not register for the event.' };
   }
 
   if (initialStatus === 'approved') {
     const { data: ticketDetails } = await getTicketDetails(ticket.id);
     if (ticketDetails) {
-      const { renderToStaticMarkup } = await import('react-dom/server');
       const { TicketEmail } = await import('@/components/emails/ticket-email');
-      const emailHtml = renderToStaticMarkup(<TicketEmail ticket={ticketDetails} />);
-
       await sendTicketEmail(
         user.email!,
         `Your ticket for ${eventData.title}`,
-        emailHtml
+        <TicketEmail ticket={ticketDetails} />
       );
     }
   }
@@ -178,6 +175,7 @@ export async function registerAndCreateTicket(
         });
 
         if (signUpError || !signUpData.user) {
+            console.error("Error signing up user:", signUpError);
             return { error: signUpError?.message || "Could not sign up user." };
         }
         finalUserId = signUpData.user.id;
@@ -245,14 +243,11 @@ export async function registerAndCreateTicket(
     if (initialStatus === 'approved') {
         const { data: ticketDetails } = await getTicketDetails(ticketResult.id);
         if (ticketDetails) {
-            const { renderToStaticMarkup } = await import('react-dom/server');
             const { TicketEmail } = await import('@/components/emails/ticket-email');
-            const emailHtml = renderToStaticMarkup(<TicketEmail ticket={ticketDetails} />);
-
             await sendTicketEmail(
                 userEmail,
                 `Your ticket for ${eventData.title}`,
-                emailHtml
+                <TicketEmail ticket={ticketDetails} />
             );
         }
     }
@@ -757,7 +752,7 @@ export async function registerGuestForEvent(
 
     if (createProfileError) {
       console.error('Error creating guest profile:', createProfileError);
-      return { error: 'Could not create a guest profile.' };
+      return { error: createProfileError?.message || 'Could not create a guest profile.' };
     }
     profile = newProfile;
   }
@@ -819,21 +814,19 @@ export async function registerGuestForEvent(
 
   if (error || !ticket) {
     console.error('Error registering for event:', error);
-    return { error: 'Could not register for the event.' };
+    return { error: error?.message || 'Could not register for the event.' };
   }
 
   if (initialStatus === 'approved') {
     // Fetch the full ticket details to provide to the email template
     const { data: ticketDetails } = await getTicketDetails(ticket.id);
     if (ticketDetails) {
-      const { renderToStaticMarkup } = await import('react-dom/server');
       const { TicketEmail } = await import('@/components/emails/ticket-email');
-      const emailHtml = renderToStaticMarkup(<TicketEmail ticket={ticketDetails} />);
       
       await sendTicketEmail(
         email,
         `Your ticket for ${eventData.title}`,
-        emailHtml
+        <TicketEmail ticket={ticketDetails} />
       );
     }
   }

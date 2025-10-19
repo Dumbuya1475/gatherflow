@@ -1,0 +1,506 @@
+API Basics
+API Headers
+
+Copy page
+
+Learn how to use and deal with Monime’s API
+
+​
+API Request
+​
+Authorization (required)
+Authenticates the caller and selects the API environment. We must know who is calling and which environment to use. Live tokens execute in production; test tokens run in sandbox.
+
+Copy
+curl --request GET \
+  --url https://api.monime.io/v1/payments \
+  --header 'Authorization: Bearer <token>'
+​
+Content-Type (required)
+This must be set to application/json for endpoint that requires payload unless otherwise stated.
+
+Copy
+curl --request POST \
+  --url https://api.monime.io/v1/payment-codes \
+  --header 'Content-Type: application/json'
+​
+Monime-Space-Id — (required)
+This is the tenancy parameter that tells Monime on whose behalf the request should be processed. Set to the Space ID.
+
+Copy
+curl --request GET \
+  --url https://api.monime.io/v1/payments \
+  --header 'Monime-Space-Id: spc-1234567890'
+​
+Monime-Version
+Pins behavior to a release name + ’.’ + version date (e.g., caph.2025-06-20).
+This locks your integration to a predictable schema and behavior. Updates within a release are backward-compatible; breaking changes only arrive in a new release—so you decide when to upgrade.
+
+Copy
+curl --request GET \
+  --url https://api.monime.io/v1/payments \
+  --header 'Monime-Version: caph.2025-06-20'
+​
+Idempotency-Key
+A unique key per resource creation that makes it safe to retry. Prevents duplicates when networks flake or clients time out.
+
+Copy
+curl --request POST \
+  --url https://api.monime.io/v1/payment-codes \
+  --header 'Idempotency-Key': 461d61c9-e7d0-4fc4-904a-565aefa1f4a6'
+​
+API Response
+Monime returns a small set of diagnostic headers so you can trace requests, see performance, and understand caching and throttling behavior.
+​
+Monime-Request-Id
+A unique ID for this request attempt. Capture it in logs and include it in support tickets for end-to-end tracing.
+​
+Monime-Request-Checksum
+A deterministic checksum of the request signature (method + path + body) primarily used for idempotency conflict detection.
+​
+Monime-Request-Timestamp
+The UTC (ISO-8601) time your request hit Monime, useful for log correlation and clock-skew checks.
+​
+Monime-Request-Duration
+Approximate server-side processing time, excluding network latency—handy for SLO tracking and regression spotting.
+​
+Monime-Cache
+The cache that served the response. The value is the cache name; for example, irc means idempotent request cache (a replayed result from a prior successful call). This helps explain when a response was satisfied from cache versus computed.
+​
+Monime-Rate-Limit
+Identifies the rate limit that was triggered. Appears only on HTTP 429 responses and is typically paired with Retry-After: <seconds> indicating when to retry.
+​
+Webhook Request
+​
+Monime-Signature
+Cryptographic signature with timestamp. Lets you verify that the request really came from Monime, that the body wasn’t tampered with, and that it’s fresh (replay-safe).
+
+
+
+API Basics
+Authentication
+
+Copy page
+
+How clients prove identity and gain the right access
+
+​
+Overview
+We use Bearer token authentication to secure all API requests.
+Every request to the API must include a valid bearer token in the Authorization header, along with a Monime-Space-Id header that identifies which Space you’re operating in. This dual-header approach creates a powerful security model where tokens provide identity and authentication, while Space IDs provide context and isolation.
+
+Copy
+curl -X GET https://api.monime.io/v1/financial-accounts \
+  --header "Authorization: Bearer <access-token>" \
+  --header "Monime-Space-Id: <monime-space-id>"
+Tokens are owned by a Monimeer (user) and are space-agnostic by design; effective access comes from the intersection of the token’s scopes and the Monimeer’s role in the Space you target.
+​
+Quick Token Test
+You can sanity-check a token by hitting the root endpoint. The response echoes whether you’re authenticated, which environment you’re in, and what Monime sees as your origin.
+
+Copy
+GET https://api.monime.io
+​
+1) Not Authenticated
+
+Copy
+curl -X GET https://api.monime.io \
+  -H "Accept: application/json"
+Response:
+
+Copy
+{
+  "platform": "Monime - Ⓜ️",
+  "tagline": "APIs Beyond Payments ⚡️⚙️💰️",
+  "status": {
+    "environment": null,
+    "isAuthenticated": false
+  },
+  "apiVersion": null,
+  "requestOrigin": {
+    "country": "SL",
+    "ipAddress": "2c0f:2a80:4ea:1f08:2c1b:e667:f921:ddcf"
+  }
+}
+What this tells you:
+❌ isAuthenticated: false - Token is missing, invalid, or expired
+❌ environment: null - Cannot determine environment without valid token
+❌ apiVersion: null -Cannot determine API version.
+​
+2) Authenticated with Test Token
+
+Copy
+curl -s https://api.monime.io \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer mon_test_XXXXXXXXXXXXXXXX"
+Response:
+
+Copy
+{
+    "platform": "Monime - Ⓜ️",
+    "tagline": "APIs Beyond Payments ⚡️⚙️💰️",
+    "status": {
+        "environment": "test",
+        "isAuthenticated": true
+    },
+    "apiVersion": {
+        "id": "caph.2025-08-23",
+        "release": {
+            "name": "caph",
+            "date": "2025-06-20"
+        },
+        "deprecated": false,
+        "apiSchemas": {
+            "openApi": "https://github.com/monimesl/monime-developer-apis/blob/main/api-versions/-/specifications/openapi.yaml"
+        }
+    },
+    "requestOrigin": {
+        "country": "SL",
+        "ipAddress": "2c0f:2a80:4ea:1f08:2c1b:e667:f921:ddcf"
+    }
+}
+What this tells you:
+✅ isAuthenticated: true - Valid test token
+✅ environment: "test" - Connected to test environment
+✅ apiVersion - Current API version you’re accessing
+⚠️ Safe for testing - No real money moves in test environment
+​
+3) Authenticated with Live Token
+
+Copy
+curl -s https://api.monime.io \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer mon_XXXXXXXXXXXXXXXX"
+Response:
+
+Copy
+{
+    "platform": "Monime - Ⓜ️",
+    "tagline": "APIs Beyond Payments ⚡️⚙️💰️",
+    "status": {
+        "environment": "live",
+        "isAuthenticated": true
+    },
+    "apiVersion": {
+        "id": "caph.2025-08-23",
+        "release": {
+            "name": "caph",
+            "date": "2025-06-20"
+        },
+        "deprecated": false,
+        "apiSchemas": {
+            "openApi": "https://github.com/monimesl/monime-developer-apis/blob/main/api-versions/-/specifications/openapi.yaml"
+        }
+    },
+    "requestOrigin": {
+        "country": "SL",
+        "ipAddress": "2c0f:2a80:4ea:1f08:2c1b:e667:f921:ddcf"
+    }
+}
+What this tells you:
+✅ isAuthenticated: true - Valid test token
+✅ environment: "live" - Connected to production environment
+✅ apiVersion - Current API version you’re accessing
+🚀 Production mode - Real financial transactions will occur
+​
+Security best practices
+Server-Side Only: Never expose tokens in browsers or mobile apps.
+Least-Privilege Scopes: Grant a token only the roles the job needs.
+One Token per Integration: Use separate tokens per service/use-case (single responsibility).
+Rotate & Revoke Fast: Rotate on a schedule; revoke immediately if leaked or unused.
+Secure Storage: Keep tokens in a secrets manager (Vault/AWS/GCP/K8s secret); never hardcode or store in plain .env file in production.
+No Logging: Mask/redact tokens in logs, metrics, traces, and error messages.
+Ownership: Name tokens clearly (owner, purpose, scope) and review them regularly.
+Limited Lifetime: Prefer shorter expirations or scheduled rotation windows.
+Usage Boundaries: Restrict where tokens can be used (e.g., IP whitelisting, Space whitelisting).
+​
+Common errors & fixes
+401 Unauthorized
+Cause: Missing/invalid/expired access token.
+Fix: send a valid and active access token.
+403 Forbidden
+Cause: Token valid, but with insufficient permission or owner has no access to the space.
+Fix: Grant the needed persmission or adjust the monimeer’s Space role.
+
+
+API Basics
+Rate Limits
+
+Copy page
+
+API limits keep Monime stable; learn how to use it to your advantage.
+
+​
+Overview
+API Rate limiting in Monime is a fundamental control mechanism designed to maintain platform reliability, equitable usage, and predictable performance. Every request passing through is subject to limit evaluation to prevent system abuse, contain noisy workloads, and ensure that resources are shared fairly across all tenants.
+Unlike single-threshold throttling, we apply limits at multiple contextual layers - capturing the identity of the caller, the scope of the tenant, and the type of request being made. This provides a balanced enforcement model that protects both the infrastructure and individual tenants, while giving clients precise feedback for adaptive behavior.
+​
+Enforcement Model
+Rate limiting operates in a chainable fashion. Each incoming request is intercepted before it reaches the core service(s). At this stage, Monime evaluates the request against several limits, each responsible for a different dimension of usage control.
+If any limit rejects the request:
+The request will not be forwarded to the target service.
+No billing or side effect action will occur downstream.
+A structured response is returned with rate limit headers (the limit and retry info).
+This ensures that rejected requests are cheap for the platform and safe for the client.
+​
+Error Response
+When a request is throttled, Monime always returns a structured error so your client knows exactly what happened and how to recover.
+​
+Status Code
+429 Too Many Requests Standard HTTP code indicating the client has hit a rate limit.
+​
+Headers
+Monime-Rate-Limit → shows which limit was triggered:
+token-limit — the per-token quota was exceeded.
+space-limit — the per-space quota was exceeded.
+endpoint-limit — the per-endpoint quota for the token was exceeded.
+Retry-After → the number of seconds to wait before retrying. Always at least 1.
+​
+Body
+The response body is JSON and mirrors the structure used across Monime errors:
+
+Copy
+{
+  "success": false,
+  "messages": [],
+  "error": {
+    "code": 429,
+    "reason": "too_many_requests",
+    "message": "Too many requests sent in a short period. Request blocked due to rate limiting",
+    "details": []
+  }
+}
+​
+Limits by Dimension
+Our API rate limiting is built on a multidimensional enforcement model, rather than a single global cap. This means every request is evaluated through multiple layers of control, each representing a different perspective of usage.
+At its core, the model ensures that traffic is constrained at the edges where pressure naturally builds:
+At the caller level, so no individual token can monopolize capacity.
+At the tenant level, so traffic bursts from one Space don’t affect others.
+At the route level, so individual endpoints remain reliable under heavy access.
+The key principle behind this design is balance. By layering limits across dimensions, Monime can:
+Protect platform stability by ensuring no single dimension overwhelms the system.
+Preserve fairness so tenants (Spaces) share resources equitably.
+Provide granularity, allowing clients to understand exactly where throttling occurred (token, space, or endpoint).
+Instead of treating all traffic equally, Monime evaluates requests in context. For example, a Space may still have capacity overall, but if a specific endpoint is being hammered, the endpoint limit can apply targeted pressure. Conversely, a token might be consuming more than its share even though the endpoint is underutilized — the token limit steps in at that layer.
+This context-aware layering makes the protection mechanism adaptive: it scales with diverse workloads, isolates noisy patterns, and gives developers actionable feedback when limits are exceeded.
+Think of it as a series of guardrails: if traffic skews too far in one direction — whether by token, by space, or by endpoint — the limit at that dimension catches it before it destabilizes the rest of the system.
+​
+Space-Based Limit
+Limit name: space-limit
+A Space in Monime represents an organizational boundary — typically a tenant or business account. To protect stability and ensure fair use, Monime applies rate limits at the Space level.
+​
+Per-second Quotas
+Test mode: up to 100 requests per second across all space interactions.
+Live mode: up to 500 requests per second across all space interactions.
+This aggregate limit ensures that even if multiple tokens are used, the combined throughput of the Space does not exceed the allowed budget.
+​
+Why Space Limit Exists
+Tenant fairness: Prevents a single tenant from monopolizing platform resources.
+Poison Containment: Controls noisy workloads where multiple apps or services operating under a Space generate bursts simultaneously.
+​
+Developer Implications
+Monitor Space-wide usage, since limits apply across all tokens and endpoints.
+When multiple apps share a Space, spread out their workloads and add jitter to avoid synchronized spikes.
+Keep test traffic in test mode to stay within the lower quota and avoid affecting production.
+One app exceeding its share can cause throttling for the entire Space, so coordinate usage across teams.
+Even if tokens are individually within their own quotas, exceeding the Space quota (500 req/s for live, 100 req/s for test) will result in throttling across the entire Space.
+​
+Token-Based Limit
+Limit name: token-limit
+Each access token has its own request-per-second budget. Live and test tokens are evaluated separately, ensuring development workloads don’t interfere with production traffic.
+​
+Per-second Quotas
+Test tokens: up to 20 requests per second
+Live tokens: up to 80 requests per second
+This separation ensures that production workloads can operate at higher throughput, while test and staging environments remain safely throttled.
+​
+Why Token Limit Exists
+Fairness: Prevents any single application from monopolizing shared infrastructure.
+Isolation: Ensures that runaway traffic from one integration won’t spill over into others, even inside the same Space.
+Environment separation: Keeps test workloads clearly isolated from production, avoiding cross-impact.
+​
+Developer Implications
+Use separate tokens for independent applications or services. This guarantees each gets its own request budget.
+Always use test tokens in staging, CI, and development environments.
+Instrument your clients to log throttling events at the token level, so you can quickly identify integrations exceeding their fair share.
+Even if your Space still has available capacity, exceeding the per-token quota (80 req/s live, 20 req/s test) will cause requests to be throttled at the token layer.
+​
+Endpoint-Based Limit
+Limit name: endpoint-limit
+In addition to token and Space limits, Monime also enforces limits at the endpoint level, applied per token. This ensures that no single token can overload a specific API route, regardless of which Space it operates in.
+​
+Per-second Quotas
+Test tokens: up to 5 requests per second per token per endpoint
+Live tokens: up to 20 requests per second per token per endpoint
+Each token has its own independent budget for every endpoint. If a token exceeds the limit on one route, only that endpoint is throttled for that token — other endpoints (or other tokens) remain unaffected.
+​
+Why Endpoint Limits Exist
+Protect sensitive APIs: Prevents abuse of routes that are commonly polled or accessed at high frequency.
+Fair distribution: Ensures all clients using the same endpoint can share capacity fairly.
+Localized throttling: Restricts overload at the narrowest scope (token and endpoint), without penalizing unrelated traffic.
+​
+Developer Implications
+Avoid rapid polling of a single endpoint — use webhooks, or conditional requests where possible.
+If polling is required, spread requests with jitter to avoid breaching the 20|5 req/s cap.
+Monitor endpoint-level throttling per token to identify “hot routes” that need optimization.
+Even if token-level and Space-level quotas are not reached, exceeding the endpoint quota (20 req/s live, 5 req/s test) will result in throttling on that specific route for the token.
+​
+Why Rate Limiting Happens & How to Avoid It
+Rate-limiting errors (429 Too Many Requests) occur when traffic goes beyond Monime’s defined quotas at the space, token, or endpoint level.
+​
+Common Causes
+Polling status endpoints (e.g., GET /v1/payouts/{payout-id}) too frequently instead of using webhooks.
+Many small API calls in loops or tiny pagination.
+Multiple apps sharing the same token.
+Staging traffic using live tokens/Spaces.
+High concurrency from workers/consumers.
+​
+Best Practices
+Use webhooks as your primary signal; poll sparingly.
+Batch & paginate smartly — fewer, larger requests.
+Issue separate tokens per app/service; keep test traffic in test mode.
+Cap concurrency and add jitter to spread requests.
+Respect Retry-After and log the Monime-Rate-Limit header to know what triggered the block.
+In Monime, 429s are not failures — they’re flow-control signals. Handle them with backoff + jitter to keep your integrations resilient and reliable.
+
+
+API Basics
+API Pagination
+
+Copy page
+
+How to page through Monime resources efficiently using cursors.
+
+​
+Overview
+Monime uses cursor-based pagination for list endpoints. Every listing Responses include a pagination object with a cursor you pass back to fetch the next page. This design is stable, efficient, and avoids the pitfalls of offset-based paging under changing datasets.
+​
+Request Shape
+Pagination on Monime APIs is controlled with query parameters:
+limit → how many objects to return in one page.
+after → an opaque cursor (usually the id of the last object from the previous page).
+This allows you to step through results page by page in a consistent order.
+Example request:
+
+Copy
+curl "https://api.monime.io/v1/payouts?limit=10&after=pyt-k6GMRZsCr61zfwCQtVemY2RrvQH" \
+  -H "Authorization: Bearer mon_***"
+​
+Response Shape
+Every paginated response includes a pagination object:
+
+Copy
+{
+  "success": true,
+  "messages": [],
+  "result": [
+   {}, // Item 1
+   {}, // Item 2
+   ....
+  ],
+  "pagination": {
+    "count": <num-of-object-in-page>,
+    "next": "<next-page-cursor>"
+  }
+}
+​
+When to Stop Paging
+If pagination.next is present → there are more results. Pass this value as after in your next request.
+If pagination.next is null or absent → you’ve reached the end of the collection. Stop paging.
+A smaller count than your requested limit often indicates you’re on the final page, but the definitive signal is when next is null or missing.
+​
+Best Practices for Paging
+​
+Choose sane page sizes
+Start with limit=30–50 for bulk jobs; use smaller limits for interactive UIs.
+Larger pages → fewer round trips; balance with payload size and client memory.
+​
+Always drive from the cursor
+Read pagination.next and pass it back as after in the next call.
+Don’t fabricate or modify cursors; they are opaque and query-specific.
+Stop when pagination.next is null/ absent.
+​
+Keep filters stable while paging
+Apply all filterss before paging.
+Changing filters mid-stream invalidates the cursor and can skip/duplicate items.
+​
+Checkpoint for resumability
+Persist {endpoint, filters} after each page.
+On restart, resume with the last after. For strict windows, bound by timestamp.
+​
+Be nice to rate limits
+Pace requests: small delay (50–200ms) between pages for steady flows.
+On 429, honor Retry-After; then continue from the same cursor.
+Remember endpoint caps (live: 20 req/s, test: 5 req/s) and token/space quotas.
+​
+Avoid N+1 request patterns
+Prefer list responses that already include fields you need.
+If you must hydrate per-item, batch those lookups and rate-gate them.
+​
+Control parallelism
+Cap concurrency per token and per endpoint; add jitter to avoid synchronized bursts.
+Was this page helpful?
+
+
+API Basics
+Object Metadata
+
+Copy page
+
+Tag your objects with your own contexts
+
+​
+Overview
+Metadata is a developer-controlled extension field available on most API objects. It allows you to attach custom key-value pairs that Monime will store and return with the object, without interpreting them.
+This feature is designed to help you bridge the gap between Monime’s standard fields (like id, status, or amount) and the real-world business context your systems require for reconciliation, reporting, or debugging.
+When you create a payment code, payout, or checkout session in Monime, the API provides all the financial attributes needed for processing. But businesses, depending on their domain, may often ask questions such as:
+Which order at the shop or restaurant does this payment code belong to?
+Which branch, kiosk, or agent in Waterloo or Kenema initiated this payout?
+Which campaign or promotion should this checkout session be tied to?
+Which customer from my database should I link this Monime object back to?
+Without metadata, you’d have to manage a separate mapping table in your system to tie Monime’s ID to your own references. With metadata, you can embed those references directly in the Monime object itself.
+This makes every API object self-describing in your domain context.
+​
+How it Works
+​
+Flat Structure Only
+Metadata is always flat keys map directly to values.
+Nested JSON {"billingAddress": {"Chiefdom": "Nongowa"}} and arrays are not supported.
+If you need hierarchy, encode it into the key itself (e.g., billing_address_chiefdom).
+This rule makes metadata predictable and fast to validate.
+​
+Partial Update Support
+Metadata updates in Monime are incremental. You don’t need to resend the full set every time. Instead:
+Omit a key → its value will remain unchanged.
+Send a key with a value → it will be created or updated.
+Send a key with null or "" (empty string) → the key will be removed if present.
+This allows you to make targeted changes without worrying about overwriting unrelated keys.
+​
+Limitations
+Metadata is powerful, but it has deliberate limitations to ensure Monime stays consistent, performant, and secure.
+Limitation	Rule
+Max pairs	64 key-value entries per object
+Max key length	64 characters
+Max value length	100 characters
+Allowed key characters	[a-zA-Z0-9_-]
+Reserved prefix	Keys cannot begin with _, - or "monime" (case-insensitive)
+Value length	Must be a string ≤ 100 chars; null or "" deletes the key
+Nesting	Not supported; metadata is always flat
+If your request includes invalid metadata (e.g., key too long, invalid characters, or too many pairs), the request will be rejected with the appropriate message
+​
+Use Cases
+Reconciliation: Add your order_id or invoice_no to payments and payouts, so your finance system can line up with Monime.
+Operational tags: Tag payments by branch, e.g. "branch": "Kenema-Kiosk-1234", or campaigns like "fund_raising_ref": "save-life-1234".
+Flexible extensions: Quickly add flags like "priority": "high" or "batch": "salary-August" without waiting for schema changes.
+Metadata is opaque to Monime. It has no semantic meaning to us. The only enforcement done on them is on the limitations (key length, value length, allowed characters).
+​
+Best Practice
+Use Predictable Keys: Define a clear convention (order_id, customer_ref, kiosk, osusu_id). This makes reconciliation easier across systems.
+Keep Values Concise: Values are capped at 100 characters. Use them for IDs, short tags, or labels, not descriptions or logs.
+Avoid Sensitive Data: Metadata is returned in API responses. Never store credentials, personal private data, or secrets here.
+Treat Metadata as Context, Not State: Use metadata for annotations and reconciliation. Do not rely on it as your system of record.
+Clean Up Over Time: Remove keys with null or "" when they’re no longer needed to keep your objects lean.
+Flat-Only Design: If you need to represent hierarchy, encode it into the key name (contact_phone_number, contact_email_address).
+Leverage Metadata for Reconciliation: Always attach your own IDs (order_id, invoice_no) so Monime objects can be directly matched to your internal records without external tables.
+
+

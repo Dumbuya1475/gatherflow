@@ -26,19 +26,39 @@ function SubmitButton({ isFull, isPaid }: { isFull: boolean, isPaid: boolean }) 
 export function RegisterForEventForm({ event, formFields, user }: { event: EventWithAttendees, formFields: EventFormField[], user: User | null }) {
   const [isGuest, setIsGuest] = useState(false);
   const [ticketState, ticketAction] = useActionState(isGuest ? registerGuestForEvent : registerAndCreateTicket, undefined);
-  const [paymentState, paymentAction] = useActionState(createPaymentIntent.bind(null, event.id, user?.id ?? ''), undefined);
 
   const isFull = event.capacity ? event.attendees >= event.capacity : false;
   const isPaid = event.is_paid && event.price > 0;
 
-  const action = isPaid ? paymentAction : ticketAction;
-  const state = isPaid ? paymentState : ticketState;
+  const action = isPaid ? async (formData: FormData) => {
+    const response = await fetch('/api/payment/create-checkout-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        eventId: event.id,
+        quantity: 1, // Assuming quantity is always 1 for now
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { error: data.error || 'Failed to create checkout session.' };
+    }
+
+    window.location.href = data.hostedUrl;
+    return { success: true };
+  } : ticketAction;
+
+  const state = ticketState; // Only ticketState is relevant now, as payment redirects immediately
   
   return (
     <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Register for Event</CardTitle>
-            <CardDescription>Fill in your details to register for {event.title}</CardDescription>
+            <CardTitle className="text-2xl">{isPaid ? 'Buy Ticket' : 'Register for Event'}</CardTitle>
+            <CardDescription>{isPaid ? `Fill in your details to buy a ticket for ${event.title}` : `Fill in your details to register for ${event.title}`}</CardDescription>
             {isPaid && <p className="text-2xl font-bold">Price: {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'SLE' }).format(event.price)}</p>}
         </CardHeader>
         <CardContent>

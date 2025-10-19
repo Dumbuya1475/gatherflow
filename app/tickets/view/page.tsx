@@ -23,6 +23,9 @@ export default async function ViewTicketPage({ searchParams }: ViewTicketPagePro
 
     const { data: ticket, error } = await getTicketDetails(parseInt(ticketId, 10));
 
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     if (error || !ticket) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-secondary">
@@ -43,6 +46,18 @@ export default async function ViewTicketPage({ searchParams }: ViewTicketPagePro
     return (
         <div className="container mx-auto py-8 flex justify-center">
             <div className="w-full max-w-2xl">
+                <div className="mb-8 text-center">
+                    <h1 className="text-3xl font-bold text-green-600">Payment Successful!</h1>
+                    <p className="text-lg text-muted-foreground mt-2">Your ticket (ID: {ticketId}) has been confirmed.</p>
+                    <Link href="/dashboard/tickets">
+                        <Button variant="link" className="mt-2">View all your tickets</Button>
+                    </Link>
+                    {!user && (
+                        <p className="text-sm text-muted-foreground mt-4">
+                            <Link href="/signup" className="text-primary hover:underline">Create an account</Link> to view and manage all your tickets in your dashboard.
+                        </p>
+                    )}
+                </div>
                 <Card>
                     <CardHeader>
                         <CardTitle>Your Ticket</CardTitle>

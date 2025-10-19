@@ -1,0 +1,371 @@
+Checkout Session
+Overview
+
+Copy page
+
+Overview of Monime Checkout Sessions and how to use them
+
+A Checkout Session is a short-lived object that creates a hosted checkout page for collecting payments on your behalf. Use it to accept payments quickly without building your own payment UI. You control what the customer is paying for, the amount, allowed payment methods, and where to return the customer after payment.
+​
+When to use Checkout Session
+You want a fast, secure way to accept payments with minimal UI work
+You need a hosted page that supports multiple payment methods out-of-the-box
+You want Monime to handle payment state, redirection, and receipt UI
+​
+How it works
+1
+Create a Checkout Session (server)
+
+Your server calls the API to create a session with amount, currency, and options.
+2
+Redirect customer
+
+Redirect the customer to the hosted checkout URL returned in the session.
+3
+Customer pays
+
+The customer completes payment on Monime’s secure page.
+4
+Webhook + Return URL
+
+Receive payment status via webhook and/or redirect back to your site.
+​
+Quick start
+Create Session API
+Create a new checkout session from your backend
+Retrieve Session
+Look up a session to check its latest status
+List Sessions
+Browse sessions for reporting or debugging
+​
+Key session fields
+amount
+
+currency
+
+payment_methods
+
+success_url / cancel_url
+
+metadata
+
+​
+Webhooks
+We recommend handling payment lifecycle events using webhooks to ensure your system is updated even if the customer closes the browser before redirecting.
+Webhook Overview
+Learn how webhooks work on Monime
+HMAC Verification
+Verify webhook signatures securely
+​
+Environments: Test vs Live
+Use Test mode for development and Live for production. Tokens, behavior, and prefixes differ between environments.
+See API Basics → Environments and Standard Headers for details.
+​
+Next steps
+Build with Next.js
+End-to-end example using Next.js API routes
+API Reference
+Explore the Checkout Session object and full API
+
+
+Checkout Session
+Create Checkout Session
+
+Copy page
+
+Creates a new checkout session to initiate a user payment experience.
+
+POST
+/
+v1
+/
+checkout-sessions
+
+Try it
+Authorizations
+​
+Authorization
+stringheaderrequired
+Bearer HTTP authentication specified with the header Authorization: Bearer <access_token>
+
+Headers
+​
+Idempotency-Key
+stringrequired
+This header is used to uniquely identify a logical request, ensuring that it is not processed more than once during retries.
+
+Maximum length: 64
+​
+Monime-Version
+enum<string> | null
+Specifies which version of the Monime API will handle this request.
+
+Available options: caph.2025-08-23, caph.2025-06-20 
+​
+Monime-Space-Id
+stringrequired
+The value is the tenancy parameter that Monime uses to determine which space the request is intended for.
+
+Maximum length: 64
+Body
+application/json
+Creates a new checkout session to initiate a user payment experience.
+
+​
+name
+stringrequired
+Title or label for the checkout session. Used for display in customer-facing UIs.
+
+Maximum length: 150
+​
+lineItems
+Custom Item (User Defined) · object[] | nullrequired
+List of items to be displayed and charged in the session. Must include at least one item.
+
+Required array length: 1 - 16 elements
+Show child attributes
+
+​
+description
+string | null
+Optional long-form description explaining the purpose or context of the checkout session.
+
+Maximum length: 1000
+​
+cancelUrl
+string<url>
+The URL to redirect the customer to if they cancel the checkout process before completing payment. This typically returns the user to your site or app with context about the cancellation.
+
+Maximum length: 255
+​
+successUrl
+string<url>
+The URL to redirect the customer to after successfully completing the checkout. Typically used to confirm the order or show a success message on your site or app.
+
+Maximum length: 255
+​
+callbackState
+string | null
+Opaque value sent back via callback for correlating the session. Never exposed in read APIs.
+
+Maximum length: 255
+​
+reference
+string | null
+Optional external reference identifier (e.g., order ID) used to link this session with the developer’s backend system.
+
+Maximum length: 255
+​
+financialAccountId
+string | null
+Financial account where collected funds are settled. Defaults to the main account if omitted.
+
+Maximum length: 100
+​
+paymentOptions
+object | null
+Payment method configuration that controls which payment options (e.g., Banks, Cards, MOMO, Wallets) are enabled or restricted during checkout.
+
+Show child attributes
+
+​
+brandingOptions
+object | null
+Visual customization options for the checkout UI, such as color schemes or logos.
+
+Show child attributes
+
+​
+metadata
+object | null
+Key-value pairs for attaching contextual metadata.
+
+Show child attributes
+
+Response
+200 - application/json
+OK
+
+​
+success
+boolean
+Represents the status of the query operation, confirming if it was successful. This field is always true
+
+​
+messages
+any[]
+Contains a list of messages providing relevant information or feedback related to the query or operation
+
+​
+result
+object
+A Checkout Session represents a Monime-hosted payment flow where customers complete purchases for a defined set of items.
+
+It is designed for e-commerce and embedded payment scenarios where merchants want a simple, secure way to accept payments across multiple channels without building the payment UI themselves.
+
+Unlike direct API-based payments, a Checkout Session aggregates multiple payment methods — such as Mobile Money, Card, and Bank Transfers — and presents them in a unified checkout experience.
+
+Use Cases
+E-Commerce Cart Checkout
+
+A customer selects items in a cart. The merchant creates a Hosted Checkout Session, and Monime presents Mobile Money, Card, and Bank options in one unified flow.
+
+Embedded SaaS Billing
+
+A SaaS platform embeds a Hosted Checkout Session to bill users. Customers pick their preferred channel (Card, MoMo, Bank), and once payment is confirmed, the SaaS receives checkout_session.completed.
+
+QR or Link-Based Payment
+
+Merchants generate a checkout session link or QR code. Customers open the hosted page and choose any available payment method.
+
+Fallback Across Methods
+
+If a user’s card payment fails, they can seamlessly retry with Mobile Money — all within the same checkout session.
+
+Show child attributes
+
+Was this page helpful?
+
+
+Yes
+
+No
+Previous
+Delete Checkout Session
+Deletes a checkout session. This operation is only allowed if the session has not yet been initiated by the user.
+Next
+Ask a question...
+
+Create Checkout Session
+
+
+Copy
+curl --request POST \
+  --url https://api.monime.io/v1/checkout-sessions \
+  --header 'Authorization: Bearer <token>' \
+  --header 'Content-Type: application/json' \
+  --header 'Idempotency-Key: <idempotency-key>' \
+  --header 'Monime-Space-Id: <monime-space-id>' \
+  --data '{
+  "name": "<string>",
+  "description": "<string>",
+  "cancelUrl": "<string>",
+  "successUrl": "<string>",
+  "callbackState": "<string>",
+  "reference": "<string>",
+  "financialAccountId": "<string>",
+  "lineItems": [
+    {
+      "type": "custom",
+      "name": "<string>",
+      "price": {
+        "currency": "<string>",
+        "value": 123
+      },
+      "quantity": 1,
+      "reference": "<string>",
+      "description": "<string>",
+      "images": [
+        "<string>"
+      ]
+    }
+  ],
+  "paymentOptions": {
+    "card": {
+      "disable": false
+    },
+    "bank": {
+      "disable": false,
+      "enabledProviders": [
+        "slb001"
+      ],
+      "disabledProviders": [
+        "slb001"
+      ]
+    },
+    "momo": {
+      "disable": false,
+      "enabledProviders": [
+        "m17"
+      ],
+      "disabledProviders": [
+        "m17"
+      ]
+    },
+    "wallet": {
+      "disable": false,
+      "enabledProviders": [
+        "dw001"
+      ],
+      "disabledProviders": [
+        "dw001"
+      ]
+    }
+  },
+  "brandingOptions": {
+    "primaryColor": "<string>"
+  },
+  "metadata": {}
+}'
+
+200
+
+Copy
+{
+  "success": true,
+  "messages": [
+    "<any>"
+  ],
+  "result": {
+    "id": "<string>",
+    "status": "pending",
+    "name": "<string>",
+    "orderNumber": "<string>",
+    "reference": "<string>",
+    "description": "<string>",
+    "redirectUrl": "<string>",
+    "cancelUrl": "<string>",
+    "successUrl": "<string>",
+    "lineItems": {
+      "data": [
+        {
+          "type": "custom",
+          "id": "<string>",
+          "name": "<string>",
+          "price": {
+            "currency": "<string>",
+            "value": 123
+          },
+          "quantity": 1,
+          "reference": "<string>",
+          "description": "<string>",
+          "images": [
+            "<string>"
+          ]
+        }
+      ]
+    },
+    "financialAccountId": "<string>",
+    "brandingOptions": {
+      "primaryColor": "<string>"
+    },
+    "expireTime": "2023-11-07T05:31:56Z",
+    "createTime": "2023-11-07T05:31:56Z",
+    "ownershipGraph": {
+      "owner": {
+        "id": "<string>",
+        "type": "<string>",
+        "metadata": {},
+        "owner": {
+          "id": "<string>",
+          "type": "<string>",
+          "metadata": {},
+          "owner": {}
+        }
+      }
+    },
+    "metadata": {}
+  }
+}
+
+
