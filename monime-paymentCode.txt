@@ -1,0 +1,262 @@
+Payment Code
+Payment Code
+
+Copy page
+
+A Payment Code is a programmable, short-lived token that allows users to collect payments from others.
+It is especially useful in USSD-like or QR-based flows, where the payer enters or scans a code to complete a transaction.
+Payment Codes provide flexibility for both one-time and recurrent collections, with configurable restrictions and targets.
+​
+Use Cases
+USSD Payment Collection
+A merchant generates a Payment Code and displays it in USSD. Customers enter the code to make payments.
+Example: A vendor creates a one-time code for SLE 50 which a customer redeems via their mobile money wallet.
+QR Code at Point of Sale
+The Payment Code is encoded as a QR displayed at checkout. Customers scan the QR to pay.
+Example: A shop generates a QR-based Payment Code for SLE 200, which is redeemed on the spot.
+Recurring Subscription Collection
+A fitness center issues a recurrent Payment Code for monthly fees.
+Example: The code accepts up to 12 payments of SLE 500 each, after which it auto-completes.
+Targeted Collection
+Restrict a Payment Code to a specific MSISDN or provider.
+Example: Only customers on Orange Money with a registered number can redeem the code.
+​
+📋
+Properties
+​
+id
+string
+Unique identifier of the payment code object.
+​
+mode
+enum<string>
+Usage mode of the payment code:
+‘one_time’: Can be used only once
+‘recurrent’: Can be used multiple times until a target is met or it expires.
+Available options: one_time recurrent
+​
+status
+enum<string>
+Lifecycle status of the payment code: ‘pending’ (created but not in use), ‘processing’ (currently in use), ‘expired’ (duration elapsed), ‘completed’ (usage or target fulfilled), or ‘cancelled’ (manually invalidated).
+Available options: pending cancelled processing expired completed
+​
+name
+string
+Optional human-readable name for the payment code, useful for labeling or tracking.
+Example: Home EDSA Meter Top-up
+​
+amount
+object
+Amount charged per use of the payment code. For ‘recurrent’ mode, this applies to each payment instance.
+Show properties
+
+​
+enable
+boolean
+Indicates whether the payment code is currently enabled for use.
+​
+expireTime
+string
+The time at which the payment code expires, provided the code is still pending.
+​
+customer
+object
+Optional customer information linked to this payment code. Often used for USSD or receipt context.
+Show properties
+
+​
+ussdCode
+string
+The USSD dial string customer(s) can use to initiate a payment for this code.
+​
+reference
+string
+Reference string associated with the payment code. Useful for transaction tagging or reconciliation.
+​
+authorizedProviders
+array
+List of mobile money providers permitted to process payments using this code.
+Example: [m17 m18]
+​
+authorizedPhoneNumber
+string
+MSISDN of the mobile money account exclusively allowed to use this code. Other users will be rejected.
+​
+recurrentPaymentTarget
+object
+Target payment count or amount that determines when a recurrent payment code is considered complete.
+Hide properties
+
+​
+expectedPaymentCount
+integer
+Minimum expected number of payments after which the recurrent payment code may be considered complete. Optional.
+​
+expectedPaymentTotal
+object
+Minimum total amount to be collected before the recurrent payment code is considered complete. Optional.
+Hide properties
+
+​
+currency
+string
+The 3-letter ISO currency code. Currently supported: ‘SLE’
+​
+value
+integer
+The value representation in the currency’s minor unit. E.g. For 1 Leone (SLE 1), the value should be 100, denoting cents, the minor unit.
+​
+financialAccountId
+string
+ID of the financial account where collected funds will be settled. Defaults to the main account if not provided.
+​
+processedPaymentData
+object
+The data of the payment that was processed for this payment code. This field is available only during the ‘payment_code.processed’ webhook event.
+Hide properties
+
+​
+amount
+object
+Hide properties
+
+​
+currency
+string
+The 3-letter ISO currency code. Currently supported: ‘SLE’
+​
+value
+integer
+The value representation in the currency’s minor unit. E.g. For 1 Leone (SLE 1), the value should be 100, denoting cents, the minor unit.
+​
+orderId
+string
+​
+paymentId
+string
+​
+orderNumber
+string
+​
+channelData
+object
+Show properties
+
+​
+financialTransactionReference
+string
+​
+metadata
+object
+Metadata is a flexible map of string key-value pairs for tagging or attaching additional information. A maximum of 64 pairs is allowed per object.
+​
+createTime
+string
+Timestamp indicating when the payment code was created.
+​
+updateTime
+string
+Timestamp indicating when the payment code was last updated.
+​
+ownershipGraph
+object
+Full ownership graph tracing the origin of this payment code objects across multiple objects.
+Hide properties
+
+​
+owner
+object
+Immediate object that owns this entity. This is the direct originator or source object.
+Hide properties
+
+​
+id
+string
+Unique ID of the object instance that owns this entity.
+​
+type
+string
+Type of the object that owns this entity. Examples include: ‘internal_transfer’, ‘checkout_session’, ‘payment_code’.
+​
+metadata
+object
+Arbitrary metadata describing the owning object.
+​
+metadata
+object
+Custom metadata attached to the payment code for storing business-specific context or tags.
+Was this page helpful?
+
+
+Yes
+
+No
+Previous
+List Payment Codes
+Retrieves a list of payment codes with support for filtering by mode, USSD code, and status.
+Next
+Ask a question...
+
+
+JSON Model
+
+Copy
+{
+    "id": null,
+    "mode": "one_time",
+    "status": "pending",
+    "name": "Home EDSA Meter Top-up",
+    "amount": {
+        "currency": null,
+        "value": null
+    },
+    "enable": null,
+    "expireTime": null,
+    "customer": {
+        "name": "Musa Kamara"
+    },
+    "ussdCode": null,
+    "reference": null,
+    "authorizedProviders": [
+        [
+            "m17",
+            "m18"
+        ]
+    ],
+    "authorizedPhoneNumber": null,
+    "recurrentPaymentTarget": {
+        "expectedPaymentCount": null,
+        "expectedPaymentTotal": {
+            "currency": null,
+            "value": null
+        }
+    },
+    "financialAccountId": null,
+    "processedPaymentData": {
+        "amount": {
+            "currency": null,
+            "value": null
+        },
+        "orderId": null,
+        "paymentId": null,
+        "orderNumber": null,
+        "channelData": {
+            "providerId": null,
+            "accountId": null,
+            "reference": null
+        },
+        "financialTransactionReference": null,
+        "metadata": null
+    },
+    "createTime": null,
+    "updateTime": null,
+    "ownershipGraph": {
+        "owner": {
+            "id": null,
+            "type": null,
+            "metadata": null,
+            "": null
+        }
+    },
+    "metadata": null
+}

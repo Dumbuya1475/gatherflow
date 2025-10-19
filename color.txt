@@ -1,0 +1,5 @@
+Dark Teal: RGB (0, 169, 143) or #00a98f
+Blue: RGB (0, 155, 235) or #009beb
+Orange: RGB (255, 179, 0) or #ffb300
+Light Teal: RGB (0, 191, 169) or #00bfa9
+White: RGB (255, 255, 255) or #ffffff

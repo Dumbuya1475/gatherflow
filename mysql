@@ -20,7 +20,9 @@ CREATE TABLE public.profiles (
 
     avatar_url text,
 
-    email text UNIQUE
+    email text UNIQUE,
+
+    is_guest boolean DEFAULT false
 
 );
 

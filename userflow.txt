@@ -1,0 +1,56 @@
+For a seamless event platform, the user flow should be intuitive and tailored to the event type. The key is to reduce friction during the registration process, especially for free events, while ensuring a secure and reliable payment system for paid ones. 
+Here is a breakdown of the complete user flow for both free and paid events.
+Free event user flow
+This flow emphasizes speed and low commitment to maximize sign-ups. 
+Step 1: Event discovery
+Action: A user sees an event on your platform's landing page, a social media post, or an email from a friend. They click the link to learn more.
+Your platform: The link leads to a clear and detailed event page showing the event's name, date, time, description, and the "Register" call-to-action (CTA). 
+Step 2: Registration
+Action: The user clicks "Register."
+Your platform: A simple form appears, requesting only the essential information, such as their name and email address. The system should not force account creation at this point. 
+Step 3: Confirmation and ticket delivery
+Action: After submitting the form, the user sees a confirmation message on the screen.
+Your platform:
+An automated confirmation email is sent immediately, containing the QR code for entry. This ensures the user has their ticket without needing to log in.
+The email also includes an invitation to create an account to manage their tickets and view other upcoming events. 
+Step 4: Managing tickets (optional)
+Action: The user follows the account creation link in their email.
+Your platform:
+The user sets up a password.
+Their new account is automatically linked to their existing registration.
+They can now log into their dashboard to see the QR code for their free ticket, view other upcoming events, and update their profile. 
+Step 5: Event check-in
+Action: The user arrives at the event.
+Your platform: Event staff use a mobile app to scan the QR code from the user's phone for quick, contactless check-in. 
+Paid event user flow
+This flow is designed for a secure payment process while maintaining a good user experience. 
+Step 1: Event discovery
+Action: A user finds a paid event on your platform or through a marketing channel.
+Your platform: The event page clearly displays the ticket price and a "Buy Ticket" CTA. 
+Step 2: Ticket selection
+Action: The user clicks "Buy Ticket" and selects the ticket type (e.g., standard, VIP) and quantity.
+Your platform: A page shows the ticket summary, total cost, and a "Proceed to Checkout" button. 
+Step 3: Account creation and checkout
+Action: The user clicks "Proceed to Checkout."
+Your platform:
+The user is prompted to enter their name and email.
+The system then initiates the Monime.io checkout process.
+The user is temporarily redirected to the secure Monime hosted payment page to enter their payment details. This keeps your platform from handling sensitive financial data. 
+Step 4: Payment completion and webhook
+Action: The user successfully completes the payment on the Monime page.
+Your platform:
+Monime redirects the user back to a pre-defined success URL on your site, which displays a confirmation message.
+Simultaneously, Monime sends a webhook to your backend, confirming the payment.
+Your backend receives the webhook, verifies it, and automatically:
+Creates an account for the user (if they don't have one).
+Generates a unique QR code.
+Saves the ticket and QR code to the new user's dashboard.
+Sends a confirmation email containing the QR code and a link to their dashboard. 
+Step 5: Accessing the ticket
+Action: The user can access their ticket and QR code from two places.
+Your platform:
+Email: The confirmation email provides instant access to the QR code.
+Dashboard: The user can log into their dashboard at any time to view all their purchased tickets. 
+Step 6: Event check-in
+Action: The user arrives at the event.
+Your platform: Staff use the mobile scanning app to check in attendees by validating their QR code. 
