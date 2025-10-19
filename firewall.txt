@@ -51,3 +51,22 @@ I understand. Navigating cloud security settings can be tricky. Here’s a more 
 
   Start with the firewall rules, as that is the most likely solution.
 
+
+✦ Thank you, that's exactly what I needed to know. You are using Firebase Studio as your coding environment.
+
+  The 403 Forbidden error is coming from the Firebase Studio environment itself. These online development environments
+  have security rules to protect you, and by default, they often block certain types of requests.
+
+  To fix this, you need to configure Firebase Studio to allow public access to the port your application is running on
+  (port 3000).
+
+  Please look for a "Ports" tab in your Firebase Studio interface. It's usually located in the terminal panel at the
+  bottom of the screen.
+
+  In the "Ports" tab, you should see a line for port 3000. Make sure the "Visibility" or "Access" for that port is set
+  to "Public". There might be a checkbox or a button to change this setting.
+
+  After you've made the port public, you may need to restart your Next.js application.
+
+  If you can't find the "Ports" tab or if this doesn't solve the problem, please let me know. There might be a
+  configuration file in your project that we need to look at.
