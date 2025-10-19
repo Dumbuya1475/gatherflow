@@ -52,7 +52,10 @@ async function getDashboardStats(user: any) {
         const { data: counts, error: ticketsCountError } = await supabaseAdmin
             .rpc('get_event_attendee_counts', { event_ids: eventIds });
 
-        if (ticketsCountError) throw ticketsCountError;
+        if (ticketsCountError) {
+            console.error("Error calling get_event_attendee_counts RPC:", ticketsCountError);
+            throw ticketsCountError;
+        }
 
         if (counts) {
             countsByEvent = counts.reduce((acc, { event_id_out, attendee_count }) => {

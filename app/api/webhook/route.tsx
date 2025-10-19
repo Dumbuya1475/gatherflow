@@ -61,11 +61,51 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing reference in payload." }, { status: 400 });
     }
 
-    const [eventId, userId] = reference.split("-").slice(1, 3); // Assuming format: event-EVENT_ID-user-USER_ID
+    const referenceParts = reference.split("-");
+    const eventId = referenceParts[1];
+    const userIdFromRef = referenceParts[3]; // This might be 'null' or a valid UUID
+    const emailFromRef = referenceParts[5];
 
-    if (!eventId || !userId) {
-      console.error("Invalid reference format:", reference);
-      return NextResponse.json({ error: "Invalid reference format." }, { status: 400 });
+    let finalUserId = userIdFromRef;
+    let finalUserEmail = emailFromRef;
+
+    if (!finalUserId || finalUserId === 'null') { // If userId is missing or 'null' from reference
+      // Try to find an existing profile by email
+      const { data: existingProfile, error: existingProfileError } = await supabase
+        .from('profiles')
+        .select('id, is_guest')
+        .eq('email', finalUserEmail)
+        .maybeSingle(); // Use maybeSingle as profile might not exist
+
+      if (existingProfileError && existingProfileError.code !== 'PGRST116') {
+        console.error('Error checking for existing profile in webhook:', existingProfileError);
+        return NextResponse.json({ error: 'An error occurred during profile lookup.' }, { status: 500 });
+      }
+
+      if (existingProfile) {
+        finalUserId = existingProfile.id;
+      } else {
+        // Create a new guest profile
+        const { data: newProfile, error: createProfileError } = await supabase
+          .from('profiles')
+          .insert({
+            email: finalUserEmail,
+            is_guest: true,
+          })
+          .select('id')
+          .single();
+
+        if (createProfileError) {
+          console.error('Error creating guest profile in webhook:', createProfileError);
+          return NextResponse.json({ error: 'Could not create guest profile.' }, { status: 500 });
+        }
+        finalUserId = newProfile.id;
+      }
+    }
+
+    if (!finalUserId) {
+      console.error("Could not determine user ID for ticket creation.");
+      return NextResponse.json({ error: "Could not determine user ID." }, { status: 500 });
     }
 
     const supabase = createServiceRoleClient();
@@ -75,7 +115,7 @@ export async function POST(req: NextRequest) {
       .from("tickets")
       .select("id, user_id, event_id")
       .eq("event_id", eventId)
-      .eq("user_id", userId)
+      .eq("user_id", finalUserId)
       .single();
 
     if (ticketError || !ticket) {

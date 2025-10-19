@@ -18,10 +18,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing eventId or quantity" }, { status: 400 });
     }
 
-    console.log("MONIME_SECRET_KEY:", process.env.MONIME_SECRET_KEY ? "Configured" : "Not Configured");
-    console.log("MONIME_SPACE_ID:", process.env.MONIME_SPACE_ID ? "Configured" : "Not Configured");
-    console.log("NEXT_PUBLIC_BASE_URL:", process.env.NEXT_PUBLIC_BASE_URL);
-
     const { data: event, error: eventError } = await supabase
       .from("events")
       .select("price, title")
@@ -70,7 +66,7 @@ export async function POST(req: NextRequest) {
         ],
         successUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/tickets/view`,
         cancelUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/events/${eventId}/register`,
-        reference: `event-${eventId}-quantity-${quantity}`,
+        reference: `event-${eventId}-user-${user.id}-email-${user.email}`,
       }),
     });
 
@@ -86,7 +82,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("Error creating checkout session:", error);
     if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message, details: (error as any).stack }, { status: 500 });
     }
     return NextResponse.json({ error: "An unknown error occurred." }, { status: 500 });
   }
