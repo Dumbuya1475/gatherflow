@@ -1,0 +1,53 @@
+I understand. Navigating cloud security settings can be tricky. Here’s a more detailed, step-by-step guide on how to
+  approach debugging this within your Google Cloud environment.
+
+  1. Check VPC Firewall Rules
+
+  The most common cause of a 403 Forbidden error in this context is a firewall rule blocking the request. You need to
+  ensure that traffic is allowed to your Cloud Workstation on the port your application is using (port 3000).
+
+   1. Go to the Firewall Rules page in the Google Cloud Console: VPC Firewall Rules 
+      (https://console.cloud.google.com/networking/firewalls/list)
+   2. Look for blocking rules: Examine the list for any rules with a "Deny" action that might apply to your workstation's
+      network or tags.
+   3. Create an "allow" rule (if one doesn't exist):
+       * Click "Create firewall rule".
+       * Name: Something descriptive, like allow-workstation-3000.
+       * Network: Select the VPC network your Cloud Workstation is using.
+       * Direction of traffic: Ingress (for incoming traffic).
+       * Action on match: Allow.
+       * Targets: Use "Specified target tags" and enter the network tag for your workstation. You can find this tag in
+         your Cloud Workstation's details.
+       * Source filter: For testing, you can set this to "IP ranges" and enter 0.0.0.0/0 to allow traffic from any IP
+         address. Warning: This is not secure for production. A better option is to use your own IP address.
+       * Protocols and ports: Select "Specified protocols and ports", then check "TCP" and enter 3000.
+       * Click "Create".
+
+  2. Review Identity-Aware Proxy (IAP)
+
+  IAP is another layer of security that could be blocking your request.
+
+   1. Go to the IAP page: Identity-Aware Proxy (https://console.cloud.google.com/security/iap)
+   2. Find your resource: Look for the backend service or resource that corresponds to your Cloud Workstation.
+   3. Check if IAP is enabled: If it is, ensure that you (and any other users who need access) are listed as a "Principal"
+      with the "IAP-secured Web App User" role. If not, you'll need to add yourself.
+
+  3. Isolate the Problem with a Simple Server
+
+  This test will help you confirm if the issue is with the network configuration in general, or something specific to
+  your Next.js application.
+
+   1. Stop your Next.js application in your Cloud Workstation's terminal.
+   2. Run a simple Python web server on the same port:
+
+   1     python3 -m http.server 3000
+   3. Try to access the server from your browser using your Cloud Workstation's URL (e.g.,
+      https://3000-your-workstation-url.com).
+
+   * If you still get a `403 Forbidden` error (or a timeout): The problem is definitely with your firewall or network
+     configuration. Focus on step 1.
+   * If you see a simple directory listing: The network is configured correctly, and the problem is more subtle. In this
+     case, you should re-enable your middleware and we can continue to investigate the application code.
+
+  Start with the firewall rules, as that is the most likely solution.
+
