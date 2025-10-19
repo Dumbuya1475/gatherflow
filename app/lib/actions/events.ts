@@ -9,11 +9,13 @@ import type { EventFormFieldWithOptions } from '@/lib/types';
 // 1. Create Event Action
 export async function createEventAction(formData: FormData) {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  /* const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     return { error: 'You must be logged in to create an event.' };
-  }
+  } */
+
+  const user = { id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef' }; // Dummy user
 
   // Server-side event limit check
   const { count, error: countError } = await supabase

@@ -12,6 +12,8 @@ import {
   BarChart,
   FileDown,
   Calendar,
+  DollarSign,
+  TrendingDown,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -173,6 +175,24 @@ export default async function DashboardLayout({
                   Analytics
                 </SidebarGroupLabel>
                 <div className="space-y-1">
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Money Flow" className="group relative overflow-hidden">
+                      <Link href="/dashboard/money-flow">
+                        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
+                        <TrendingDown className="relative z-10" />
+                        <span className="relative z-10">Money Flow</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Pricing" className="group relative overflow-hidden">
+                      <Link href="/dashboard/pricing">
+                        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
+                        <DollarSign className="relative z-10" />
+                        <span className="relative z-10">Pricing</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild tooltip="Analytics" className="group relative overflow-hidden">
                       <Link href="/dashboard/analytics">

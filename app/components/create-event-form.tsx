@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -553,7 +554,14 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                     <FormItem>
                       <FormLabel>Price (SLE)</FormLabel>
                       <FormControl>
+                                              <div className="flex items-center gap-2">
                         <Input type="number" placeholder="e.g., 500000" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} value={field.value ?? ''} />
+                        <Button variant="outline" asChild>
+                          <Link href="/dashboard/pricing" target="_blank">
+                            Preview Pricing
+                          </Link>
+                        </Button>
+                      </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

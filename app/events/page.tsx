@@ -123,6 +123,7 @@ export default function AllEventsPage() {
         setUser(currentUser);
 
         const eventsData = await getAllPublicEvents(currentUser);
+        console.log("All public events:", JSON.stringify(eventsData, null, 2));
         setAllEvents(eventsData);
         setIsLoading(false);
     }
@@ -220,6 +221,7 @@ export default function AllEventsPage() {
             )}
           </div>
         </section>
+        <pre>{JSON.stringify(allEvents, null, 2)}</pre>
       </main>
       <Footer />
     </div>

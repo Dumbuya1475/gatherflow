@@ -299,12 +299,19 @@ export default function EventsPage() {
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
           Events
         </h1>
-        <Button asChild>
-          <Link href="/dashboard/events/create">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Create Event
-          </Link>
-        </Button>
+        <div className="flex gap-4">
+          <Button asChild>
+            <Link href="/dashboard/organizer">
+              Organizer Dashboard
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/dashboard/events/create">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create Event
+            </Link>
+          </Button>
+        </div>
       </div>
       
        <div className="flex flex-col md:flex-row gap-4">

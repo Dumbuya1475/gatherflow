@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
 
     if (!monimeResponse.ok) {
       const errorBody = await monimeResponse.text();
+      console.error("Monime API Error:", errorBody);
       return NextResponse.json({ error: `Failed to create Monime checkout session: ${errorBody}` }, { status: monimeResponse.status });
     }
 
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ hostedUrl: redirectUrl });
   } catch (error) {
-    console.error("Error creating checkout session:", error);
+    console.error("Error creating checkout session:", JSON.stringify(error, null, 2));
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message, details: (error as any).stack }, { status: 500 });
     }
