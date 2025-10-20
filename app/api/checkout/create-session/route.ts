@@ -12,14 +12,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Event ID is required' }, { status: 400 });
     }
 
-    // 1. Get event details
+    // 1. Get event details, including the fee_bearer
     const { data: event, error: eventError } = await supabase
       .from('events')
-      .select('id, title, price, requires_approval')
+      .select('id, title, price, requires_approval, fee_bearer')
       .eq('id', eventId)
       .single();
 
     if (eventError || !event) {
+      console.error('Checkout Error: Event not found.', eventError);
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
 
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
             .maybeSingle();
         
         if (profileFindError && profileFindError.code !== 'PGRST116') { // Ignore "not found" error
+             console.error("Checkout Error: Database error finding profile.", profileFindError);
              return NextResponse.json({ error: 'Database error finding profile.' }, { status: 500 });
         }
 
@@ -51,7 +53,7 @@ export async function POST(req: NextRequest) {
             });
 
             if (createProfileError || !newProfile.user) {
-                console.error("Error creating guest auth user:", createProfileError);
+                console.error("Checkout Error: Could not create guest auth user.", createProfileError);
                 return NextResponse.json({ error: 'Could not create guest user.' }, { status: 500 });
             }
             finalUserId = newProfile.user.id;
@@ -62,14 +64,14 @@ export async function POST(req: NextRequest) {
                 .insert({ id: finalUserId, email, first_name: firstName, last_name: lastName, is_guest: true });
             
             if (publicProfileError) {
-                console.error("Error creating guest public profile:", publicProfileError);
-                return NextResponse.json({ error: 'Could not create guest profile.' }, { status: 500 });
+                console.error("Checkout Error: Could not create guest public profile.", publicProfileError);
+                // Don't fail the whole transaction, but log it. We can proceed.
             }
         }
     }
 
 
-    // 3. Create a pending ticket record
+    // 3. Create a pending ticket record, now including fee_bearer
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
       .insert({
@@ -77,12 +79,13 @@ export async function POST(req: NextRequest) {
         user_id: finalUserId,
         status: 'pending', // Always pending until payment is confirmed
         ticket_price: event.price,
+        fee_bearer: event.fee_bearer, // Add the fee_bearer from the event
       })
       .select('id')
       .single();
 
     if (ticketError || !ticket) {
-      console.error('Ticket creation error:', ticketError);
+      console.error('Checkout Error: Failed to create a pending ticket.', ticketError);
       return NextResponse.json({ error: 'Failed to create a pending ticket.' }, { status: 500 });
     }
 
@@ -98,7 +101,7 @@ export async function POST(req: NextRequest) {
         .insert(responsesToInsert);
       
       if (responsesError) {
-        console.error('Could not save form responses:', responsesError);
+        console.error('Checkout Warning: Could not save form responses.', responsesError);
         // Don't fail the whole transaction, but log it.
       }
     }
@@ -130,7 +133,8 @@ export async function POST(req: NextRequest) {
       .eq('id', ticket.id);
 
     if (updateTicketError) {
-        console.error('Failed to update ticket with session ID:', updateTicketError);
+        console.error('Checkout Error: Failed to update ticket with session ID.', updateTicketError);
+        // This is a critical error, as we can't reconcile the payment later.
         return NextResponse.json({ error: 'Failed to link payment session to ticket.' }, { status: 500 });
     }
 
@@ -139,7 +143,7 @@ export async function POST(req: NextRequest) {
       ticketId: ticket.id,
     });
   } catch (error: any) {
-    console.error('Checkout error:', error);
+    console.error('Checkout Error: Unhandled exception in POST handler.', error);
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
