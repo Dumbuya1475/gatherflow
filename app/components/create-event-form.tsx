@@ -5,7 +5,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -67,6 +67,7 @@ const eventFormSchema = z.object({
   current_cover_image: z.string().url().optional(),
   is_paid: z.boolean().default(false),
   price: z.coerce.number().nonnegative().optional(),
+  fee_bearer: z.enum(['organizer', 'buyer']).default('buyer'),
   is_public: z.boolean().default(true),
   requires_approval: z.boolean().default(false),
   customFields: z.array(z.object({
@@ -166,6 +167,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
       capacity: defaultValues?.capacity || undefined,
       is_paid: defaultValues?.is_paid || false,
       price: defaultValues?.price || undefined,
+      fee_bearer: defaultValues?.fee_bearer || 'buyer',
       is_public: defaultValues?.is_public ?? true,
       requires_approval: defaultValues?.requires_approval || false,
       current_cover_image: event?.cover_image,
@@ -183,6 +185,12 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
   });
 
   const isPaid = form.watch('is_paid');
+
+  useEffect(() => {
+    if (isPaid) {
+      form.setValue('requires_approval', false);
+    }
+  }, [isPaid, form]);
 
   async function handleGenerateContent() {
     setIsGenerating(true);
@@ -570,6 +578,46 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
               )}
             </div>
 
+            {isPaid && (
+                <FormField
+                    control={form.control}
+                    name="fee_bearer"
+                    render={({ field }) => (
+                    <FormItem className="space-y-3">
+                        <FormLabel>Service Fee</FormLabel>
+                        <FormDescription>
+                            Who should bear the platform service fee?
+                        </FormDescription>
+                        <FormControl>
+                        <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex flex-col space-y-2"
+                        >
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                                <RadioGroupItem value="buyer" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                                Pass fee to buyer (Buyer pays price + fee)
+                            </FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                                <RadioGroupItem value="organizer" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                                Absorb fee (You get price - fee)
+                            </FormLabel>
+                            </FormItem>
+                        </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+            )}
+
             <FormField
               control={form.control}
               name="is_public"
@@ -606,6 +654,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
+                      disabled={isPaid}
                     />
                   </FormControl>
                 </FormItem>
@@ -741,7 +790,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
-                ))}`
+                ))}
               </div>
               <Button
                 type="button"
