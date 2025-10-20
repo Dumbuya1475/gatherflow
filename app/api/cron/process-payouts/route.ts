@@ -1,6 +1,9 @@
+
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 import { createMonimePayout } from '@@/lib/monime';
+
+const supabaseAdmin = createServiceRoleClient();
 
 export async function GET(req: NextRequest) {
   // Verify cron secret
