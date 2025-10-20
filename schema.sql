@@ -1,7 +1,6 @@
-
 -- =====================================================
 -- GATHERFLOW - MASTER DATABASE SCHEMA
--- Version: 1.2
+-- Version: 1.1
 -- Description: This script sets up the entire database,
 -- including tables, types, functions, and RLS policies.
 -- Run this on a fresh, empty Supabase project.
