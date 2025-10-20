@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -37,31 +38,31 @@ const NewPricingSection = () => {
   const pricingTiers = [
     {
       tier: 'super_early',
-      label: '🦅 Super Early Bird',
+      label: 'Super Early Bird',
       sales: 'First 25 tickets',
       ticketsSold: 0,
     },
     {
       tier: 'early',
-      label: '🐦 Early Bird',
+      label: 'Early Bird',
       sales: 'Next 25 tickets',
       ticketsSold: 25,
     },
     {
       tier: 'normal',
-      label: '🎫 Regular Price',
+      label: 'Regular Price',
       sales: 'Next 50 tickets',
       ticketsSold: 50,
     },
     {
       tier: 'standard',
-      label: '🎟️ Standard Price',
+      label: 'Standard Price',
       sales: 'Next 100 tickets',
       ticketsSold: 100,
     },
     {
       tier: 'late',
-      label: '⏰ Last Minute',
+      label: 'Last Minute',
       sales: '200+ tickets',
       ticketsSold: 200,
     },
@@ -80,7 +81,7 @@ const NewPricingSection = () => {
               A Fairer Pricing Model for <span className="bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">Everyone</span>
             </h2>
             <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-              Our Early Bird Discount Model rewards your most loyal fans. The earlier they buy, the more they save. It’s that simple.
+              Our dynamic fee model rewards you for selling more tickets. The earlier your fans buy, the more they save. It’s that simple.
             </p>
           </div>
         </div>
@@ -113,11 +114,13 @@ const NewPricingSection = () => {
                   </div>
                 </CardContent>
                 <CardFooter className="relative z-10">
-                  <Button className={`w-full group relative overflow-hidden transition-all duration-300`} variant={'outline'}>
-                    <span className="relative z-10">
-                      Create an Event
-                    </span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <Button asChild className={`w-full group relative overflow-hidden transition-all duration-300`} variant={'outline'}>
+                    <Link href="/signup">
+                      <span className="relative z-10">
+                        Create an Event
+                      </span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    </Link>
                   </Button>
                 </CardFooter>
               </Card>
