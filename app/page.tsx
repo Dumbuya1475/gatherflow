@@ -1,7 +1,7 @@
 
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@@/app/lib/supabase/server';
 import type { EventWithAttendees } from '@/lib/types';
 import { LandingPageClient } from '@/components/landing-page-client';
 
