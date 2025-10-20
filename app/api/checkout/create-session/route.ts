@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
         event_id: eventId,
         user_id: finalUserId,
         status: 'pending', // Always pending until payment is confirmed
+        ticket_price: event.price,
       })
       .select('id')
       .single();
