@@ -1,7 +1,14 @@
+
+import { OpenAPI, CheckoutSessionService, PayoutService, ApiError } from './monime-client';
+import crypto from 'crypto';
+
+OpenAPI.BASE = 'https://api.monime.io';
+OpenAPI.TOKEN = process.env.MONIME_API_KEY;
+
 interface MonimeCheckoutParams {
-  amount: number;
-  currency: string;
   metadata: Record<string, any>;
+  name: string;
+  lineItems: any;
 }
 
 interface MonimeCheckoutResponse {
@@ -12,32 +19,35 @@ interface MonimeCheckoutResponse {
 export async function createMonimeCheckout(
   params: MonimeCheckoutParams
 ): Promise<MonimeCheckoutResponse> {
-  const response = await fetch('https://api.monime.io/v1/checkout-sessions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.MONIME_API_KEY}`,
-      'Monime-Space-Id': process.env.MONIME_SPACE_ID!,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      amount: Math.round(params.amount * 100), // Convert to cents
-      currency: params.currency,
-      success_url: `${process.env.NEXT_PUBLIC_URL}/tickets/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_URL}/tickets/cancel`,
-      metadata: params.metadata
-    })
-  });
+  try {
+    const idempotencyKey = crypto.randomUUID();
+    const response = await CheckoutSessionService.createCheckoutSession(
+      idempotencyKey,
+      process.env.MONIME_SPACE_ID!,
+      null,
+      {
+        name: params.name,
+        lineItems: params.lineItems,
+        successUrl: `${process.env.NEXT_PUBLIC_URL}/tickets/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${process.env.NEXT_PUBLIC_URL}/tickets/cancel`,
+        metadata: params.metadata,
+      }
+    );
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(`Monime API error: ${error.message || 'Unknown error'}`);
+    if (response.result) {
+      return {
+        id: response.result.id!,
+        url: response.result.redirectUrl!,
+      };
+    } else {
+      throw new Error('Failed to create Monime checkout session');
+    }
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw new Error(`Monime API error: ${error.body.message || 'Unknown error'}`);
+    }
+    throw error;
   }
-
-  const data = await response.json();
-  return {
-    id: data.id,
-    url: data.url
-  };
 }
 
 interface MonimePayoutParams {
@@ -50,29 +60,37 @@ interface MonimePayoutParams {
 export async function createMonimePayout(
   params: MonimePayoutParams
 ): Promise<{ id: string }> {
-  const response = await fetch('https://api.monime.io/v1/payouts', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.MONIME_API_KEY}`,
-      'Monime-Space-Id': process.env.MONIME_SPACE_ID!,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      amount: Math.round(params.amount * 100),
-      currency: params.currency,
-      destination: {
-        type: 'mobile_money',
-        phone: params.recipientPhone
-      },
-      metadata: params.metadata
-    })
-  });
+  try {
+    const idempotencyKey = crypto.randomUUID();
+    const response = await PayoutService.createPayout(
+      idempotencyKey,
+      process.env.MONIME_SPACE_ID!,
+      null,
+      {
+        amount: {
+          currency: params.currency,
+          value: Math.round(params.amount * 100),
+        },
+        destination: {
+          type: 'momo',
+          providerId: 'm17', // Assuming Orange Money SL, this might need to be dynamic
+          phoneNumber: params.recipientPhone,
+        },
+        metadata: params.metadata,
+      }
+    );
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(`Monime payout error: ${error.message || 'Unknown error'}`);
+    if (response.result) {
+      return {
+        id: response.result.id!,
+      };
+    } else {
+      throw new Error('Failed to create Monime payout');
+    }
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw new Error(`Monime payout error: ${error.body.message || 'Unknown error'}`);
+    }
+    throw error;
   }
-
-  const data = await response.json();
-  return { id: data.id };
 }

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase/server';
-import { calculateEarlyBirdPricing } from '@/lib/pricing';
-import { generateQRCode } from '@/lib/qrcode';
-import { createMonimeCheckout } from '@/lib/monime';
+import { supabaseAdmin } from '@@/lib/supabase/server';
+import { calculateEarlyBirdPricing } from '@@/lib/pricing';
+import { generateQRCode } from '@@/lib/qrcode';
+import { createMonimeCheckout } from '@@/lib/monime';
 
 export async function POST(req: NextRequest) {
   try {
@@ -88,15 +88,24 @@ export async function POST(req: NextRequest) {
 
     // 5. Create Monime checkout session
     const checkoutSession = await createMonimeCheckout({
-      amount: pricing.buyerPays,
-      currency: 'SLE',
+      name: event.name,
       metadata: {
         ticket_id: ticket.id,
         event_id: eventId,
         user_id: userId,
         tier: pricing.tier,
         ticket_number: ticketNumber
-      }
+      },
+      lineItems: [
+        {
+          name: event.name,
+          price: {
+            currency: 'SLE',
+            value: Math.round(pricing.buyerPays * 100)
+          },
+          quantity: 1
+        }
+      ]
     });
 
     // 6. Update ticket with checkout session ID

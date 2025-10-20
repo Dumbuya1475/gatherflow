@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import {
@@ -9,7 +10,6 @@ import {
   Settings,
   User,
   BarChart,
-  FileDown,
   Calendar,
 } from 'lucide-react';
 import {
@@ -136,18 +136,6 @@ export function DashboardSheet() {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    asChild 
-                    className="group relative overflow-hidden transition-all duration-300 hover:bg-accent/50"
-                  >
-                    <Link href="/dashboard/attendees">
-                      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
-                      <User className="relative z-10 group-hover:text-primary transition-colors duration-200" />
-                      <span className="relative z-10 group-hover:text-primary transition-colors duration-200">Attendees</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
               </div>
             </SidebarGroup>
 
@@ -165,18 +153,6 @@ export function DashboardSheet() {
                       <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
                       <BarChart className="relative z-10 group-hover:text-primary transition-colors duration-200" />
                       <span className="relative z-10 group-hover:text-primary transition-colors duration-200">Analytics</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    asChild 
-                    className="group relative overflow-hidden transition-all duration-300 hover:bg-accent/50"
-                  >
-                    <Link href="/dashboard/reports">
-                      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
-                      <FileDown className="relative z-10 group-hover:text-primary transition-colors duration-200" />
-                      <span className="relative z-10 group-hover:text-primary transition-colors duration-200">Reports</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

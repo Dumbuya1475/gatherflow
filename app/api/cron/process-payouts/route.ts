@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase/server';
-import { createMonimePayout } from '@/lib/monime';
+import { supabaseAdmin } from '@@/lib/supabase/server';
+import { createMonimePayout } from '@@/lib/monime';
 
 export async function GET(req: NextRequest) {
   // Verify cron secret

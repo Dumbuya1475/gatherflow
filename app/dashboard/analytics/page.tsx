@@ -110,8 +110,8 @@ export default async function AnalyticsPage() {
                                     <TableCell className="text-center">{event.registrations}</TableCell>
                                     <TableCell className="text-center">{event.check_ins}</TableCell>
                                     <TableCell className="text-right">
-                                        <Badge variant={event.attendance_rate > 75 ? 'default' : 'secondary'} className={`${event.attendance_rate > 75 ? 'bg-green-500' : 'bg-yellow-500'} text-white`}>
-                                            {event.attendance_rate.toFixed(1)}%
+                                        <Badge variant={typeof event.attendance_rate === 'number' && event.attendance_rate > 75 ? 'default' : 'secondary'} className={`${typeof event.attendance_rate === 'number' && event.attendance_rate > 75 ? 'bg-green-500' : 'bg-yellow-500'} text-white`}>
+                                            {typeof event.attendance_rate === 'number' ? `${event.attendance_rate.toFixed(1)}%` : 'N/A'}
                                         </Badge>
                                     </TableCell>
                                 </TableRow>
