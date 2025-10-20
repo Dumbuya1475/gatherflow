@@ -94,7 +94,7 @@ const NewPricingSection = () => {
             placeholder="Enter your ticket price"
           />
         </div>
-        <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-5 mt-16">
+        <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mt-16">
           {pricingTiers.map((tier, index) => {
             const { buyerPays, savings } = calculateEarlyBirdFee(ticketPrice, tier.ticketsSold);
             return (
