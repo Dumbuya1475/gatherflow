@@ -154,6 +154,12 @@ export default async function DashboardPage() {
         data: { user },
       } = await supabase.auth.getUser();
 
+  if (!user) {
+      // Handle the case where there is no user. 
+      // Maybe redirect or show a login prompt.
+      // For now, let's pass null to the data fetching functions.
+  }
+
   const { isOrganizer, totalEvents, activeEvents, totalAttendees, checkInsToday, recentEvents } = await getDashboardStats(user);
   const { registeredEventsCount, upcomingEvents, attendedEventsCount } = user ? await getAttendeeDashboardStats(user) : { registeredEventsCount: 0, upcomingEvents: [], attendedEventsCount: 0 };
 
