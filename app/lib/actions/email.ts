@@ -1,8 +1,11 @@
+
 'use server';
 
 import * as React from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { Resend } from 'resend';
+import { render } from '@react-email/render';
+
 
 let resend: Resend | undefined;
 
@@ -70,15 +73,19 @@ export async function sendEmailAction(eventId: number, subject: string, message:
 
 export async function sendTicketEmail(to: string, subject: string, react: React.ReactElement) {
   try {
+    const html = render(react);
     await getResend().emails.send({
       from: process.env.RESEND_FROM_EMAIL!,
       to,
       subject,
-      react,
+      html,
     });
     return { success: true };
   } catch (error) {
     console.error('Error sending email:', error);
+    if (error instanceof Error) {
+        return { success: false, error: `Could not send email: ${error.message}` };
+    }
     return { success: false, error: 'Could not send email.' };
   }
 }
