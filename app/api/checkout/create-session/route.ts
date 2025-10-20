@@ -5,13 +5,12 @@ import { createMonimeCheckout } from '@/lib/monime';
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = createServiceRoleClient();
     const { eventId, userId, formResponses, firstName, lastName, email } = await req.json();
 
     if (!eventId) {
       return NextResponse.json({ error: 'Event ID is required' }, { status: 400 });
     }
-
-    const supabase = createServiceRoleClient();
 
     // 1. Get event details
     const { data: event, error: eventError } = await supabase
