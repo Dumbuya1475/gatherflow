@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState } from 'react';
 import { TrendingDown, DollarSign, Users, Info } from 'lucide-react';
@@ -33,6 +34,7 @@ const PricingPreview = () => {
       finalPercentage,
       platformFee,
       buyerPays: price + platformFee,
+      organizerGets: price,
       isEarlyBird: earlyBirdDiscount > 0,
       saved: earlyBirdDiscount > 0 ? (price * (earlyBirdDiscount / 100)) : 0
     };
@@ -133,7 +135,7 @@ const PricingPreview = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Buyer Pays</span>
                   <span className="text-lg font-semibold text-gray-900">
-                    NLE {scenario.userPays.toFixed(2)}
+                    NLE {scenario.buyerPays.toFixed(2)}
                   </span>
                 </div>
                 
@@ -208,7 +210,7 @@ const PricingPreview = () => {
                     NLE {scenario.platformFee.toFixed(2)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    NLE {scenario.userPays.toFixed(2)}
+                    NLE {scenario.buyerPays.toFixed(2)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
                     NLE {scenario.organizerGets.toFixed(2)}
