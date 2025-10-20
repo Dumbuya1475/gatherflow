@@ -3,9 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { createMonimePayout } from '@@/lib/monime';
 
-const supabaseAdmin = createServiceRoleClient();
-
 export async function GET(req: NextRequest) {
+  // Initialize client inside the request handler
+  const supabaseAdmin = createServiceRoleClient();
+  
   // Verify cron secret
   const authHeader = req.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -53,6 +54,9 @@ export async function GET(req: NextRequest) {
 }
 
 async function processEventPayout(event: any) {
+  // Initialize client inside the function
+  const supabaseAdmin = createServiceRoleClient();
+
   // Get all paid tickets
   const { data: tickets } = await supabaseAdmin
     .from('tickets')

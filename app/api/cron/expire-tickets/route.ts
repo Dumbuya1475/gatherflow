@@ -1,9 +1,7 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-
-// WARNING: Use environment variables for Supabase URL and service role key
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { createServiceRoleClient } from '@/lib/supabase/server';
 
 // This is the endpoint that will be called by a cron job scheduler
 export async function POST(request: Request) {
@@ -13,12 +11,8 @@ export async function POST(request: Request) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    return new NextResponse('Supabase environment variables are not set', { status: 500 });
-  }
-
-  // Use the service role key to bypass RLS for this system-level task
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+  // Initialize client inside the request handler
+  const supabaseAdmin = createServiceRoleClient();
 
   try {
     // 2. Calculate the cutoff date (2 days ago)
