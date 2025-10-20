@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { uploadFile } from '@/lib/supabase/storage';
+import { uploadFile } from '@@/app/lib/supabase/storage';
 import type { EventFormFieldWithOptions } from '@/lib/types';
 
 // 1. Create Event Action
