@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useActionState, useState } from 'react';
@@ -6,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { registerAndCreateTicket, registerGuestForEvent } from '@/lib/actions/tickets.tsx';
-import { createPaymentIntent } from '@/lib/actions/payments';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -24,45 +24,65 @@ function SubmitButton({ isFull, isPaid }: { isFull: boolean, isPaid: boolean }) 
 }
 
 export function RegisterForEventForm({ event, formFields, user }: { event: EventWithAttendees, formFields: EventFormField[], user: User | null }) {
-  const [isGuest, setIsGuest] = useState(false);
-  const [ticketState, ticketAction] = useActionState(isGuest ? registerGuestForEvent : registerAndCreateTicket, undefined);
+  const [state, setState] = useState<{error?: string}>({});
+  const { pending } = useFormStatus();
 
   const isFull = event.capacity ? event.attendees >= event.capacity : false;
   const isPaid = event.is_paid && event.price > 0;
 
-  const action = isPaid ? async (formData: FormData) => {
-    const response = await fetch('/api/payment/create-checkout-session', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        eventId: event.id,
-        quantity: 1, // Assuming quantity is always 1 for now
-      }),
-    });
+  const handleSubmit = async (eventTarget: React.FormEvent<HTMLFormElement>) => {
+    eventTarget.preventDefault();
+    setState({});
 
-    const data = await response.json();
+    const formData = new FormData(eventTarget.currentTarget);
+    const formResponses = formFields.map(field => ({
+        form_field_id: field.id,
+        field_value: formData.get(`custom_field_${field.id}`) as string,
+    }));
 
-    if (!response.ok) {
-      return { error: data.error || 'Failed to create checkout session.' };
+    if (isPaid) {
+        // Paid event flow
+        const payload = {
+            eventId: event.id,
+            userId: user?.id,
+            firstName: user ? user.user_metadata.first_name : formData.get('firstName'),
+            lastName: user ? user.user_metadata.last_name : formData.get('lastName'),
+            email: user ? user.email : formData.get('email'),
+            formResponses,
+        };
+
+        const response = await fetch('/api/checkout/create-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            setState({ error: data.error || 'Failed to create checkout session.' });
+        } else {
+            window.location.href = data.checkoutUrl;
+        }
+    } else {
+        // Free event flow
+        const action = user ? registerAndCreateTicket : registerGuestForEvent;
+        const result = await action(undefined, formData);
+        if (result?.error) {
+            setState({ error: result.error });
+        }
     }
-
-    window.location.href = data.hostedUrl;
-    return { success: true };
-  } : ticketAction;
-
-  const state = ticketState; // Only ticketState is relevant now, as payment redirects immediately
+  };
   
   return (
     <Card className="w-full max-w-md">
         <CardHeader className="text-center">
             <CardTitle className="text-2xl">{isPaid ? 'Buy Ticket' : 'Register for Event'}</CardTitle>
             <CardDescription>{isPaid ? `Fill in your details to buy a ticket for ${event.title}` : `Fill in your details to register for ${event.title}`}</CardDescription>
-            {isPaid && <p className="text-2xl font-bold">Price: {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'SLE' }).format(event.price)}</p>}
+            {isPaid && <p className="text-2xl font-bold">Price: {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'SLE' }).format(event.price!)}</p>}
         </CardHeader>
         <CardContent>
-            <form action={action} className="grid gap-4">
+            <form onSubmit={handleSubmit} className="grid gap-4">
                 <input type="hidden" name="eventId" value={event.id} />
                 {user ? (
                     <>
@@ -98,22 +118,6 @@ export function RegisterForEventForm({ event, formFields, user }: { event: Event
                             <Label htmlFor="email">Email</Label>
                             <Input id="email" name="email" type="email" placeholder="m@example.com" required />
                         </div>
-                        <div className="flex items-center space-x-2">
-                            <Checkbox id="guest" onCheckedChange={(checked) => setIsGuest(checked as boolean)} />
-                            <Label htmlFor="guest">Register as a guest</Label>
-                        </div>
-                        {!isGuest && (
-                            <>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="password">Password</Label>
-                                    <Input id="password" name="password" type="password" required />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="confirmPassword">Confirm Password</Label>
-                                    <Input id="confirmPassword" name="confirmPassword" type="password" required />
-                                </div>
-                            </>
-                        )}
                     </>
                 )}
 
@@ -123,7 +127,7 @@ export function RegisterForEventForm({ event, formFields, user }: { event: Event
                     {field.field_type === 'text' && <Input id={`custom-field-${field.id}`} name={`custom_field_${field.id}`} type="text" required={field.is_required} />}
                     {field.field_type === 'number' && <Input id={`custom-field-${field.id}`} name={`custom_field_${field.id}`} type="number" required={field.is_required} />}
                     {field.field_type === 'date' && <Input id={`custom-field-${field.id}`} name={`custom_field_${field.id}`} type="date" required={field.is_required} />}
-                    {field.field_type === 'boolean' && <Checkbox id={`custom-field-${field.id}`} name={`custom_field_${field.id}`} required={field.is_required} />}
+                    {field.field_type === 'boolean' && <Checkbox id={`custom-field-${field.id}`} name={`custom_field_${field.id}`} />}
                     {field.field_type === 'dropdown' && (
                       <Select name={`custom_field_${field.id}`} required={field.is_required}>
                         <SelectTrigger>

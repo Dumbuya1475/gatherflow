@@ -1,123 +1,142 @@
+
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@@/lib/supabase/server';
-import { calculateEarlyBirdPricing } from '@@/lib/pricing';
-import { generateQRCode } from '@@/lib/qrcode';
+import { createClient, createServiceRoleClient } from '@@/lib/supabase/server';
 import { createMonimeCheckout } from '@@/lib/monime';
 
 export async function POST(req: NextRequest) {
   try {
-    const { eventId, userId } = await req.json();
+    const { eventId, userId, formResponses, firstName, lastName, email } = await req.json();
 
-    // 1. Get event
-    const { data: event, error: eventError } = await supabaseAdmin
+    if (!eventId) {
+      return NextResponse.json({ error: 'Event ID is required' }, { status: 400 });
+    }
+
+    const supabase = createServiceRoleClient();
+
+    // 1. Get event details
+    const { data: event, error: eventError } = await supabase
       .from('events')
-      .select('*')
+      .select('id, title, price, requires_approval')
       .eq('id', eventId)
       .single();
 
     if (eventError || !event) {
-      return NextResponse.json(
-        { error: 'Event not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
 
-    // Check if event is published
-    if (event.status !== 'published') {
-      return NextResponse.json(
-        { error: 'Event is not available for purchase' },
-        { status: 400 }
-      );
+    // 2. Create or find the user profile. This is crucial for guest checkouts.
+    let finalUserId = userId;
+    if (!finalUserId) {
+        if (!email || !firstName || !lastName) {
+            return NextResponse.json({ error: 'Name and email are required for guest checkout' }, { status: 400 });
+        }
+        
+        const { data: existingProfile, error: profileFindError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .maybeSingle();
+        
+        if (profileFindError && profileFindError.code !== 'PGRST116') { // Ignore "not found" error
+             return NextResponse.json({ error: 'Database error finding profile.' }, { status: 500 });
+        }
+
+        if (existingProfile) {
+            finalUserId = existingProfile.id;
+        } else {
+             const { data: newProfile, error: createProfileError } = await supabase.auth.admin.createUser({
+                email: email,
+                password: crypto.randomUUID(), // Secure random password for guest
+                email_confirm: true, // Auto-confirm guest accounts
+                user_metadata: { first_name: firstName, last_name: lastName }
+            });
+
+            if (createProfileError || !newProfile.user) {
+                console.error("Error creating guest auth user:", createProfileError);
+                return NextResponse.json({ error: 'Could not create guest user.' }, { status: 500 });
+            }
+            finalUserId = newProfile.user.id;
+
+            // Also create the public profile with is_guest = true
+            const { error: publicProfileError } = await supabase
+                .from('profiles')
+                .insert({ id: finalUserId, email, first_name: firstName, last_name: lastName, is_guest: true });
+            
+            if (publicProfileError) {
+                console.error("Error creating guest public profile:", publicProfileError);
+                return NextResponse.json({ error: 'Could not create guest profile.' }, { status: 500 });
+            }
+        }
     }
 
-    // 2. Count actual tickets sold (paid only)
-    const { count: ticketsSold } = await supabaseAdmin
-      .from('tickets')
-      .select('*', { count: 'exact', head: true })
-      .eq('event_id', eventId)
-      .eq('monime_payment_status', 'paid');
 
-    const currentTicketsSold = ticketsSold || 0;
-
-    // Check if sold out
-    if (currentTicketsSold >= event.max_attendees) {
-      return NextResponse.json(
-        { error: 'Event is sold out' },
-        { status: 400 }
-      );
-    }
-
-    const ticketNumber = currentTicketsSold + 1;
-
-    // 3. Calculate pricing
-    const pricing = calculateEarlyBirdPricing(
-      event.ticket_price,
-      currentTicketsSold,
-      event.fee_model
-    );
-
-    // 4. Create ticket record
-    const qrCode = generateQRCode();
-
-    const { data: ticket, error: ticketError } = await supabaseAdmin
+    // 3. Create a pending ticket record
+    const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
       .insert({
         event_id: eventId,
-        user_id: userId,
-        ticket_number: ticketNumber,
-        ticket_price: event.ticket_price,
-        pricing_tier: pricing.tier,
-        tier_discount: pricing.discount,
-        platform_fee: pricing.platformFee,
-        platform_fee_percentage: pricing.percentage,
-        amount_paid: pricing.buyerPays,
-        organizer_amount: pricing.organizerGets,
-        buyer_saved: pricing.saved,
-        qr_code: qrCode,
-        monime_payment_status: 'pending'
+        user_id: finalUserId,
+        status: 'pending', // Always pending until payment is confirmed
       })
-      .select()
+      .select('id')
       .single();
 
     if (ticketError || !ticket) {
-      return NextResponse.json(
-        { error: 'Failed to create ticket' },
-        { status: 500 }
-      );
+      console.error('Ticket creation error:', ticketError);
+      return NextResponse.json({ error: 'Failed to create a pending ticket.' }, { status: 500 });
+    }
+
+    // 4. Save form responses if any
+    if (formResponses && formResponses.length > 0) {
+      const responsesToInsert = formResponses.map((response: any) => ({
+        ticket_id: ticket.id,
+        form_field_id: response.form_field_id,
+        field_value: response.field_value,
+      }));
+      const { error: responsesError } = await supabase
+        .from('attendee_form_responses')
+        .insert(responsesToInsert);
+      
+      if (responsesError) {
+        console.error('Could not save form responses:', responsesError);
+        // Don't fail the whole transaction, but log it.
+      }
     }
 
     // 5. Create Monime checkout session
     const checkoutSession = await createMonimeCheckout({
-      name: event.name,
+      name: `Ticket for ${event.title}`,
       metadata: {
         ticket_id: ticket.id,
         event_id: eventId,
-        user_id: userId,
-        tier: pricing.tier,
-        ticket_number: ticketNumber
+        user_id: finalUserId,
       },
       lineItems: [
         {
-          name: event.name,
+          name: event.title,
           price: {
             currency: 'SLE',
-            value: Math.round(pricing.buyerPays * 100)
+            value: Math.round(event.price! * 100),
           },
-          quantity: 1
-        }
-      ]
+          quantity: 1,
+        },
+      ],
     });
-
-    // 6. Update ticket with checkout session ID
-    await supabaseAdmin
+    
+    // 6. Update ticket with checkout session ID for webhook reconciliation
+    const { error: updateTicketError } = await supabase
       .from('tickets')
       .update({ monime_checkout_session_id: checkoutSession.id })
       .eq('id', ticket.id);
 
+    if (updateTicketError) {
+        console.error('Failed to update ticket with session ID:', updateTicketError);
+        return NextResponse.json({ error: 'Failed to link payment session to ticket.' }, { status: 500 });
+    }
+
     return NextResponse.json({
       checkoutUrl: checkoutSession.url,
       ticketId: ticket.id,
-      pricing
     });
   } catch (error: any) {
     console.error('Checkout error:', error);

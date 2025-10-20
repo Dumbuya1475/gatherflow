@@ -1,7 +1,10 @@
 
+import { createClient } from '@/lib/supabase/server';
 import { getTicketDetails } from '@/lib/actions/tickets.tsx';
 import { TicketView } from '@/components/tickets/ticket-view';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 interface ViewTicketPageProps {
     searchParams: {
@@ -13,49 +16,66 @@ interface ViewTicketPageProps {
 export default async function ViewTicketPage({ searchParams }: ViewTicketPageProps) {
     const { ticketId, email } = searchParams;
 
-    if (!ticketId || !email) {
+    if (!ticketId) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-secondary">
-                <p>Invalid ticket link. Please check the URL and try again.</p>
+                <p>Invalid ticket link: Missing ticket ID.</p>
+            </div>
+        );
+    }
+    
+    const id = parseInt(ticketId, 10);
+    if (isNaN(id)) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-secondary">
+                <p>Invalid ticket link: Invalid ticket ID format.</p>
             </div>
         );
     }
 
-    const { data: ticket, error } = await getTicketDetails(parseInt(ticketId, 10));
-
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: ticket, error } = await getTicketDetails(id);
 
     if (error || !ticket) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-secondary">
-                <p>Ticket not found.</p>
+                <p>Ticket not found or you do not have permission to view it.</p>
             </div>
         );
     }
+    
+    // For guest users, we validate with email. For logged-in users, we check ownership.
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    // @ts-ignore
-    if (ticket.profiles?.email !== email) {
-        return (
+    const isOwner = user && user.id === ticket.profiles?.id;
+    const isGuestWithValidEmail = !user && ticket.profiles?.is_guest && ticket.profiles?.email === email;
+
+    if (!isOwner && !isGuestWithValidEmail) {
+         return (
             <div className="flex items-center justify-center min-h-screen bg-secondary">
-                <p>This ticket is not associated with the provided email address.</p>
+                <p>You are not authorized to view this ticket.</p>
             </div>
         );
     }
 
     return (
         <div className="container mx-auto py-8 flex justify-center">
-            <div className="w-full max-w-2xl">
-                <div className="mb-8 text-center">
-                    <h1 className="text-3xl font-bold text-green-600">Payment Successful!</h1>
-                    <p className="text-lg text-muted-foreground mt-2">Your ticket (ID: {ticketId}) has been confirmed.</p>
-                    <Link href="/dashboard/tickets">
-                        <Button variant="link" className="mt-2">View all your tickets</Button>
-                    </Link>
+            <div className="w-full max-w-4xl">
+                 <div className="mb-8 text-center">
+                    <h1 className="text-3xl font-bold">Your Ticket is Confirmed!</h1>
+                    <p className="text-lg text-muted-foreground mt-2">Event: {ticket.events.title}</p>
                     {!user && (
-                        <p className="text-sm text-muted-foreground mt-4">
-                            <Link href="/signup" className="text-primary hover:underline">Create an account</Link> to view and manage all your tickets in your dashboard.
-                        </p>
+                        <Card className="mt-6 text-left">
+                            <CardHeader>
+                                <CardTitle>Want to manage all your tickets in one place?</CardTitle>
+                                <CardDescription>Create a free account to access your dashboard.</CardDescription>
+                            </CardHeader>
+                             <CardContent>
+                                <Button asChild>
+                                    <Link href={`/signup?email=${email}`}>Create an Account</Link>
+                                </Button>
+                            </CardContent>
+                        </Card>
                     )}
                 </div>
                 <Card>

@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
@@ -13,38 +14,194 @@ type TicketData = {
   qr_token?: string;
 };
 
-// Updated ticket registration functions with proper QR workflow
+// This action is now only for FREE events. Paid events are handled by the API route.
+export async function registerAndCreateTicket(
+    prevState: { error: string | undefined } | undefined,
+    formData: FormData
+) {
+    const supabase = await createClient();
+    const eventId = parseInt(formData.get('eventId') as string, 10);
 
-export async function registerForEventAction(
-  prevState: { error?: string; success?: boolean; ticketId?: number; } | undefined,
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+       return { error: "You must be logged in to register." };
+    }
+
+    // Check for a profile and create one if it doesn't exist
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+    if (!profile) {
+        const { error: createProfileError } = await supabase
+            .from('profiles')
+            .insert({ id: user.id, email: user.email });
+        if (createProfileError) {
+            return { error: 'Could not create user profile.' };
+        }
+    }
+
+    const { data: eventData, error: eventError } = await supabase
+        .from('events')
+        .select('capacity, requires_approval, title')
+        .eq('id', eventId)
+        .single();
+
+    if(eventError || !eventData) {
+      return { error: 'This event could not be found.' };
+    }
+
+    if (eventData.capacity !== null) {
+      const { count, error: countError } = await supabase
+          .from('tickets')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_id', eventId)
+          .in('status', ['approved', 'pending']);
+
+      if (countError) {
+          return { error: 'Could not verify event capacity.' };
+      }
+
+      if ((count || 0) >= eventData.capacity) {
+          return { error: 'This event has reached its maximum capacity.' };
+      }
+    }
+
+    const { data: existingTicket } = await supabase
+      .from('tickets')
+      .select('id')
+      .eq('event_id', eventId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (existingTicket) {
+      redirect(`/dashboard/tickets/${existingTicket.id}`);
+    }
+    
+    const initialStatus = eventData.requires_approval ? 'pending' : 'approved';
+    
+    const ticketData: any = {
+      event_id: eventId,
+      user_id: user.id,
+      status: initialStatus,
+    };
+
+    if (initialStatus === 'approved') {
+      ticketData.qr_token = crypto.randomUUID();
+    }
+
+    const { data: ticket, error } = await supabase.from('tickets').insert(ticketData).select('id').single();
+
+    if (error || !ticket) {
+      return { error: error?.message || 'Could not register for the event.' };
+    }
+
+    // Save custom form responses
+    const { data: formFields } = await getEventFormFields(eventId);
+    if (formFields && formFields.length > 0) {
+      const responsesToInsert = formFields.map(field => ({
+        ticket_id: ticket.id,
+        form_field_id: field.id,
+        field_value: formData.get(`custom_field_${field.id}`) as string,
+      })).filter(response => response.field_value); // Filter out empty responses
+
+      if(responsesToInsert.length > 0) {
+          const { error: responsesError } = await supabase
+            .from('attendee_form_responses')
+            .insert(responsesToInsert);
+
+          if (responsesError) {
+            console.error('Error inserting form responses:', responsesError);
+          }
+      }
+    }
+
+    if (initialStatus === 'approved') {
+      const { data: ticketDetails } = await getTicketDetails(ticket.id);
+      if (ticketDetails) {
+        const { TicketEmail } = await import('@/components/emails/ticket-email');
+        await sendTicketEmail(
+          user.email!,
+          `Your ticket for ${eventData.title}`,
+          <TicketEmail ticket={ticketDetails} />
+        );
+      }
+    }
+    
+    revalidatePath('/dashboard');
+    revalidatePath(`/events/${eventId}`);
+    revalidatePath(`/dashboard/events/${eventId}/manage`);
+
+    if (initialStatus === 'pending') {
+      redirect(`/events/${eventId}/register/pending`);
+    } else {
+      redirect(`/events/${eventId}/register/success?ticketId=${ticket.id}`);
+    }
+}
+
+
+export async function registerGuestForEvent(
+  prevState: { error?: string; success?: boolean; ticketId?: number } | undefined,
   formData: FormData
 ) {
-  const supabase = await createClient();
+  const supabase = createServiceRoleClient();
   const eventId = parseInt(formData.get('eventId') as string, 10);
+  const email = formData.get('email') as string;
+  const firstName = formData.get('firstName') as string;
+  const lastName = formData.get('lastName') as string;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-     redirect(`/events/${eventId}/register`);
+  if (!email || !firstName || !lastName) {
+    return { error: 'Please provide your full name and email address.' };
   }
 
-  // Check for a profile and create one if it doesn't exist
-  const { data: profile, error: profileError } = await supabase
+  let profile;
+  const { data: existingProfile, error: existingProfileError } = await supabase
+    .from('profiles')
+    .select('id, is_guest')
+    .eq('email', email)
+    .single();
+
+  if (existingProfileError && existingProfileError.code !== 'PGRST116') {
+    return { error: 'An error occurred. Please try again.' };
+  }
+
+  if (existingProfile) {
+    profile = existingProfile;
+  } else {
+    // Create an auth user first for the guest
+    const { data: newAuthUser, error: createAuthError } = await supabase.auth.admin.createUser({
+        email: email,
+        password: crypto.randomUUID(), // Assign a secure, random password
+        email_confirm: true, // Auto-confirm guests
+        user_metadata: { first_name: firstName, last_name: lastName }
+    });
+    
+    if (createAuthError || !newAuthUser.user) {
+        console.error("Error creating guest auth user:", createAuthError);
+        return { error: 'Could not create guest user.' };
+    }
+
+    // Then create the public profile
+    const { data: newProfile, error: createProfileError } = await supabase
       .from('profiles')
-      .select('id')
-      .eq('id', user.id)
+      .insert({
+        id: newAuthUser.user.id,
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        is_guest: true,
+      })
+      .select('id, is_guest')
       .single();
 
-  if (!profile) {
-      const { error: createProfileError } = await supabase
-          .from('profiles')
-          .insert({ id: user.id, email: user.email });
-      if (createProfileError) {
-          console.error('Error creating profile:', createProfileError);
-          return { error: 'Could not create user profile.' };
-      }
+    if (createProfileError) {
+      console.error('Error creating guest profile:', createProfileError);
+      return { error: 'Could not create a guest profile.' };
+    }
+    profile = newProfile;
   }
 
   const { data: eventData, error: eventError } = await supabase
@@ -53,27 +210,17 @@ export async function registerForEventAction(
     .eq('id', eventId)
     .single();
 
-  if(eventError || !eventData) {
+  if (eventError || !eventData) {
     return { error: 'This event could not be found.' };
   }
-
-  const capacity = eventData.capacity;
-
-  if (capacity !== null) {
-    const supabaseAdmin = await createServiceRoleClient();
-    const { count, error: countError } = await supabaseAdmin
+  
+  if (eventData.capacity !== null) {
+    const { count } = await supabase
         .from('tickets')
         .select('*', { count: 'exact', head: true })
         .eq('event_id', eventId)
         .in('status', ['approved', 'pending']);
-
-    if (countError) {
-        console.error('Error counting tickets:', countError);
-        return { error: 'Could not verify event capacity.' };
-    }
-
-    const currentAttendees = count || 0;
-    if (currentAttendees >= capacity) {
+    if ((count || 0) >= eventData.capacity) {
         return { error: 'This event has reached its maximum capacity.' };
     }
   }
@@ -82,33 +229,42 @@ export async function registerForEventAction(
     .from('tickets')
     .select('id')
     .eq('event_id', eventId)
-    .eq('user_id', user.id)
+    .eq('user_id', profile.id)
     .maybeSingle();
 
   if (existingTicket) {
-    return redirect(`/dashboard/tickets/${existingTicket.id}`);
+     return redirect(`/tickets/view/${existingTicket.id}`);
   }
-  
+
   const initialStatus = eventData.requires_approval ? 'pending' : 'approved';
   
-  // Create ticket data - QR token will be handled by trigger if approved
   const ticketData: any = {
     event_id: eventId,
-    user_id: user.id,
+    user_id: profile.id,
     status: initialStatus,
   };
 
-  // Only generate QR token for automatically approved tickets
   if (initialStatus === 'approved') {
     ticketData.qr_token = crypto.randomUUID();
   }
-  // For pending tickets, qr_token will be NULL
 
   const { data: ticket, error } = await supabase.from('tickets').insert(ticketData).select('id').single();
 
   if (error || !ticket) {
-    console.error('Error registering for event:', error);
     return { error: error?.message || 'Could not register for the event.' };
+  }
+  
+  // Save custom form responses
+  const { data: formFields } = await getEventFormFields(eventId);
+  if (formFields && formFields.length > 0) {
+      const responsesToInsert = formFields.map(field => ({
+        ticket_id: ticket.id,
+        form_field_id: field.id,
+        field_value: formData.get(`custom_field_${field.id}`) as string,
+      })).filter(response => response.field_value);
+      if (responsesToInsert.length > 0) {
+        await supabase.from('attendee_form_responses').insert(responsesToInsert);
+      }
   }
 
   if (initialStatus === 'approved') {
@@ -116,168 +272,103 @@ export async function registerForEventAction(
     if (ticketDetails) {
       const { TicketEmail } = await import('@/components/emails/ticket-email');
       await sendTicketEmail(
-        user.email!,
+        email,
         `Your ticket for ${eventData.title}`,
         <TicketEmail ticket={ticketDetails} />
       );
     }
   }
 
-  revalidatePath('/dashboard');
-  revalidatePath('/dashboard/events');
-  revalidatePath(`/dashboard/events/${eventId}/manage`);
   revalidatePath(`/events/${eventId}`);
-  revalidatePath(`/events`);
-  
-  return { success: true, ticketId: ticket.id };
+  if (initialStatus === 'pending') {
+    redirect(`/events/${eventId}/register/pending`);
+  } else {
+    // For guests, we can't redirect to a dashboard.
+    // A special view page is better.
+    redirect(`/tickets/view/${ticket.id}`);
+  }
 }
 
-export async function registerAndCreateTicket(
-    prevState: { error: string | undefined } | undefined,
-    formData: FormData
-) {
-    const supabase = await createClient();
-    const eventId = parseInt(formData.get('eventId') as string, 10);
-    const userId = formData.get('userId') as string | null;
+// Other functions remain unchanged...
 
-    // Fetch custom form fields and validate them
-    const { data: formFields } = await getEventFormFields(eventId);
-    for (const field of formFields) {
-      if (field.is_required && !formData.get(`custom_field_${field.id}`)) {
-        return { error: `${field.field_name} is required.` };
-      }
-    }
+export async function getTicketDetails(ticketId: number) {
+    const supabase = createClient();
 
-    let finalUserId = userId;
-    let userEmail = '';
-
-    if (!userId) {
-        const email = formData.get('email') as string;
-        userEmail = email;
-        const password = formData.get('password') as string;
-        const confirmPassword = formData.get('confirmPassword') as string;
-        const firstName = formData.get('firstName') as string;
-        const lastName = formData.get('lastName') as string;
-
-        if (password !== confirmPassword) {
-            return { error: "Passwords do not match." };
-        }
-
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    first_name: firstName,
-                    last_name: lastName,
-                },
-            },
-        });
-
-        if (signUpError || !signUpData.user) {
-            console.error("Error signing up user:", signUpError);
-            return { error: signUpError?.message || "Could not sign up user." };
-        }
-        finalUserId = signUpData.user.id;
-    } else {
-        const { data: { user } } = await supabase.auth.getUser();
-        userEmail = user?.email || '';
-    }
-
-    if (!finalUserId) {
-        return { error: "Could not determine user." };
-    }
-    
-    const { data: eventData, error: eventError } = await supabase
-        .from('events')
-        .select('requires_approval, capacity, title')
-        .eq('id', eventId)
+    const { data: ticket, error } = await supabase
+        .from('tickets')
+        .select('*, checked_in_at, checked_out_at, status, events(*, tickets(count)), profiles(id, email, first_name, last_name, is_guest)')
+        .eq('id', ticketId)
         .single();
-
-    if (eventError || !eventData) {
-        return { error: "Could not find the specified event." };
-    }
-
-    const capacity = eventData.capacity;
-
-    if (capacity !== null) {
-        const supabaseAdmin = await createServiceRoleClient();
-        const { count, error: countError } = await supabaseAdmin
-            .from('tickets')
-            .select('*', { count: 'exact', head: true })
-            .eq('event_id', eventId)
-            .in('status', ['approved', 'pending']);
-
-        if (countError) {
-            console.error('Error counting tickets:', countError);
-            return { error: 'Could not verify event capacity.' };
-        }
-
-        const currentAttendees = count || 0;
-        if (currentAttendees >= capacity) {
-            return { error: 'This event has reached its maximum capacity.' };
-        }
-    }
-
-    const initialStatus = eventData.requires_approval ? 'pending' : 'approved';
     
-    // Create ticket data - QR token will be handled by trigger if approved
-    const ticketData: any = {
-        event_id: eventId,
-        user_id: finalUserId,
-        status: initialStatus,
-    };
-
-    // Only generate QR token for automatically approved tickets
-    if (initialStatus === 'approved') {
-        ticketData.qr_token = crypto.randomUUID();
-    }
-    // For pending tickets, qr_token will be NULL
-
-    const { data: ticketResult, error: ticketError } = await supabase.from('tickets').insert(ticketData).select('id').single();
-
-    if (ticketError || !ticketResult) {
-        return { error: ticketError?.message || "You are registered as a user, but we failed to create your ticket. Please contact support." };
+    if (error || !ticket) {
+        console.error('Error fetching ticket', error);
+        return { data: null, error: 'Ticket not found.' };
     }
 
-    if (initialStatus === 'approved') {
-        const { data: ticketDetails } = await getTicketDetails(ticketResult.id);
-        if (ticketDetails) {
-            const { TicketEmail } = await import('@/components/emails/ticket-email');
-            await sendTicketEmail(
-                userEmail,
-                `Your ticket for ${eventData.title}`,
-                <TicketEmail ticket={ticketDetails} />
-            );
-        }
+    const { data: organizerProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', ticket.events!.organizer_id!)
+        .single();
+    
+    if (profileError) {
+        console.error("Error fetching organizer profile for ticket", profileError);
     }
 
-    // Save custom form responses
-    if (formFields.length > 0) {
-      const responsesToInsert = formFields.map(field => ({
-        ticket_id: ticketResult.id,
-        form_field_id: field.id,
-        field_value: formData.get(`custom_field_${field.id}`) as string,
-      }));
-
-      const { error: responsesError } = await supabase
+    const { data: formResponses, error: formResponsesError } = await supabase
         .from('attendee_form_responses')
-        .insert(responsesToInsert);
+        .select('field_value, event_form_fields(field_name)')
+        .eq('ticket_id', ticket.id);
 
-      if (responsesError) {
-        console.error('Error inserting form responses:', responsesError);
-        // Don't fail the whole action, just log the error
-      }
+    if (formResponsesError) {
+        console.error("Error fetching form responses for ticket", formResponsesError);
     }
-    
-    revalidatePath(`/dashboard/events`);
-    revalidatePath(`/events`);
 
-    if (initialStatus === 'pending') {
-        redirect(`/events/${eventId}/register/pending`);
-    } else {
-        redirect(`/events/${eventId}/register/success?ticketId=${ticketResult.id}`);
+    const ticketWithOrganizer = {
+        ...ticket,
+        events: {
+            ...ticket.events!,
+            attendees: ticket.events!.tickets[0]?.count || 0,
+            organizer: organizerProfile,
+        },
+        form_responses: formResponses || [],
     }
+
+    return { data: ticketWithOrganizer, error: null };
+}
+
+export async function approveAttendeeAction(formData: FormData) {
+  const supabase = createClient();
+  const ticketId = formData.get('ticketId') as string;
+  const eventId = formData.get('eventId') as string;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('You must be logged in.');
+  }
+
+  const { data: event, error: eventError } = await supabase
+    .from('events')
+    .select('organizer_id')
+    .eq('id', parseInt(eventId, 10))
+    .single();
+  
+  if (eventError || !event || event.organizer_id !== user.id) {
+    throw new Error('You are not authorized to perform this action.');
+  }
+
+  const { error: updateError } = await supabase
+    .from('tickets')
+    .update({ status: 'approved', qr_token: crypto.randomUUID() })
+    .eq('id', parseInt(ticketId, 10));
+  
+  if (updateError) {
+    throw new Error('Could not approve the attendee.');
+  }
+
+  revalidatePath(`/dashboard/events/${eventId}/manage`);
+  revalidatePath(`/dashboard/analytics`);
+  redirect(`/dashboard/events/${eventId}/manage`);
 }
 
 export async function rejectAttendeeAction(formData: FormData) {
@@ -300,7 +391,6 @@ export async function rejectAttendeeAction(formData: FormData) {
     throw new Error('You are not authorized to perform this action.');
   }
 
-  // Update status to rejected - the trigger will automatically remove QR token
   const { error: updateError } = await supabase
     .from('tickets')
     .update({ status: 'rejected' })
@@ -400,61 +490,13 @@ export async function unregisterAttendeeAction(formData: FormData) {
   redirect(`/dashboard/events/${eventId}/manage`);
 }
 
-export async function getTicketDetails(ticketId: number) {
-    const supabase = createClient();
-
-    const { data: ticket, error } = await supabase
-        .from('tickets')
-        .select('*, checked_in_at, checked_out_at, status, events(*, tickets(count)), profiles(email, first_name, last_name, is_guest)')
-        .eq('id', ticketId)
-        .single();
-    
-    if (error || !ticket) {
-        console.error('Error fetching ticket', error);
-        return { data: null, error: 'Ticket not found.' };
-    }
-
-    const { data: organizerProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('first_name, last_name')
-        .eq('id', ticket.events!.organizer_id!)
-        .single();
-    
-    if (profileError) {
-        console.error("Error fetching organizer profile for ticket", profileError);
-    }
-
-    const { data: formResponses, error: formResponsesError } = await supabase
-        .from('attendee_form_responses')
-        .select('field_value, event_form_fields(field_name)')
-        .eq('ticket_id', ticket.id);
-
-    if (formResponsesError) {
-        console.error("Error fetching form responses for ticket", formResponsesError);
-    }
-
-    const ticketWithOrganizer = {
-        ...ticket,
-        events: {
-            ...ticket.events!,
-            attendees: ticket.events!.tickets[0]?.count || 0,
-            organizer: organizerProfile,
-        },
-        form_responses: formResponses || [],
-    }
-
-    return { data: ticketWithOrganizer, error: null };
-}
 
 export async function scanTicketAction(qrToken: string, eventId: number) {
   try {
     const supabase = createClient();
     
     // 1. Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError) {
-      return { success: false, error: 'Authentication failed. Please log in again.' };
-    }
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return { success: false, error: 'Not authenticated. Please log in.' };
     }
@@ -463,33 +505,14 @@ export async function scanTicketAction(qrToken: string, eventId: number) {
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
       .select(`
-        id, 
-        event_id, 
-        user_id,
-        checked_in, 
-        checked_out, 
-        checked_in_at, 
-        checked_out_at,
-        qr_token,
-        status,
-        events!inner(
-          id,
-          organizer_id,
-          title
-        )
+        id, event_id, user_id, checked_in, checked_out, checked_in_at, 
+        checked_out_at, qr_token, status,
+        events!inner(id, organizer_id, title)
       `)
       .eq('qr_token', qrToken)
       .single();
 
-    if (ticketError) {
-      // Handle specific error codes
-      if (ticketError.code === 'PGRST116') {
-        return { success: false, error: 'Invalid QR Code. Ticket not found.' };
-      }
-      return { success: false, error: `Database error: ${ticketError.message}` };
-    }
-
-    if (!ticket) {
+    if (ticketError || !ticket) {
       return { success: false, error: 'Invalid QR Code. Ticket not found.' };
     }
 
@@ -498,30 +521,20 @@ export async function scanTicketAction(qrToken: string, eventId: number) {
       return { success: false, error: 'This ticket is not for this event.' };
     }
 
-    if (ticket.status === 'pending') {
-      return { success: false, error: 'This ticket has not been approved yet.' };
+    if (ticket.status !== 'approved') {
+      return { success: false, error: `Ticket status is '${ticket.status}', not 'approved'.` };
     }
 
-    if (ticket.status === 'rejected') {
-      return { success: false, error: 'This ticket has been rejected.' };
-    }
-
-    // 4. Check permissions - simplified and more robust
+    // 4. Check permissions
     const isOrganizer = ticket.events?.organizer_id === user.id;
-    
     let isScanner = false;
     if (!isOrganizer) {
-      const { data: scannerData, error: scannerError } = await supabase
+      const { data: scannerData } = await supabase
         .from('event_scanners')
         .select('user_id')
         .eq('event_id', eventId)
         .eq('user_id', user.id)
         .maybeSingle();
-      
-      if (scannerError) {
-        return { success: false, error: 'Permission verification failed.' };
-      }
-      
       isScanner = !!scannerData;
     }
 
@@ -535,21 +548,12 @@ export async function scanTicketAction(qrToken: string, eventId: number) {
     const now = new Date().toISOString();
 
     if (!ticket.checked_in) {
-      // First scan → check-in
-      updateData = { 
-        checked_in: true, 
-        checked_in_at: now 
-      };
+      updateData = { checked_in: true, checked_in_at: now };
       message = 'Ticket successfully checked in.';
     } else if (!ticket.checked_out) {
-      // Second scan → check-out
-      updateData = { 
-        checked_out: true, 
-        checked_out_at: now 
-      };
+      updateData = { checked_out: true, checked_out_at: now };
       message = 'Ticket successfully checked out.';
     } else {
-      // Already processed
       return { 
         success: false, 
         error: 'This ticket has already been checked in and out.',
@@ -567,56 +571,27 @@ export async function scanTicketAction(qrToken: string, eventId: number) {
       .eq('id', ticket.id);
 
     if (updateError) {
-      return { 
-        success: false, 
-        error: `Failed to update ticket: ${updateError.message}` 
-      };
+      return { success: false, error: `Failed to update ticket: ${updateError.message}` };
     }
 
     // 7. Fetch attendee profile for display
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from('profiles')
       .select('first_name, last_name')
       .eq('id', ticket.user_id)
       .single();
 
-    // 8. Revalidate cache paths
-    try {
-      revalidatePath(`/dashboard/events/${ticket.event_id}/manage`);
-      revalidatePath(`/dashboard/analytics`);
-    } catch (revalidateError) {
-      // Don't fail the operation for this
-    }
+    revalidatePath(`/dashboard/events/${ticket.event_id}/manage`);
+    revalidatePath(`/dashboard/analytics`);
 
-    // 9. Return success response
-    const attendeeName = profile 
-      ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() 
-      : 'Unknown attendee';
+    const attendeeName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 'Unknown attendee';
     
-    const finalMessage = attendeeName !== 'Unknown attendee' 
-      ? `${message} (${attendeeName})` 
-      : message;
-    
-    return { 
-      success: true, 
-      message: finalMessage,
-      ticketId: ticket.id,
-      attendeeName,
-      action: ticket.checked_in ? 'check-out' : 'check-in'
-    };
+    return { success: true, message: `${message} (${attendeeName})` };
 
   } catch (error) {
-    // Handle specific error types
     if (error instanceof Error) {
-      if (error.message.includes('invalid input syntax for type uuid')) {
-        return { success: false, error: 'Invalid QR Code format.' };
-      }
-      if (error.message.includes('JWT')) {
-        return { success: false, error: 'Session expired. Please log in again.' };
-      }
       return { success: false, error: `Scan failed: ${error.message}` };
     }
-    
     return { success: false, error: 'An unexpected error occurred during scanning.' };
   }
 }
@@ -635,7 +610,6 @@ export async function getScannableEvents() {
         .eq('user_id', user.id);
 
     if (scannerError) {
-        console.error('Error fetching scannable event IDs:', scannerError);
         return { data: [], error: 'Could not fetch assigned events.', isLoggedIn: true };
     }
     const assignedEventIds = (scannerAssignments || []).map(a => a.event_id);
@@ -646,7 +620,7 @@ export async function getScannableEvents() {
         .eq('organizer_id', user.id);
 
     if (organizedEventsError) {
-        console.error('Error fetching organized event IDs:', organizedEventsError);
+      // Don't fail if this errors, just log it
     }
     const organizedEventIds = (organizedEventsData || []).map(e => e.id);
 
@@ -663,7 +637,6 @@ export async function getScannableEvents() {
         .gt('date', new Date(new Date().setDate(new Date().getDate() -1)).toISOString()); // show events from yesterday onwards
 
     if (eventsError) {
-        console.error('Error fetching full event details:', eventsError);
         return { data: [], error: 'Could not fetch event details.', isLoggedIn: true };
     }
 
@@ -673,216 +646,4 @@ export async function getScannableEvents() {
     }));
 
     return { data: uniqueEvents, isLoggedIn: true, error: null };
-}
-
-export async function approveAttendeeAction(formData: FormData) {
-  const supabase = createClient();
-  const ticketId = formData.get('ticketId') as string;
-  const eventId = formData.get('eventId') as string;
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error('You must be logged in.');
-  }
-
-  const { data: event, error: eventError } = await supabase
-    .from('events')
-    .select('organizer_id')
-    .eq('id', parseInt(eventId, 10))
-    .single();
-  
-  if (eventError || !event || event.organizer_id !== user.id) {
-    throw new Error('You are not authorized to perform this action.');
-  }
-
-  const { error: updateError } = await supabase
-    .from('tickets')
-    .update({ status: 'approved', qr_token: crypto.randomUUID() })
-    .eq('id', parseInt(ticketId, 10));
-  
-  if (updateError) {
-    console.error('Error approving attendee:', updateError);
-    throw new Error('Could not approve the attendee.');
-  }
-
-  revalidatePath(`/dashboard/events/${eventId}/manage`);
-  revalidatePath(`/dashboard/analytics`);
-  redirect(`/dashboard/events/${eventId}/manage`);
-}
-
-export async function registerGuestForEvent(
-  prevState: { error?: string; success?: boolean; ticketId?: number } | undefined,
-  formData: FormData
-) {
-  const supabase = await createServiceRoleClient();
-  const eventId = parseInt(formData.get('eventId') as string, 10);
-  const email = formData.get('email') as string;
-  const firstName = formData.get('firstName') as string;
-  const lastName = formData.get('lastName') as string;
-
-  if (!email || !firstName || !lastName) {
-    return { error: 'Please provide your full name and email address.' };
-  }
-
-  let profile;
-  const { data: existingProfile, error: existingProfileError } = await supabase
-    .from('profiles')
-    .select('id, is_guest')
-    .eq('email', email)
-    .single();
-
-  if (existingProfileError && existingProfileError.code !== 'PGRST116') {
-    console.error('Error checking for existing profile:', existingProfileError);
-    return { error: 'An error occurred. Please try again.' };
-  }
-
-  if (existingProfile) {
-    profile = existingProfile;
-  } else {
-    const { data: newProfile, error: createProfileError } = await supabase
-      .from('profiles')
-      .insert({
-        email,
-        first_name: firstName,
-        last_name: lastName,
-        is_guest: true,
-      })
-      .select('id, is_guest')
-      .single();
-
-    if (createProfileError) {
-      console.error('Error creating guest profile:', createProfileError);
-      return { error: createProfileError?.message || 'Could not create a guest profile.' };
-    }
-    profile = newProfile;
-  }
-
-  const { data: eventData, error: eventError } = await supabase
-    .from('events')
-    .select('capacity, requires_approval, title')
-    .eq('id', eventId)
-    .single();
-
-  if (eventError || !eventData) {
-    return { error: 'This event could not be found.' };
-  }
-
-  const capacity = eventData.capacity;
-
-  if (capacity !== null) {
-    const { count, error: countError } = await supabase
-      .from('tickets')
-      .select('*', { count: 'exact', head: true })
-      .eq('event_id', eventId)
-      .in('status', ['approved', 'pending']);
-
-    if (countError) {
-      console.error('Error counting tickets:', countError);
-      return { error: 'Could not verify event capacity.' };
-    }
-
-    const currentAttendees = count || 0;
-    if (currentAttendees >= capacity) {
-      return { error: 'This event has reached its maximum capacity.' };
-    }
-  }
-
-  const { data: existingTicket } = await supabase
-    .from('tickets')
-    .select('id')
-    .eq('event_id', eventId)
-    .eq('user_id', profile.id)
-    .maybeSingle();
-
-  if (existingTicket) {
-    return { error: 'You are already registered for this event.' };
-  }
-
-  const initialStatus = eventData.requires_approval ? 'pending' : 'approved';
-  
-  const ticketData: any = {
-    event_id: eventId,
-    user_id: profile.id,
-    status: initialStatus,
-  };
-
-  if (initialStatus === 'approved') {
-    ticketData.qr_token = crypto.randomUUID();
-  }
-
-  const { data: ticket, error } = await supabase.from('tickets').insert(ticketData).select('id').single();
-
-  if (error || !ticket) {
-    console.error('Error registering for event:', error);
-    return { error: error?.message || 'Could not register for the event.' };
-  }
-
-  if (initialStatus === 'approved') {
-    // Fetch the full ticket details to provide to the email template
-    const { data: ticketDetails } = await getTicketDetails(ticket.id);
-    if (ticketDetails) {
-      const { TicketEmail } = await import('@/components/emails/ticket-email');
-      
-      await sendTicketEmail(
-        email,
-        `Your ticket for ${eventData.title}`,
-        <TicketEmail ticket={ticketDetails} />
-      );
-    }
-  }
-
-  revalidatePath(`/events/${eventId}`);
-
-  if (initialStatus === 'pending') {
-    redirect(`/events/${eventId}/register/pending`);
-  } else {
-    redirect(`/tickets/view?ticketId=${ticket.id}&email=${email}`);
-  }
-}
-
-export async function resendTicketLinkAction(
-  prevState: { error?: string; success?: boolean } | undefined,
-  formData: FormData
-) {
-  const supabase = createServiceRoleClient();
-  const eventId = parseInt(formData.get('eventId') as string, 10);
-  const email = formData.get('email') as string;
-
-  if (!email) {
-    return { error: 'Please provide an email address.' };
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('email', email)
-    .single();
-
-  if (profileError || !profile) {
-    // Return a generic success message to prevent email enumeration
-    return { success: true };
-  }
-
-  const { data: ticket, error: ticketError } = await supabase
-    .from('tickets')
-    .select('id, events(title)')
-    .eq('event_id', eventId)
-    .eq('user_id', profile.id)
-    .single();
-
-  if (ticketError || !ticket) {
-    // Return a generic success message to prevent email enumeration
-    return { success: true };
-  }
-
-  const ticketUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/tickets/view?ticketId=${ticket.id}&email=${email}`;
-  const eventTitle = ticket.events?.title || 'the event';
-
-  await sendTicketEmail(
-    email,
-    `Your ticket for ${eventTitle}`,
-    `<h1>Here is your ticket</h1><p>You can view your ticket and QR code here: <a href="${ticketUrl}">${ticketUrl}</a></p>`
-  );
-
-  return { success: true };
 }
