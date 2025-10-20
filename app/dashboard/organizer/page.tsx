@@ -1,100 +1,192 @@
 
-'use client';
-import React, { useState } from 'react';
-import { DollarSign, TrendingUp, Calendar, Users, Download, AlertCircle } from 'lucide-react';
+'use server';
 
+import { createClient } from '@/lib/supabase/server';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  DollarSign,
+  TrendingUp,
+  Ticket,
+  Users,
+  Eye,
+  ArrowRight,
+} from 'lucide-react';
+import Link from 'next/link';
 
+async function getOrganizerStats() {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-import { createClient } from '@/lib/supabase/client';
+  if (!user) {
+    return { error: 'User not authenticated' };
+  }
 
-import { useEffect } from 'react';
+  const { data: events, error: eventsError } = await supabase
+    .from('events')
+    .select('id, title, price, status')
+    .eq('organizer_id', user.id);
 
+  if (eventsError) {
+    return { error: 'Could not fetch events' };
+  }
 
+  const eventIds = events.map(event => event.id);
 
-const OrganizerDashboard = () => {
+  const { data: tickets, error: ticketsError } = await supabase
+    .from('tickets')
+    .select('event_id, ticket_price, platform_fee, payment_processor_fee')
+    .in('event_id', eventIds)
+    .eq('monime_payment_status', 'paid');
 
-  const [activeTab, setActiveTab] = useState('overview');
+  if (ticketsError) {
+    return { error: 'Could not fetch ticket data' };
+  }
 
-  const [earnings, setEarnings] = useState({ totalSales: 0, platformFees: 0, monimeFees: 0, availableBalance: 0, pendingPayout: 0, totalPayouts: 0 });
+  const totalSales = tickets.reduce((acc, t) => acc + (t.ticket_price || 0) + (t.platform_fee || 0), 0);
+  const totalPlatformFees = tickets.reduce((acc, t) => acc + (t.platform_fee || 0), 0);
+  const totalMonimeFees = tickets.reduce((acc, t) => acc + (t.payment_processor_fee || 0), 0);
+  const netRevenue = totalSales - totalPlatformFees - totalMonimeFees;
+  
+  const eventsWithStats = events.map(event => {
+    const eventTickets = tickets.filter(t => t.event_id === event.id);
+    const revenue = eventTickets.reduce((acc, t) => acc + (t.ticket_price || 0) + (t.platform_fee || 0), 0);
+    const ticketsSold = eventTickets.length;
+    return {
+      ...event,
+      revenue,
+      ticketsSold,
+    };
+  });
 
-  const [events, setEvents] = useState([]);
+  return {
+    totalSales,
+    totalPlatformFees,
+    netRevenue,
+    totalTicketsSold: tickets.length,
+    events: eventsWithStats,
+  };
+}
 
-  const [payoutHistory, setPayoutHistory] = useState([]);
+export default async function OrganizerDashboardPage() {
+  const stats = await getOrganizerStats();
 
-  const [isLoading, setIsLoading] = useState(true);
-
-
+  if (stats.error) {
+    return <p className="text-destructive">{stats.error}</p>;
+  }
 
   const formatCurrency = (amount: number) => {
-    return `NLE ${(amount / 1000).toFixed(0)}`;
-  };
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'SLE' }).format(amount);
+  }
 
-  useEffect(() => {
-    async function fetchData() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold">Organizer Dashboard</h1>
+        <p className="text-muted-foreground">
+          Your financial overview and event performance.
+        </p>
+      </div>
 
-      if (user) {
-        const { data: userEvents, error } = await supabase
-          .from('events')
-          .select('*, tickets(count)')
-          .eq('organizer_id', user.id)
-          .order('date', { ascending: false });
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(stats.totalSales)}</div>
+            <p className="text-xs text-muted-foreground">Gross revenue from all events</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Net Revenue</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(stats.netRevenue)}</div>
+            <p className="text-xs text-muted-foreground">After all fees</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Platform Fees</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(stats.totalPlatformFees)}</div>
+            <p className="text-xs text-muted-foreground">Fees paid to GatherFlow</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Tickets Sold</CardTitle>
+            <Ticket className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalTicketsSold}</div>
+            <p className="text-xs text-muted-foreground">Across all paid events</p>
+          </CardContent>
+        </Card>
+      </div>
 
-        if (error) {
-          console.error('Error fetching user events:', error);
-          return;
-        }
-
-        const totalSales = userEvents.reduce((acc, event) => acc + (event.price || 0) * (event.tickets[0]?.count || 0), 0);
-        const platformFees = totalSales * 0.1;
-        const monimeFees = totalSales * 0.03;
-        const availableBalance = totalSales - platformFees - monimeFees;
-
-        setEvents(userEvents.map(event => ({
-          id: event.id,
-          name: event.title,
-          date: event.date,
-          ticketPrice: event.price || 0,
-          ticketsSold: event.tickets[0]?.count || 0,
-          revenue: (event.price || 0) * (event.tickets[0]?.count || 0),
-          status: new Date(event.date) < new Date() ? 'completed' : 'active',
-          organizer_gets: (event.price || 0) * (event.tickets[0]?.count || 0) * 0.87,
-        })));
-
-        setEarnings({
-          totalSales,
-          platformFees,
-          monimeFees,
-          availableBalance,
-          pendingPayout: 850000, // Mock data
-          totalPayouts: 1281500, // Mock data
-        });
-
-        setPayoutHistory([
-          {
-            id: 1,
-            date: '2025-10-15',
-            amount: 850000,
-            status: 'completed',
-            reference: 'PAYOUT-001',
-            events: 'Moe AI Tutor Launch'
-          },
-          {
-            id: 2,
-            date: '2025-10-10',
-            amount: 431500,
-            status: 'completed',
-            reference: 'PAYOUT-002',
-            events: 'Web Dev Workshop'
-          }
-        ]);
-      }
-      setIsLoading(false);
-    }
-
-    fetchData();
-  }, []);
-};
-
-export default OrganizerDashboard;
+      <Card>
+        <CardHeader>
+          <CardTitle>Events Summary</CardTitle>
+          <CardDescription>Financial performance of each event.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Event</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Tickets Sold</TableHead>
+                <TableHead className="text-right">Total Revenue</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {stats.events?.map(event => (
+                <TableRow key={event.id}>
+                  <TableCell className="font-medium">{event.title}</TableCell>
+                  <TableCell>
+                    <Badge variant={event.status === 'published' ? 'default' : 'secondary'}>{event.status}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">{event.ticketsSold}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(event.revenue)}</TableCell>
+                  <TableCell className="text-right">
+                    <Button asChild variant="outline" size="sm">
+                        <Link href={`/dashboard/organizer/${event.id}`}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Details
+                        </Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
