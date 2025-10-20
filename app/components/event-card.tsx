@@ -1,18 +1,18 @@
+
 'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useActionState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye, Eye, Pencil, DollarSign, Timer, User, X, Clock } from 'lucide-react';
 import type { EventWithAttendees } from '@/lib/types';
-import { registerForEventAction, unregisterForEventAction } from '@@/app/lib/actions/tickets.tsx';
+import { unregisterForEventAction } from '@@/app/lib/actions/tickets.tsx';
 import { useToast } from '@/hooks/use-toast';
-import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Badge } from './ui/badge';
-import { differenceInDays, isPast, isToday, formatDistanceStrict } from 'date-fns';
+import { differenceInDays, isPast, isToday } from 'date-fns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useFormState } from 'react-dom';
 
 interface EventCardProps {
   event: EventWithAttendees;
@@ -33,50 +34,6 @@ interface EventCardProps {
 }
 
 export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent = false }: EventCardProps) {
-    const { toast } = useToast();
-    const router = useRouter();
-    
-    const [registerState, registerAction] = useActionState(registerForEventAction, undefined);
-    const [unregisterState, unregisterAction] = useActionState(unregisterForEventAction, undefined);
-
-
-    useEffect(() => {
-        if(registerState?.error) {
-            toast({
-                variant: 'destructive',
-                title: 'Registration Failed',
-                description: registerState.error,
-            });
-        }
-        if(registerState?.success && registerState.ticketId) {
-            toast({
-                title: 'Registration Successful!',
-                description: "You've got a ticket for this event.",
-            });
-            // Redirect to the success page with the ticketId
-            router.push(`/events/${event.id}/register/success?ticketId=${registerState.ticketId}`);
-        }
-    }, [registerState, toast, router, event.id]);
-
-    useEffect(() => {
-      if (unregisterState?.error) {
-        toast({
-          variant: 'destructive',
-          title: 'Unregistration Failed',
-          description: unregisterState.error,
-        });
-      }
-      if (unregisterState?.success) {
-        toast({
-          title: 'Unregistered Successfully',
-          description: "You have cancelled your registration for this event.",
-        });
-        // This is a client component, a hard refresh might be needed or better state management
-        // For now, we rely on the revalidation from the server action.
-         router.refresh();
-      }
-    }, [unregisterState, toast, router]);
-
     const daysLeft = useMemo(() => {
       const eventDate = new Date(event.date);
       if (isPast(eventDate) && !isToday(eventDate)) return null;
@@ -110,7 +67,7 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
             fill
             data-ai-hint="event music"
             className="object-cover"
-            unoptimized={event.cover_image?.includes('supabase.co')}
+            unoptimized={!!event.cover_image?.includes('supabase.co')}
             onError={(e) => {
             e.currentTarget.src = 'https://picsum.photos/600/400';
           }}
@@ -212,7 +169,7 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Keep Ticket</AlertDialogCancel>
-                              <form action={unregisterAction}>
+                               <form action={unregisterForEventAction} className="inline-block">
                                 <input type="hidden" name="ticketId" value={event.ticket_id} />
                                 <AlertDialogAction type="submit">Yes, Cancel</AlertDialogAction>
                               </form>
