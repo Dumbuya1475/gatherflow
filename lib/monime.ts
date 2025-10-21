@@ -2,7 +2,7 @@
 import { OpenAPI, CheckoutSessionService, PayoutService, ApiError } from '@@/lib/monime-client';
 import crypto from 'crypto';
 
-OpenAPI.BASE = 'https://api.monime.io';
+OpenAPI.BASE = process.env.MONIME_API_BASE_URL || 'https://api.monime.io';
 OpenAPI.TOKEN = process.env.MONIME_API_KEY;
 
 interface MonimeCheckoutParams {
