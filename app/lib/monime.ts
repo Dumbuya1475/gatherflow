@@ -1,6 +1,7 @@
 
 'use server';
 import { createClient } from 'monime-package';
+import type { ApiError } from 'monime-package';
 
 interface MonimeCheckoutParams {
   metadata: Record<string, any>;
@@ -8,6 +9,7 @@ interface MonimeCheckoutParams {
   price: number;
   quantity: number;
   description?: string;
+  financialAccountId: string;
 }
 
 interface MonimeCheckoutResponse {
@@ -18,9 +20,9 @@ interface MonimeCheckoutResponse {
 export async function createMonimeCheckout(
   params: MonimeCheckoutParams
 ): Promise<MonimeCheckoutResponse> {
-  const accessToken = process.env.MONIME_ACCESS_TOKEN;
+  const accessToken = process.env.MONIME_API_KEY;
   if (!accessToken) {
-    throw new Error('MONIME_ACCESS_TOKEN environment variable is not set.');
+    throw new Error('MONIME_API_KEY environment variable is not set.');
   }
 
   const client = createClient({
@@ -29,10 +31,6 @@ export async function createMonimeCheckout(
   });
 
   try {
-    const financialAccountId = process.env.MONIME_FINANCIAL_ACCOUNT_ID;
-    if (!financialAccountId) {
-      throw new Error('MONIME_FINANCIAL_ACCOUNT_ID environment variable is not set.');
-    }
 
     const appUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
     const successUrl = `${appUrl}/events/${params.metadata.event_id}/register/success?ticketId=${params.metadata.ticket_id}`;
@@ -45,7 +43,7 @@ export async function createMonimeCheckout(
       successUrl,
       cancelUrl,
       params.description,
-      financialAccountId // Pass the financial account ID
+      params.financialAccountId
     );
 
     if (checkout.success && checkout.data?.result.redirectUrl) {
@@ -54,7 +52,7 @@ export async function createMonimeCheckout(
         url: checkout.data.result.redirectUrl!,
       };
     } else {
-      console.error("Monime SDK Error:", JSON.stringify(checkout.error, null, 2));
+      console.error("Monime SDK Error:", checkout.error?.message);
       throw new Error(checkout.error?.message || 'Failed to create Monime checkout session using SDK.');
     }
   } catch (error) {
@@ -76,9 +74,9 @@ interface MonimePayoutParams {
 export async function createMonimePayout(
   params: MonimePayoutParams
 ): Promise<{ id: string }> {
-  const accessToken = process.env.MONIME_ACCESS_TOKEN;
+  const accessToken = process.env.MONIME_API_KEY;
   if (!accessToken) {
-    throw new Error('MONIME_ACCESS_TOKEN environment variable is not set.');
+    throw new Error('MONIME_API_KEY environment variable is not set.');
   }
 
   const client = createClient({

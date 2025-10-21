@@ -1,5 +1,4 @@
 
-'use server';
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServiceRoleClient } from '@/lib/supabase/server';
@@ -7,8 +6,7 @@ import { createMonimeCheckout } from '@/lib/monime';
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = cookies();
-    const supabase = createServiceRoleClient(cookieStore);
+    const supabase = createServiceRoleClient(cookies());
 
     const { eventId, userId, formResponses, firstName, lastName, email } = await req.json();
 
@@ -129,6 +127,11 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Create Monime checkout session
+    const financialAccountId = process.env.MONIME_FINANCIAL_ACCOUNT_ID;
+    if (!financialAccountId) {
+        return NextResponse.json({ error: 'MONIME_FINANCIAL_ACCOUNT_ID is not configured.' }, { status: 500 });
+    }
+
     const checkoutSession = await createMonimeCheckout({
       name: `Ticket for ${event.title}`,
       metadata: {
@@ -136,10 +139,10 @@ export async function POST(req: NextRequest) {
         event_id: eventId,
         user_id: finalUserId,
       },
-      // The SDK expects amount in minor units (cents).
       price: Math.round(event.price! * 100),
       quantity: 1,
       description: event.title,
+      financialAccountId: financialAccountId,
     });
     
     // 5. Update ticket with checkout session ID for webhook reconciliation

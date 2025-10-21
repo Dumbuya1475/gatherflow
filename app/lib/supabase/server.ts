@@ -34,7 +34,8 @@ export function createClient(cookieStore: ReadonlyRequestCookies) {
   );
 }
 
-export function createServiceRoleClient(cookieStore: ReadonlyRequestCookies) {
+export function createServiceRoleClient() {
+  const cookieStore = cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
