@@ -42,5 +42,5 @@ export async function updateSession(request: NextRequest) {
   // This middleware is designed to refresh the session and nothing more.
   // It will run on every request, so adding heavy logic here will impact performance.
 
-  return { supabaseResponse, supabase };
+  return supabaseResponse;
 }

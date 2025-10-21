@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useActionState, useEffect } from 'react';
@@ -406,4 +407,3 @@ export function ManageEventView({ event, initialAttendees }: ManageEventViewProp
     </>
   );
 }
-    

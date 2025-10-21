@@ -753,56 +753,6 @@ export type Composites<
     
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
 -   _initialSupabase: { PostgrestVersion: string }
   public: {
     Tables: {
@@ -992,7 +942,5 @@ export const Constants = {
     },
   },
 } as const
-
-    
 
     

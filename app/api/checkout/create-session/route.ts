@@ -1,11 +1,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { createMonimeCheckout } from '@/lib/monime';
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createServiceRoleClient();
+    const cookieStore = cookies();
+    const supabase = createServiceRoleClient(cookieStore);
     const { eventId, userId, formResponses, firstName, lastName, email } = await req.json();
 
     if (!eventId) {
@@ -102,7 +104,7 @@ export async function POST(req: NextRequest) {
 
       if (createTicketError || !newTicket) {
         console.error('Checkout Error: Failed to create an unpaid ticket.', createTicketError);
-        return NextResponse.json({ error: 'Failed to create an unpaid ticket.' }, { status: 500 });
+        return NextResponse.json({ error: `Failed to create an unpaid ticket: ${createTicketError.message}` }, { status: 500 });
       }
       ticketId = newTicket.id;
       
@@ -168,4 +170,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-    

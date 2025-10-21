@@ -11,6 +11,8 @@ import Link from 'next/link';
 import { Progress } from '@/components/ui/progress';
 import { Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 
 function InfoCard({ title, value }: { title: string, value: string | number }) {
   return (

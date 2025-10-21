@@ -13,11 +13,13 @@ import { format } from 'date-fns';
 import { EventWithAttendees } from "@/lib/types";
 import { ShareButton } from "./_components/share-button";
 import { ResendTicketForm } from "./_components/resend-ticket-form";
+import { cookies } from 'next/headers';
 
 
 async function getTicketId(eventId: number, userId?: string) {
     if (!userId) return null;
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const { data: ticket } = await supabase
         .from('tickets')
         .select('id')
@@ -31,7 +33,8 @@ async function getTicketId(eventId: number, userId?: string) {
 export default async function EventDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const eventId = parseInt(id, 10);
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
 
     const { data: event, error } = await getEventDetails(eventId);

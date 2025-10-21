@@ -4,6 +4,7 @@
 import { getEventAttendees } from "@/lib/actions/events";
 import { getEventDetails } from "@/lib/server/queries/events";
 import { ManageEventView } from "./_components/manage-event-view";
+import { cookies } from "next/headers";
 
 interface ManageEventPageProps {
   params: { id: string };

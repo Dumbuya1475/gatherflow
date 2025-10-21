@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getEventFormFields } from '@/lib/server/queries/events';
 import { sendTicketEmail } from './email';
+import { cookies } from 'next/headers';
 
 type TicketData = {
   event_id: number;
@@ -19,7 +20,8 @@ export async function registerAndCreateTicket(
     prevState: { error: string | undefined } | undefined,
     formData: FormData
 ) {
-    const supabase = await createClient();
+    const cookieStore = cookies();
+    const supabase = await createClient(cookieStore);
     const eventId = parseInt(formData.get('eventId') as string, 10);
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -147,7 +149,8 @@ export async function registerGuestForEvent(
   prevState: { error?: string; success?: boolean; ticketId?: number } | undefined,
   formData: FormData
 ) {
-  const supabase = createServiceRoleClient();
+  const cookieStore = cookies();
+  const supabase = createServiceRoleClient(cookieStore);
   const eventId = parseInt(formData.get('eventId') as string, 10);
   const email = formData.get('email') as string;
   const firstName = formData.get('firstName') as string;
@@ -292,7 +295,8 @@ export async function registerGuestForEvent(
 // Other functions remain unchanged...
 
 export async function getTicketDetails(ticketId: number) {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
 
     const { data: ticket, error } = await supabase
         .from('tickets')
@@ -338,7 +342,8 @@ export async function getTicketDetails(ticketId: number) {
 }
 
 export async function approveAttendeeAction(formData: FormData) {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const ticketId = formData.get('ticketId') as string;
   const eventId = formData.get('eventId') as string;
 
@@ -372,7 +377,8 @@ export async function approveAttendeeAction(formData: FormData) {
 }
 
 export async function rejectAttendeeAction(formData: FormData) {
-  const supabase = await createClient();
+  const cookieStore = cookies();
+  const supabase = await createClient(cookieStore);
   const ticketId = formData.get('ticketId') as string;
   const eventId = formData.get('eventId') as string;
 
@@ -410,7 +416,8 @@ export async function unregisterForEventAction(
   prevState: { error?: string; success?: boolean; } | undefined,
   formData: FormData
 ) {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const ticketId = parseInt(formData.get('ticketId') as string, 10);
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -454,7 +461,8 @@ export async function unregisterForEventAction(
 }
 
 export async function unregisterAttendeeAction(formData: FormData) {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const ticketId = formData.get('ticketId') as string;
   const eventId = formData.get('eventId') as string;
 
@@ -493,7 +501,8 @@ export async function unregisterAttendeeAction(formData: FormData) {
 
 export async function scanTicketAction(qrToken: string, eventId: number) {
   try {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     
     // 1. Check authentication
     const { data: { user } } = await supabase.auth.getUser();
@@ -597,7 +606,8 @@ export async function scanTicketAction(qrToken: string, eventId: number) {
 }
 
 export async function getScannableEvents() {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -652,7 +662,8 @@ export async function resendTicketLinkAction(
     prevState: { error?: string; success?: boolean; } | undefined,
     formData: FormData
 ) {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const eventId = parseInt(formData.get('eventId') as string, 10);
     const email = formData.get('email') as string;
 

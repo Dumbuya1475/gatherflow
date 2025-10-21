@@ -1,10 +1,13 @@
+
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 
 export async function getProfile() {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
 
   const {
     data: { user },
@@ -31,7 +34,8 @@ export async function getProfile() {
 }
 
 export async function updateProfile(prevState: { error: string | undefined, success?: boolean } | undefined, formData: FormData) {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
 
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -57,7 +61,8 @@ export async function updateProfile(prevState: { error: string | undefined, succ
 }
 
 export async function getProfileStats() {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -93,7 +98,8 @@ export async function getProfileStats() {
 }
 
 export async function getScanners() {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const { data, error } = await supabase
       .from('profiles')
       .select("id, first_name, last_name, email:raw_user_meta_data->>'email'")
@@ -108,7 +114,8 @@ export async function getScanners() {
 }
     
 export async function upgradeGuestAccount(userId: string, password: string): Promise<{ error?: string; success?: boolean; }> {
-  const supabase = await createServiceRoleClient();
+  const cookieStore = cookies();
+  const supabase = createServiceRoleClient(cookieStore);
 
   const { error: authError } = await supabase.auth.admin.updateUserById(
     userId,

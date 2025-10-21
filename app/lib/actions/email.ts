@@ -5,6 +5,7 @@ import * as React from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { Resend } from 'resend';
 import { render } from '@react-email/render';
+import { cookies } from 'next/headers';
 
 
 let resend: Resend | undefined;
@@ -24,7 +25,8 @@ function getResend() {
 
 export async function sendEmailAction(eventId: number, subject: string, message: string, recipientSegment: string) {
     try {
-        const supabase = createClient();
+        const cookieStore = cookies();
+        const supabase = createClient(cookieStore);
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) {

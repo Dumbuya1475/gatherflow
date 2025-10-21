@@ -1,5 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { sendTicketEmail } from '@/lib/actions/email';
 import { getTicketDetails } from '@/lib/actions/tickets';
@@ -49,7 +50,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
   }
 
-  const supabase = createServiceRoleClient();
+  const cookieStore = cookies();
+  const supabase = createServiceRoleClient(cookieStore);
 
   if (event.event === "checkout_session.completed") {
     const session = event.data;
@@ -114,4 +116,3 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ received: true, message: "Event type not handled." });
 }
-    

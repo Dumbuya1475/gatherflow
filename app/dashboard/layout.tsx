@@ -33,9 +33,11 @@ import { DashboardHeader } from '@/components/dashboard-header';
 import { AppLogo } from '@/components/app-logo';
 import { createClient } from '@/lib/supabase/server';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cookies } from 'next/headers';
 
 async function getActiveEventCount(userId: string) {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const { count, error } = await supabase
     .from('events')
     .select('*', { count: 'exact', head: true })
@@ -55,7 +57,8 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
   const activeEventCount = user ? await getActiveEventCount(user.id) : 0;
   const isLimitReached = activeEventCount >= 3;

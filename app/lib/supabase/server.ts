@@ -1,10 +1,8 @@
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { cookies, type ReadonlyRequestCookies } from 'next/headers';
 
-export function createClient() {
-  const cookieStore = cookies();
-
+export function createClient(cookieStore: ReadonlyRequestCookies) {
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -36,9 +34,7 @@ export function createClient() {
   );
 }
 
-export function createServiceRoleClient() {
-  const cookieStore = cookies();
-
+export function createServiceRoleClient(cookieStore: ReadonlyRequestCookies) {
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,

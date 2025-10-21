@@ -4,9 +4,11 @@
 import { createClient } from '@@/app/lib/supabase/server';
 import type { EventWithAttendees } from '@/lib/types';
 import { LandingPageClient } from '@/components/landing-page-client';
+import { cookies } from 'next/headers';
 
 async function getRecentEvents() {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   
   const { data: events, error } = await supabase
     .from('events')
@@ -48,7 +50,8 @@ async function getRecentEvents() {
 
 
 export default async function LandingPage() {
-    const { data: { user } } = await createClient().auth.getUser();
+    const cookieStore = cookies();
+    const { data: { user } } = await createClient(cookieStore).auth.getUser();
     const recentEvents = await getRecentEvents();
 
     return <LandingPageClient recentEvents={recentEvents} user={user} />;

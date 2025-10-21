@@ -28,9 +28,11 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 
 async function getOrganizerStats() {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -21,9 +21,11 @@ import { Badge } from '@/components/ui/badge';
 import { DollarSign, TrendingUp, Ticket, Users, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { cookies } from 'next/headers';
 
 async function getEventFinancialDetails(eventId: number) {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const {
     data: { user },
   } = await supabase.auth.getUser();

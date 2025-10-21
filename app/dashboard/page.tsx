@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { cookies } from 'next/headers';
 
 
 async function getDashboardStats(user: any) {
@@ -19,7 +20,8 @@ async function getDashboardStats(user: any) {
   }
 
   try {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
 
     const { count: totalEvents, error: totalEventsError } = await supabase
       .from('events')
@@ -48,7 +50,7 @@ async function getDashboardStats(user: any) {
 
     if (events && events.length > 0) {
         const eventIds = events.map(e => e.id);
-        const supabaseAdmin = createServiceRoleClient();
+        const supabaseAdmin = createServiceRoleClient(cookieStore);
         const { data: counts, error: ticketsCountError } = await supabaseAdmin
             .rpc('get_event_attendee_counts', { event_ids: eventIds });
 
@@ -101,7 +103,8 @@ async function getDashboardStats(user: any) {
 }
 
 async function getAttendeeDashboardStats(user: any) {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const { data: tickets, error } = await supabase
     .from('tickets')
     .select('events!inner(*), id')
@@ -116,7 +119,7 @@ async function getAttendeeDashboardStats(user: any) {
   let countsByEvent: Record<number, number> = {};
 
   if (eventIds.length > 0) {
-    const supabaseAdmin = createServiceRoleClient();
+    const supabaseAdmin = createServiceRoleClient(cookieStore);
     const { data: counts, error: countError } = await supabaseAdmin
         .rpc('get_event_attendee_counts', { event_ids: eventIds });
 
@@ -149,7 +152,8 @@ async function getAttendeeDashboardStats(user: any) {
 }
 
 export default async function DashboardPage() {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
     const {
         data: { user },
       } = await supabase.auth.getUser();
