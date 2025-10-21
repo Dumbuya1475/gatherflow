@@ -141,16 +141,10 @@ export async function POST(req: NextRequest) {
         event_id: eventId,
         user_id: finalUserId,
       },
-      lineItems: [
-        {
-          name: event.title,
-          price: {
-            currency: 'SLE',
-            value: event.price!, // Pass the price in major units (e.g., 100.00)
-          },
-          quantity: 1,
-        },
-      ],
+      // The SDK expects amount in minor units (cents).
+      price: Math.round(event.price! * 100),
+      quantity: 1,
+      description: event.title,
     });
     
     // 5. Update ticket with checkout session ID for webhook reconciliation

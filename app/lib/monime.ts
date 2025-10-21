@@ -1,11 +1,17 @@
 
 'use server';
-import { ApiError } from '@@/lib/monime-client';
+import { ApiError } from 'monime-package';
+import { createClient } from 'monime-package';
 
 interface MonimeCheckoutParams {
   metadata: Record<string, any>;
   name: string;
-  lineItems: any;
+  price: number;
+  quantity: number;
+  description?: string;
+  financialAccountId?: string;
+  primaryColor?: string;
+  images?: string[];
 }
 
 interface MonimeCheckoutResponse {
@@ -22,16 +28,17 @@ export async function createMonimeCheckout(
     const successUrl = `${appUrl}/events/${params.metadata.event_id}/register/success?ticketId=${params.metadata.ticket_id}`;
     const cancelUrl = `${appUrl}/events/${params.metadata.event_id}/register?payment_cancelled=true`;
     
+    // The SDK expects arguments directly, not in a lineItems object.
     const checkout = await monimeClient.checkoutSession.create(
       params.name,
-      params.lineItems[0].price.value, // The SDK seems to take amount directly
-      params.lineItems[0].quantity,
+      params.price, // Amount should be in minor units (e.g., cents)
+      params.quantity,
       successUrl,
       cancelUrl,
-      params.lineItems[0].name, // Using item name as description
-      undefined, // financialAccountId
-      undefined, // primaryColor
-      [], // images
+      params.description,
+      params.financialAccountId,
+      params.primaryColor,
+      params.images
     );
 
     if (checkout.success && checkout.data?.result.redirectUrl) {
