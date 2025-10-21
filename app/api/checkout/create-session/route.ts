@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
           name: event.title,
           price: {
             currency: 'SLE',
-            value: Math.round(event.price! * 100),
+            value: event.price!, // Pass the price in major units (e.g., 100.00)
           },
           quantity: 1,
         },
