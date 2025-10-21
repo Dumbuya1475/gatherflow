@@ -2,8 +2,9 @@
 import { OpenAPI, CheckoutSessionService, PayoutService, ApiError } from './monime-client';
 import crypto from 'crypto';
 
+// Use MONIME_SECRET_KEY as the authentication token.
 OpenAPI.BASE = 'https://api.monime.io';
-OpenAPI.TOKEN = process.env.MONIME_API_KEY;
+OpenAPI.TOKEN = process.env.MONIME_SECRET_KEY;
 
 interface MonimeCheckoutParams {
   metadata: Record<string, any>;
