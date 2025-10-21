@@ -1,5 +1,5 @@
 
-import { OpenAPI, CheckoutSessionService, PayoutService, ApiError } from './monime-client';
+import { OpenAPI, CheckoutSessionService, PayoutService, ApiError } from '@@/lib/monime-client';
 import crypto from 'crypto';
 
 OpenAPI.BASE = 'https://api.monime.io';

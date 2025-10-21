@@ -3,8 +3,9 @@ import { OpenAPI, CheckoutSessionService, PayoutService, ApiError } from '@@/lib
 import crypto from 'crypto';
 
 // Use MONIME_SECRET_KEY as the authentication token and allow configurable base URL.
-// Default to the sandbox environment for testing.
-OpenAPI.BASE = process.env.MONIME_API_BASE_URL || 'https://api.sandbox.monime.io';
+// The sandbox and production environments seem to use the same base URL.
+// The API key (test vs. live) determines the environment.
+OpenAPI.BASE = process.env.MONIME_API_BASE_URL || 'https://api.monime.io';
 OpenAPI.TOKEN = process.env.MONIME_SECRET_KEY;
 
 interface MonimeCheckoutParams {
