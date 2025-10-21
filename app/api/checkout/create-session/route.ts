@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     // 1. Get event details
     const { data: event, error: eventError } = await supabase
       .from('events')
-      .select('id, title, price, requires_approval')
+      .select('id, title, price, requires_approval, fee_bearer')
       .eq('id', eventId)
       .single();
 
@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
         user_id: finalUserId,
         status: 'pending', // Always pending until payment is confirmed
         ticket_price: event.price,
+        fee_bearer: event.fee_bearer,
       })
       .select('id')
       .single();
@@ -149,3 +150,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+    

@@ -67,6 +67,7 @@ const eventFormSchema = z.object({
   current_cover_image: z.string().url().optional(),
   is_paid: z.boolean().default(false),
   price: z.coerce.number().nonnegative().optional(),
+  fee_bearer: z.enum(['organizer', 'buyer']).default('buyer'),
   is_public: z.boolean().default(true),
   requires_approval: z.boolean().default(false),
   customFields: z.array(z.object({
@@ -166,6 +167,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
       capacity: defaultValues?.capacity || undefined,
       is_paid: defaultValues?.is_paid || false,
       price: defaultValues?.price || undefined,
+      fee_bearer: defaultValues?.fee_bearer === 'organizer' ? 'organizer' : 'buyer',
       is_public: defaultValues?.is_public ?? true,
       requires_approval: defaultValues?.requires_approval || false,
       current_cover_image: event?.cover_image,
@@ -519,8 +521,8 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                 )}
               />
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <div className="space-y-4">
               <FormField
                 control={form.control}
                 name="is_paid"
@@ -553,26 +555,58 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
               />
 
               {isPaid && (
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <FormField
+                    control={form.control}
+                    name="price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Price (SLE)</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center gap-2">
+                            <Input type="number" placeholder="e.g., 50" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} value={field.value ?? ''} />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Price (SLE)</FormLabel>
-                      <FormControl>
-                                              <div className="flex items-center gap-2">
-                        <Input type="number" placeholder="e.g., 500000" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} value={field.value ?? ''} />
-                        <Button variant="outline" asChild>
-                          <Link href="/dashboard/pricing" target="_blank">
-                            Preview Pricing
-                          </Link>
-                        </Button>
-                      </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    control={form.control}
+                    name="fee_bearer"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Service Fee</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex space-x-4 pt-2"
+                          >
+                            <FormItem className="flex items-center space-x-2">
+                              <FormControl>
+                                <RadioGroupItem value="buyer" />
+                              </FormControl>
+                              <Label htmlFor="is_paid-paid">Buyer pays fee</Label>
+                            </FormItem>
+                             <FormItem className="flex items-center space-x-2">
+                              <FormControl>
+                                <RadioGroupItem value="organizer" />
+                              </FormControl>
+                              <Label htmlFor="is_paid-paid">I'll pay fee</Label>
+                            </FormItem>
+                          </RadioGroup>
+                        </FormControl>
+                         <Button variant="link" asChild className="p-0 h-auto">
+                            <Link href="/dashboard/pricing" target="_blank">
+                              (Preview fee structure)
+                            </Link>
+                          </Button>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  </div>
               )}
             </div>
 
@@ -773,3 +807,5 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
     </Card>
   );
 }
+
+    

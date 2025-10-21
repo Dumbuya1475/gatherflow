@@ -167,6 +167,8 @@ export type Database = {
           requires_approval: boolean
           ticket_background_image: string | null
           fee_bearer: string | null
+          status: string | null
+          payout_completed: boolean | null
         }
         Insert: {
           id?: number
@@ -188,6 +190,8 @@ export type Database = {
           requires_approval?: boolean
           ticket_background_image?: string | null
           fee_bearer?: string | null
+          status?: string | null
+          payout_completed?: boolean | null
         }
         Update: {
           id?: number
@@ -209,6 +213,8 @@ export type Database = {
           requires_approval?: boolean
           ticket_background_image?: string | null
           fee_bearer?: string | null
+          status?: string | null
+          payout_completed?: boolean | null
         }
         Relationships: [
           {
@@ -764,46 +770,7 @@ export type Composites<
     
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-_initialSupabase: { PostgrestVersion: string }
+-   _initialSupabase: { PostgrestVersion: string }
   public: {
     Tables: {
       [_ in never]: never
