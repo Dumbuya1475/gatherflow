@@ -1,4 +1,5 @@
-import { getEventDetails } from "@/lib/actions/events";
+
+import { getEventDetails } from "@/lib/server/queries/events";
 import { TicketCustomizer } from "./_components/ticket-customizer";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";

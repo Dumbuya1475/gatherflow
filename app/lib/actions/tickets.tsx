@@ -4,7 +4,7 @@
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { getEventFormFields } from './events';
+import { getEventFormFields } from '@/lib/server/queries/events';
 import { sendTicketEmail } from './email';
 
 type TicketData = {
@@ -646,4 +646,51 @@ export async function getScannableEvents() {
     }));
 
     return { data: uniqueEvents, isLoggedIn: true, error: null };
+}
+
+export async function resendTicketLinkAction(
+    prevState: { error?: string; success?: boolean; } | undefined,
+    formData: FormData
+) {
+    const supabase = createClient();
+    const eventId = parseInt(formData.get('eventId') as string, 10);
+    const email = formData.get('email') as string;
+
+    if (!email) {
+        return { error: 'Please provide an email address.' };
+    }
+
+    const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .single();
+        
+    if (profileError || !profile) {
+        return { success: true }; // Don't reveal if an email is registered or not
+    }
+
+    const { data: ticket, error: ticketError } = await supabase
+        .from('tickets')
+        .select('id, events(title)')
+        .eq('event_id', eventId)
+        .eq('user_id', profile.id)
+        .single();
+
+    if (ticketError || !ticket) {
+        return { success: true };
+    }
+    
+    const { data: ticketDetails } = await getTicketDetails(ticket.id);
+
+    if (ticketDetails) {
+        const { TicketEmail } = await import('@/components/emails/ticket-email');
+        await sendTicketEmail(
+            email,
+            `Your ticket for ${ticket.events?.title}`,
+            <TicketEmail ticket={ticketDetails} />
+        );
+    }
+    
+    return { success: true };
 }

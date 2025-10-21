@@ -1,5 +1,5 @@
 
-import { getEventDetails, getEventFormFields } from '@/lib/actions/events';
+import { getEventDetails, getEventFormFields } from '@/lib/server/queries/events';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { RegisterForEventForm } from './_components/register-event-form';

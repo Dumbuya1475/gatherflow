@@ -9,8 +9,8 @@ import type { EventFormFieldWithOptions } from '@/lib/types';
 
 // 1. Create Event Action
 export async function createEventAction(formData: FormData) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const supabase = createServiceRoleClient();
+  const { data: { user } } = await createClient().auth.getUser();
 
   if (!user) {
     return { error: 'You must be logged in to create an event.' };
@@ -56,9 +56,8 @@ export async function createEventAction(formData: FormData) {
     }
     coverImageUrl = publicUrl;
   }
-  
-  const supabaseAdmin = createServiceRoleClient();
-  const { data: event, error: eventError } = await supabaseAdmin
+
+  const { data: event, error: eventError } = await supabase
     .from('events')
     .insert({
       title: rawData.title,
@@ -85,7 +84,7 @@ export async function createEventAction(formData: FormData) {
 
   if (rawData.customFields.length > 0) {
     for (const [index, field] of rawData.customFields.entries()) {
-        const { data: newField, error: fieldError } = await supabaseAdmin
+        const { data: newField, error: fieldError } = await supabase
             .from('event_form_fields')
             .insert({
                 event_id: event.id,
@@ -107,7 +106,7 @@ export async function createEventAction(formData: FormData) {
                 value: opt.value,
             }));
 
-            const { error: optionsError } = await supabaseAdmin.from('event_form_field_options').insert(optionsToInsert);
+            const { error: optionsError } = await supabase.from('event_form_field_options').insert(optionsToInsert);
             if (optionsError) {
                 return { error: `Failed to create field options: ${optionsError.message}` };
             }
@@ -121,8 +120,8 @@ export async function createEventAction(formData: FormData) {
 
 // 2. Update Event Action (with redirect)
 export async function updateEventAction(eventId: number, formData: FormData) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const supabase = createServiceRoleClient();
+  const { data: { user } } = await createClient().auth.getUser();
 
   if (!user) {
     return { error: 'You must be logged in to update an event.' };
@@ -152,8 +151,7 @@ export async function updateEventAction(eventId: number, formData: FormData) {
     coverImageUrl = publicUrl;
   }
   
-  const supabaseAdmin = createServiceRoleClient();
-  const { error: eventUpdateError } = await supabaseAdmin
+  const { error: eventUpdateError } = await supabase
     .from('events')
     .update({
       title: rawData.title,
@@ -174,12 +172,12 @@ export async function updateEventAction(eventId: number, formData: FormData) {
 
   if (eventUpdateError) return { error: `Failed to update event: ${eventUpdateError.message}` };
 
-  const { error: deleteFieldsError } = await supabaseAdmin.from('event_form_fields').delete().eq('event_id', eventId);
+  const { error: deleteFieldsError } = await supabase.from('event_form_fields').delete().eq('event_id', eventId);
   if (deleteFieldsError) return { error: `Failed to update custom fields (step 1): ${deleteFieldsError.message}` };
 
   if (rawData.customFields.length > 0) {
     for (const [index, field] of rawData.customFields.entries()) {
-        const { data: newField, error: fieldError } = await supabaseAdmin
+        const { data: newField, error: fieldError } = await supabase
             .from('event_form_fields').insert({
                 event_id: eventId,
                 field_name: field.field_name,
@@ -190,69 +188,26 @@ export async function updateEventAction(eventId: number, formData: FormData) {
         if (fieldError) return { error: `Failed to update custom fields (step 2): ${fieldError.message}` };
         if (field.options && field.options.length > 0) {
             const optionsToInsert = field.options.map(opt => ({ form_field_id: newField.id, value: opt.value }));
-            const { error: optionsError } = await supabaseAdmin.from('event_form_field_options').insert(optionsToInsert);
+            const { error: optionsError } = await supabase.from('event_form_field_options').insert(optionsToInsert);
             if (optionsError) return { error: `Failed to update custom fields (step 3): ${optionsError.message}` };
         }
     }
   }
 
-  const { error: deleteScannersError } = await supabaseAdmin.from('event_scanners').delete().eq('event_id', eventId);
+  const { error: deleteScannersError } = await supabase.from('event_scanners').delete().eq('event_id', eventId);
   if (deleteScannersError) return { error: `Failed to update scanners (step 1): ${deleteScannersError.message}` };
 
   if (rawData.scanners.length > 0) {
-    const { data: profiles, error: profileError } = await supabaseAdmin.from('profiles').select('id').in('email', rawData.scanners);
+    const { data: profiles, error: profileError } = await supabase.from('profiles').select('id').in('email', rawData.scanners);
     if (profileError) return { error: `Failed to find scanner profiles: ${profileError.message}` };
     const scannersToInsert = profiles.map(p => ({ event_id: eventId, user_id: p.id }));
-    const { error: insertScannersError } = await supabaseAdmin.from('event_scanners').insert(scannersToInsert);
+    const { error: insertScannersError } = await supabase.from('event_scanners').insert(scannersToInsert);
     if (insertScannersError) return { error: `Failed to update scanners (step 2): ${insertScannersError.message}` };
   }
 
   revalidatePath(`/dashboard/events/${eventId}/edit`);
   revalidatePath(`/dashboard/events/${eventId}/manage`);
   redirect(`/dashboard/events/${eventId}/manage`);
-}
-
-// 3. Get Event Details
-export async function getEventDetails(eventId: number) {
-    const supabase = createServiceRoleClient();
-    const { data, error } = await supabase
-        .from('events')
-        .select(`
-            *,
-            requires_approval,
-            scanners:event_scanners(*, profiles(email)),
-            event_form_fields(*, options:event_form_field_options(*))
-        `)
-        .eq('id', eventId)
-        .single();
-
-    const { count: attendees, error: countError } = await supabase
-        .from('tickets')
-        .select('count', { count: 'exact' })
-        .eq('event_id', eventId);
-
-    if (error || countError) {
-        return { 
-            data: null, 
-            error: error?.message || countError?.message 
-        };
-    }
-
-    return { 
-        data: { ...data, attendees: attendees || 0 }, 
-        error: null 
-    };
-}
-
-// 4. Get Event Form Fields
-export async function getEventFormFields(eventId: number) {
-    const supabase = createClient();
-    const { data, error } = await supabase
-        .from('event_form_fields')
-        .select('*, options:event_form_field_options(*)')
-        .eq('event_id', eventId)
-        .order('order', { ascending: true });
-    return { data, error };
 }
 
 // 5. Update Ticket Appearance

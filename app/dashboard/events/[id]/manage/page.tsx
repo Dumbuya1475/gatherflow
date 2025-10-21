@@ -1,7 +1,8 @@
 
 'use server';
 
-import { getEventAttendees, getEventDetails } from "@/lib/actions/events";
+import { getEventAttendees } from "@/lib/actions/events";
+import { getEventDetails } from "@/lib/server/queries/events";
 import { ManageEventView } from "./_components/manage-event-view";
 
 interface ManageEventPageProps {
