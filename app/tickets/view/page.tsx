@@ -5,6 +5,7 @@ import { TicketView } from '@/components/tickets/ticket-view';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { cookies } from 'next/headers';
 
 interface ViewTicketPageProps {
     searchParams: {
@@ -44,7 +45,8 @@ export default async function ViewTicketPage({ searchParams }: ViewTicketPagePro
     }
     
     // For guest users, we validate with email. For logged-in users, we check ownership.
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
 
     const isOwner = user && user.id === ticket.profiles?.id;

@@ -51,7 +51,8 @@ async function getRecentEvents() {
 
 export default async function LandingPage() {
     const cookieStore = cookies();
-    const { data: { user } } = await createClient(cookieStore).auth.getUser();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
     const recentEvents = await getRecentEvents();
 
     return <LandingPageClient recentEvents={recentEvents} user={user} />;
