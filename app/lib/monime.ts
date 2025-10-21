@@ -1,6 +1,6 @@
 
 'use server';
-import { createClient, type AllFinancialAccount, type CreateFinancialAccount } from 'monime-package';
+import { createClient } from 'monime-package';
 
 interface MonimeCheckoutParams {
   metadata: Record<string, any>;
@@ -18,31 +18,20 @@ interface MonimeCheckoutResponse {
 export async function createMonimeCheckout(
   params: MonimeCheckoutParams
 ): Promise<MonimeCheckoutResponse> {
+  const accessToken = process.env.MONIME_ACCESS_TOKEN;
+  if (!accessToken) {
+    throw new Error('MONIME_ACCESS_TOKEN environment variable is not set.');
+  }
+
   const client = createClient({
     monimeSpaceId: process.env.MONIME_SPACE_ID!,
-    accessToken: process.env.MONIME_ACCESS_TOKEN!,
+    accessToken: accessToken,
   });
 
   try {
-    // Find or create the main financial account
-    let financialAccountId: string;
-    const accountName = "GatherFlow Main Account";
-
-    const accountsResponse = await client.financialAccount.getAll();
-    if (!accountsResponse.success) {
-      throw new Error(`Failed to get financial accounts: ${accountsResponse.error?.message}`);
-    }
-
-    const existingAccount = accountsResponse.data?.result.find(acc => acc.name === accountName);
-
-    if (existingAccount) {
-      financialAccountId = existingAccount.id;
-    } else {
-      const newAccountResponse = await client.financialAccount.create(accountName);
-      if (!newAccountResponse.success) {
-        throw new Error(`Failed to create financial account: ${newAccountResponse.error?.message}`);
-      }
-      financialAccountId = newAccountResponse.data!.result.id;
+    const financialAccountId = process.env.MONIME_FINANCIAL_ACCOUNT_ID;
+    if (!financialAccountId) {
+      throw new Error('MONIME_FINANCIAL_ACCOUNT_ID environment variable is not set.');
     }
 
     const appUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
@@ -65,7 +54,7 @@ export async function createMonimeCheckout(
         url: checkout.data.result.redirectUrl!,
       };
     } else {
-      console.error("Monime SDK Error:", checkout.error?.message);
+      console.error("Monime SDK Error:", JSON.stringify(checkout.error, null, 2));
       throw new Error(checkout.error?.message || 'Failed to create Monime checkout session using SDK.');
     }
   } catch (error) {
@@ -87,9 +76,14 @@ interface MonimePayoutParams {
 export async function createMonimePayout(
   params: MonimePayoutParams
 ): Promise<{ id: string }> {
+  const accessToken = process.env.MONIME_ACCESS_TOKEN;
+  if (!accessToken) {
+    throw new Error('MONIME_ACCESS_TOKEN environment variable is not set.');
+  }
+
   const client = createClient({
     monimeSpaceId: process.env.MONIME_SPACE_ID!,
-    accessToken: process.env.MONIME_ACCESS_TOKEN!,
+    accessToken: accessToken,
   });
 
   const payout = await client.payout.create(
