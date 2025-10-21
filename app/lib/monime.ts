@@ -20,7 +20,7 @@ export async function createMonimeCheckout(
 ): Promise<MonimeCheckoutResponse> {
   const client = createClient({
     monimeSpaceId: process.env.MONIME_SPACE_ID!,
-    accessToken: process.env.MONIME_API_KEY!,
+    accessToken: process.env.MONIME_ACCESS_TOKEN!,
   });
 
   try {
@@ -89,7 +89,7 @@ export async function createMonimePayout(
 ): Promise<{ id: string }> {
   const client = createClient({
     monimeSpaceId: process.env.MONIME_SPACE_ID!,
-    accessToken: process.env.MONIME_API_KEY!,
+    accessToken: process.env.MONIME_ACCESS_TOKEN!,
   });
 
   const payout = await client.payout.create(
