@@ -70,47 +70,65 @@ export async function POST(req: NextRequest) {
         }
     }
 
+    // 3. Find an existing ticket or create a new pending one
+    let ticketId: number;
 
-    // 3. Create a pending ticket record
-    const { data: ticket, error: ticketError } = await supabase
+    const { data: existingTicket, error: findTicketError } = await supabase
       .from('tickets')
-      .insert({
-        event_id: eventId,
-        user_id: finalUserId,
-        status: 'pending', // Always pending until payment is confirmed
-        ticket_price: event.price,
-        fee_bearer: event.fee_bearer,
-      })
       .select('id')
-      .single();
+      .eq('event_id', eventId)
+      .eq('user_id', finalUserId)
+      .maybeSingle();
 
-    if (ticketError || !ticket) {
-      console.error('Checkout Error: Failed to create a pending ticket.', ticketError);
-      return NextResponse.json({ error: 'Failed to create a pending ticket.' }, { status: 500 });
+    if (findTicketError) {
+      console.error('Checkout Error: Error finding existing ticket.', findTicketError);
+      return NextResponse.json({ error: 'Database error while checking for ticket.' }, { status: 500 });
     }
 
-    // 4. Save form responses if any
-    if (formResponses && formResponses.length > 0) {
-      const responsesToInsert = formResponses.map((response: any) => ({
-        ticket_id: ticket.id,
-        form_field_id: response.form_field_id,
-        field_value: response.field_value,
-      }));
-      const { error: responsesError } = await supabase
-        .from('attendee_form_responses')
-        .insert(responsesToInsert);
+    if (existingTicket) {
+      ticketId = existingTicket.id;
+    } else {
+      const { data: newTicket, error: createTicketError } = await supabase
+        .from('tickets')
+        .insert({
+          event_id: eventId,
+          user_id: finalUserId,
+          status: 'pending', // Always pending until payment is confirmed
+          ticket_price: event.price,
+          fee_bearer: event.fee_bearer,
+        })
+        .select('id')
+        .single();
+
+      if (createTicketError || !newTicket) {
+        console.error('Checkout Error: Failed to create a pending ticket.', createTicketError);
+        return NextResponse.json({ error: 'Failed to create a pending ticket.' }, { status: 500 });
+      }
+      ticketId = newTicket.id;
       
-      if (responsesError) {
-        console.error('Checkout Warning: Could not save form responses.', responsesError);
-        // Don't fail the whole transaction, but log it.
+      // Save form responses only when creating a new ticket
+      if (formResponses && formResponses.length > 0) {
+        const responsesToInsert = formResponses.map((response: any) => ({
+          ticket_id: ticketId,
+          form_field_id: response.form_field_id,
+          field_value: response.field_value,
+        }));
+        const { error: responsesError } = await supabase
+          .from('attendee_form_responses')
+          .insert(responsesToInsert);
+        
+        if (responsesError) {
+          console.error('Checkout Warning: Could not save form responses.', responsesError);
+          // Don't fail the whole transaction, but log it.
+        }
       }
     }
 
-    // 5. Create Monime checkout session
+    // 4. Create Monime checkout session
     const checkoutSession = await createMonimeCheckout({
       name: `Ticket for ${event.title}`,
       metadata: {
-        ticket_id: ticket.id,
+        ticket_id: ticketId,
         event_id: eventId,
         user_id: finalUserId,
       },
@@ -126,11 +144,11 @@ export async function POST(req: NextRequest) {
       ],
     });
     
-    // 6. Update ticket with checkout session ID for webhook reconciliation
+    // 5. Update ticket with checkout session ID for webhook reconciliation
     const { error: updateTicketError } = await supabase
       .from('tickets')
       .update({ monime_checkout_session_id: checkoutSession.id })
-      .eq('id', ticket.id);
+      .eq('id', ticketId);
 
     if (updateTicketError) {
         console.error('Checkout Error: Failed to update ticket with session ID.', updateTicketError);
@@ -140,7 +158,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       checkoutUrl: checkoutSession.url,
-      ticketId: ticket.id,
+      ticketId: ticketId,
     });
   } catch (error: any) {
     console.error('Checkout Error: Unhandled exception in POST handler.', error);
@@ -150,5 +168,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
-    
