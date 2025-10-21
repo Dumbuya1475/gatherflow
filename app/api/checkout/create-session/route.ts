@@ -4,16 +4,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { createMonimeCheckout } from '@/lib/monime';
-import { createClient as createMonimeClient } from 'monime-package';
 
 export async function POST(req: NextRequest) {
   try {
     const cookieStore = cookies();
     const supabase = createServiceRoleClient(cookieStore);
-    const monimeClient = createMonimeClient({
-      monimeSpaceId: process.env.MONIME_SPACE_ID!,
-      accessToken: process.env.MONIME_API_KEY!,
-    });
 
     const { eventId, userId, formResponses, firstName, lastName, email } = await req.json();
 
@@ -134,7 +129,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Create Monime checkout session
-    const checkoutSession = await createMonimeCheckout(monimeClient, {
+    const checkoutSession = await createMonimeCheckout({
       name: `Ticket for ${event.title}`,
       metadata: {
         ticket_id: ticketId,

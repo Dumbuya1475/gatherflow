@@ -1,6 +1,6 @@
 
 'use server';
-import { createClient } from 'monime-package';
+import { createClient, type AllFinancialAccount, type CreateFinancialAccount } from 'monime-package';
 
 interface MonimeCheckoutParams {
   metadata: Record<string, any>;
@@ -24,6 +24,27 @@ export async function createMonimeCheckout(
   });
 
   try {
+    // Find or create the main financial account
+    let financialAccountId: string;
+    const accountName = "GatherFlow Main Account";
+
+    const accountsResponse = await client.financialAccount.getAll();
+    if (!accountsResponse.success) {
+      throw new Error(`Failed to get financial accounts: ${accountsResponse.error?.message}`);
+    }
+
+    const existingAccount = accountsResponse.data?.result.find(acc => acc.name === accountName);
+
+    if (existingAccount) {
+      financialAccountId = existingAccount.id;
+    } else {
+      const newAccountResponse = await client.financialAccount.create(accountName);
+      if (!newAccountResponse.success) {
+        throw new Error(`Failed to create financial account: ${newAccountResponse.error?.message}`);
+      }
+      financialAccountId = newAccountResponse.data!.result.id;
+    }
+
     const appUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
     const successUrl = `${appUrl}/events/${params.metadata.event_id}/register/success?ticketId=${params.metadata.ticket_id}`;
     const cancelUrl = `${appUrl}/events/${params.metadata.event_id}/register?payment_cancelled=true`;
@@ -34,7 +55,8 @@ export async function createMonimeCheckout(
       params.quantity,
       successUrl,
       cancelUrl,
-      params.description
+      params.description,
+      financialAccountId // Pass the financial account ID
     );
 
     if (checkout.success && checkout.data?.result.redirectUrl) {
