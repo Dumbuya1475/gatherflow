@@ -1,5 +1,5 @@
 
-import { OpenAPI, CheckoutSessionService, PayoutService, ApiError } from './monime-client';
+import { OpenAPI, CheckoutSessionService, PayoutService, ApiError } from '@@/lib/monime-client';
 import crypto from 'crypto';
 
 // Use MONIME_SECRET_KEY as the authentication token.
