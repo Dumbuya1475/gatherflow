@@ -1,6 +1,5 @@
 
 'use server';
-import { ApiError } from 'monime-package';
 import { createClient } from 'monime-package';
 
 interface MonimeCheckoutParams {
@@ -9,9 +8,6 @@ interface MonimeCheckoutParams {
   price: number;
   quantity: number;
   description?: string;
-  financialAccountId?: string;
-  primaryColor?: string;
-  images?: string[];
 }
 
 interface MonimeCheckoutResponse {
@@ -20,25 +16,25 @@ interface MonimeCheckoutResponse {
 }
 
 export async function createMonimeCheckout(
-  monimeClient: any,
   params: MonimeCheckoutParams
 ): Promise<MonimeCheckoutResponse> {
+  const client = createClient({
+    monimeSpaceId: process.env.MONIME_SPACE_ID!,
+    accessToken: process.env.MONIME_API_KEY!,
+  });
+
   try {
     const appUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
     const successUrl = `${appUrl}/events/${params.metadata.event_id}/register/success?ticketId=${params.metadata.ticket_id}`;
     const cancelUrl = `${appUrl}/events/${params.metadata.event_id}/register?payment_cancelled=true`;
     
-    // The SDK expects arguments directly, not in a lineItems object.
-    const checkout = await monimeClient.checkoutSession.create(
+    const checkout = await client.checkoutSession.create(
       params.name,
-      params.price, // Amount should be in minor units (e.g., cents)
+      params.price, // SDK expects amount in minor units
       params.quantity,
       successUrl,
       cancelUrl,
-      params.description,
-      params.financialAccountId,
-      params.primaryColor,
-      params.images
+      params.description
     );
 
     if (checkout.success && checkout.data?.result.redirectUrl) {
@@ -51,11 +47,9 @@ export async function createMonimeCheckout(
       throw new Error(checkout.error?.message || 'Failed to create Monime checkout session using SDK.');
     }
   } catch (error) {
-    if (error instanceof ApiError) {
-      // Log the full error for better debugging, then throw a cleaner message.
-      console.error("Monime API Error Details:", JSON.stringify(error, null, 2));
-      const errorMessage = error.body?.message || error.body?.error?.message || 'Unknown error from Monime API.';
-      throw new Error(`Monime API error: ${errorMessage}`);
+    if (error instanceof Error) {
+        console.error("Checkout Error in createMonimeCheckout:", error.message);
+        throw new Error(`Monime API error: ${error.message}`);
     }
     throw error;
   }
@@ -69,10 +63,14 @@ interface MonimePayoutParams {
 }
 
 export async function createMonimePayout(
-  monimeClient: any,
   params: MonimePayoutParams
 ): Promise<{ id: string }> {
-  const payout = await monimeClient.payout.create(
+  const client = createClient({
+    monimeSpaceId: process.env.MONIME_SPACE_ID!,
+    accessToken: process.env.MONIME_API_KEY!,
+  });
+
+  const payout = await client.payout.create(
       params.amount,
       {
           type: "momo",
