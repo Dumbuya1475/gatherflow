@@ -1,5 +1,5 @@
 
-import { OpenAPI, CheckoutSessionService, PayoutService, ApiError } from '@@/lib/monime-client';
+import { OpenAPI, CheckoutSessionService, PayoutService, ApiError } from './monime-client';
 import crypto from 'crypto';
 
 OpenAPI.BASE = 'https://api.monime.io';
@@ -43,8 +43,11 @@ export async function createMonimeCheckout(
       throw new Error('Failed to create Monime checkout session');
     }
   } catch (error) {
+    console.error("Monime API Error Details:", JSON.stringify(error, null, 2));
     if (error instanceof ApiError) {
-      throw new Error(`Monime API error: ${error.body?.message || 'Unknown error'}`);
+      // Log the full error for better debugging, then throw a cleaner message.
+      const errorMessage = error.body?.message || error.body?.error?.message || 'Unknown error from Monime API.';
+      throw new Error(`Monime API error: ${errorMessage}`);
     }
     throw error;
   }
@@ -88,8 +91,10 @@ export async function createMonimePayout(
       throw new Error('Failed to create Monime payout');
     }
   } catch (error) {
+    console.error("Monime Payout Error Details:", JSON.stringify(error, null, 2));
     if (error instanceof ApiError) {
-      throw new Error(`Monime payout error: ${error.body.message || 'Unknown error'}`);
+      const errorMessage = error.body?.message || error.body?.error?.message || 'Unknown error from Monime API during payout.';
+      throw new Error(`Monime payout error: ${errorMessage}`);
     }
     throw error;
   }
