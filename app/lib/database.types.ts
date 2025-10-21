@@ -59,7 +59,7 @@ export type Database = {
         | "multiple-choice"
         | "checkboxes"
         | "dropdown"
-      ticket_status: "pending" | "approved" | "rejected"
+      ticket_status: "pending" | "approved" | "rejected" | "checked_in" | "checked_out" | "expired";
     }
     CompositeTypes: {
       [_ in never]: never
