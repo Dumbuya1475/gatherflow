@@ -214,7 +214,7 @@ export type Database = {
           ticket_background_image?: string | null
           fee_bearer?: string | null
           status?: string | null
-          payout_completed?: boolean | null
+          payout_completed?: string | null
         }
         Relationships: [
           {
@@ -456,6 +456,7 @@ export type Database = {
         | "checked_in"
         | "checked_out"
         | "expired"
+        | "unpaid"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -570,7 +571,7 @@ export type Composites<
             "checkboxes",
             "dropdown",
           ],
-          ticket_status: ["pending", "approved", "rejected"],
+          ticket_status: ["pending", "approved", "rejected", "unpaid"],
         },
       },
     } as const
@@ -592,7 +593,7 @@ export type Composites<
         first_name: string | null;
         last_name: string | null;
         email: string | null;
-        status: 'pending' | 'approved' | 'rejected' | 'checked_in' | 'checked_out' | 'unknown';
+        status: 'pending' | 'approved' | 'rejected' | 'checked_in' | 'checked_out' | 'unknown' | 'unpaid';
         avatar_url: string | null;
     }
     
@@ -611,6 +612,38 @@ export type Composites<
     
     
     // ... (rest of the original file content)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
@@ -818,7 +851,7 @@ export type Composites<
         | "multiple-choice"
         | "checkboxes"
         | "dropdown"
-      ticket_status: "pending" | "approved" | "rejected" | "checked_in" | "checked_out" | "expired";
+      ticket_status: "pending" | "approved" | "rejected" | "checked_in" | "checked_out" | "expired" | "unpaid";
     }
     CompositeTypes: {
       [_ in never]: never
@@ -955,9 +988,11 @@ export const Constants = {
         "checkboxes",
         "dropdown",
       ],
-      ticket_status: ["pending", "approved", "rejected"],
+      ticket_status: ["pending", "approved", "rejected", "unpaid"],
     },
   },
 } as const
+
+    
 
     

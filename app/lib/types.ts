@@ -29,7 +29,7 @@ export type Attendee = {
     first_name: string | null;
     last_name: string | null;
     email: string | null;
-    status: 'pending' | 'approved' | 'rejected' | 'checked_in' | 'checked_out' | 'unknown';
+    status: 'pending' | 'approved' | 'rejected' | 'checked_in' | 'checked_out' | 'unknown' | 'unpaid';
     avatar_url: string | null;
     form_responses?: AttendeeFormResponse[];
 }
@@ -46,3 +46,4 @@ export type EventFormField = Database['public']['Tables']['event_form_fields']['
 export type EventFormFieldWithOptions = Omit<EventFormField, 'id' | 'event_id' | 'order' | 'options'> & {
   options?: { value: string }[];
 };
+    

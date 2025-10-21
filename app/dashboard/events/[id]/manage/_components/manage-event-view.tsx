@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { unregisterAttendeeAction } from "@/lib/actions/tickets.tsx";
 import { deleteEventAction } from "@/lib/actions/events";
-import { CheckCircle, XCircle, Trash2, Eye, Clock, Ban, UserPlus, Settings, Users, UserRoundCheck, UserRoundX, Ticket, Calendar, MapPin, UsersRound } from "lucide-react";
+import { CheckCircle, XCircle, Trash2, Eye, Clock, Ban, UserPlus, Settings, Users, UserRoundCheck, UserRoundX, Ticket, Calendar, MapPin, UsersRound, CircleDollarSign } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -180,8 +180,9 @@ function AttendeesTab({ event, attendees }: { event: Event, attendees: Attendee[
 
     const statusConfig = {
         approved: { text: 'Approved', className: 'bg-green-500', icon: <CheckCircle className="mr-2 h-4 w-4" /> },
-        pending: { text: 'Pending', className: 'bg-yellow-500', icon: <Clock className="mr-2 h-4 w-4" /> },
+        pending: { text: 'Pending Approval', className: 'bg-yellow-500', icon: <Clock className="mr-2 h-4 w-4" /> },
         rejected: { text: 'Rejected', className: 'bg-red-500', icon: <Ban className="mr-2 h-4 w-4" /> },
+        unpaid: { text: 'Pending Payment', className: 'bg-orange-500', icon: <CircleDollarSign className="mr-2 h-4 w-4" /> },
         checked_in: { text: 'Checked In', className: 'bg-blue-500', icon: <CheckCircle className="mr-2 h-4 w-4" /> },
         checked_out: { text: 'Checked Out', className: 'bg-gray-700', icon: <XCircle className="mr-2 h-4 w-4" /> },
         unknown: { text: 'Unknown', className: 'bg-gray-500', icon: <Users className="mr-2 h-4 w-4" /> }
@@ -227,12 +228,9 @@ function AttendeesTab({ event, attendees }: { event: Event, attendees: Attendee[
                                     statusKey = 'checked_in';
                                 } else if (attendee.status) {
                                     statusKey = attendee.status;
-                                } else if (!event.requires_approval) {
-                                    // If event does not require approval and no other status is set, assume approved
-                                    statusKey = 'approved';
                                 }
 
-                                const { text, className, icon } = statusConfig[statusKey];
+                                const { text, className, icon } = statusConfig[statusKey] || statusConfig.unknown;
 
                                 return (
                                     <TableRow key={attendee.ticket_id}>
@@ -408,3 +406,4 @@ export function ManageEventView({ event, initialAttendees }: ManageEventViewProp
     </>
   );
 }
+    

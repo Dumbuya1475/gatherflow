@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
         }
     }
 
-    // 3. Find an existing ticket or create a new pending one
+    // 3. Find an existing ticket or create a new unpaid one
     let ticketId: number;
 
     const { data: existingTicket, error: findTicketError } = await supabase
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
         .insert({
           event_id: eventId,
           user_id: finalUserId,
-          status: 'pending', // Always pending until payment is confirmed
+          status: 'unpaid', // Use 'unpaid' for tickets awaiting payment
           ticket_price: event.price,
           fee_bearer: event.fee_bearer,
         })
@@ -101,8 +101,8 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (createTicketError || !newTicket) {
-        console.error('Checkout Error: Failed to create a pending ticket.', createTicketError);
-        return NextResponse.json({ error: 'Failed to create a pending ticket.' }, { status: 500 });
+        console.error('Checkout Error: Failed to create an unpaid ticket.', createTicketError);
+        return NextResponse.json({ error: 'Failed to create an unpaid ticket.' }, { status: 500 });
       }
       ticketId = newTicket.id;
       
@@ -168,3 +168,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+    

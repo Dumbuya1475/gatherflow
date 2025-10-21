@@ -62,13 +62,19 @@ export async function POST(req: NextRequest) {
     // 1. Find the ticket using the checkout session ID
     const { data: ticket, error: ticketError } = await supabase
       .from("tickets")
-      .select("id, event_id")
+      .select("id, event_id, status")
       .eq("monime_checkout_session_id", checkoutSessionId)
       .single();
 
     if (ticketError || !ticket) {
       console.error("Webhook Error: Ticket not found for checkout session:", checkoutSessionId, ticketError);
       return NextResponse.json({ error: "Ticket not found for this session." }, { status: 404 });
+    }
+
+    // Idempotency check: If ticket is already approved, do nothing.
+    if (ticket.status === 'approved') {
+        console.log("Webhook Info: Ticket already approved for session:", checkoutSessionId);
+        return NextResponse.json({ received: true, message: "Ticket already processed." });
     }
 
     // 2. Mark ticket as 'approved' and generate QR token
@@ -108,3 +114,4 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ received: true, message: "Event type not handled." });
 }
+    
