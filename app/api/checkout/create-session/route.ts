@@ -12,10 +12,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Event ID is required' }, { status: 400 });
     }
 
-    // 1. Get event details, including the fee_bearer
+    // 1. Get event details
     const { data: event, error: eventError } = await supabase
       .from('events')
-      .select('id, title, price, requires_approval, fee_bearer')
+      .select('id, title, price, requires_approval')
       .eq('id', eventId)
       .single();
 
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     }
 
 
-    // 3. Create a pending ticket record, now including fee_bearer
+    // 3. Create a pending ticket record
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
       .insert({
@@ -79,7 +79,6 @@ export async function POST(req: NextRequest) {
         user_id: finalUserId,
         status: 'pending', // Always pending until payment is confirmed
         ticket_price: event.price,
-        fee_bearer: event.fee_bearer, // Add the fee_bearer from the event
       })
       .select('id')
       .single();
