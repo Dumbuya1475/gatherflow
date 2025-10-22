@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
   const supabaseAdmin = createServiceRoleClient(cookieStore);
   const monimeClient = createMonimeClient({
     monimeSpaceId: process.env.MONIME_SPACE_ID!,
-    accessToken: process.env.MONIME_API_KEY!,
+    accessToken: process.env.MONIME_ACCESS_TOKEN!,
   });
   
   // Verify cron secret

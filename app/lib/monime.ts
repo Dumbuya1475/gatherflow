@@ -23,7 +23,7 @@ interface MonimeCheckoutResponse {
 export async function createMonimeCheckout(
   params: MonimeCheckoutParams
 ): Promise<MonimeCheckoutResponse> {
-  const accessToken = process.env.MONIME_API_KEY;
+  const accessToken = process.env.MONIME_ACCESS_TOKEN;
   if (!accessToken) {
     throw new Error('MONIME_API_KEY environment variable is not set.');
   }
@@ -73,7 +73,7 @@ interface MonimePayoutParams {
 export async function createMonimePayout(
   params: MonimePayoutParams
 ): Promise<{ id: string }> {
-  const accessToken = process.env.MONIME_API_KEY;
+  const accessToken = process.env.MONIME_ACCESS_TOKEN;
   if (!accessToken) {
     throw new Error('MONIME_API_KEY environment variable is not set.');
   }
