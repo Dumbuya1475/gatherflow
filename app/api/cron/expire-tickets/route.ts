@@ -2,7 +2,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
+<<<<<<< HEAD
+=======
 import { cookies } from 'next/headers';
+>>>>>>> 5b980ee66e2892a4a47e32296589f8dfeb9e3b9f
 
 // This is the endpoint that will be called by a cron job scheduler
 export async function POST(request: Request) {
@@ -11,9 +14,15 @@ export async function POST(request: Request) {
   if (authToken !== process.env.CRON_SECRET) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
+<<<<<<< HEAD
+
+  // Initialize client inside the request handler
+  const supabaseAdmin = createServiceRoleClient();
+=======
   const cookieStore = cookies();
   // Initialize client inside the request handler
   const supabaseAdmin = createServiceRoleClient(cookieStore);
+>>>>>>> 5b980ee66e2892a4a47e32296589f8dfeb9e3b9f
 
   try {
     // 2. Calculate the cutoff date (2 days ago)
