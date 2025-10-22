@@ -2,17 +2,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServiceRoleClient } from '@/lib/supabase/server';
-import { createMonimeCheckout } from '@/lib/monime';
+import { createMonimeCheckout } from '@@/lib/monime';
 
 export async function POST(req: NextRequest) {
   try {
-<<<<<<< HEAD
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createServiceRoleClient(cookieStore);
-=======
-    const supabase = createServiceRoleClient(cookies());
 
->>>>>>> 5b980ee66e2892a4a47e32296589f8dfeb9e3b9f
     const { eventId, userId, formResponses, firstName, lastName, email } = await req.json();
 
     if (!eventId) {
@@ -22,11 +18,7 @@ export async function POST(req: NextRequest) {
     // 1. Get event details
     const { data: event, error: eventError } = await supabase
       .from('events')
-<<<<<<< HEAD
-      .select('id, title, price, requires_approval, fee_bearer')
-=======
       .select('id, title, description, price, requires_approval, fee_bearer')
->>>>>>> 5b980ee66e2892a4a47e32296589f8dfeb9e3b9f
       .eq('id', eventId)
       .single();
 
@@ -134,43 +126,26 @@ export async function POST(req: NextRequest) {
         }
       }
     }
-<<<<<<< HEAD
-=======
     
-    const appUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
+    const appUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const successUrl = `${appUrl}/events/${eventId}/register/success?ticketId=${ticketId}`;
     const cancelUrl = `${appUrl}/events/${eventId}/register?payment_cancelled=true`;
 
-        if (event.is_paid && (event.price === null || event.price === undefined || isNaN(event.price) || event.price <= 0)) {
+    if (event.price === null || event.price === undefined || isNaN(event.price) || event.price <= 0) {
       console.error('Checkout Error: Paid event has invalid price.', event.price);
       return NextResponse.json({ error: 'Paid event has an invalid price configuration.' }, { status: 400 });
     }
->>>>>>> 5b980ee66e2892a4a47e32296589f8dfeb9e3b9f
 
     // 4. Create Monime checkout session
     const checkoutSession = await createMonimeCheckout({
       name: `Ticket for ${event.title}`,
-<<<<<<< HEAD
-      metadata: {
-        ticket_id: ticketId,
-        event_id: eventId,
-        user_id: finalUserId,
-      },
       lineItems: [
         {
           name: event.title,
           price: {
-            currency: 'SLE',
+            currency: 'SLL',
             value: Math.round(event.price! * 100),
           },
-          quantity: 1,
-        },
-      ],
-=======
-      lineItems: [
-        {
-          name: event.title,
-          amount: Math.round(event.price! * 100),
           quantity: 1,
         },
       ],
@@ -181,7 +156,6 @@ export async function POST(req: NextRequest) {
         userId: finalUserId,
         eventId: eventId,
       }
->>>>>>> 5b980ee66e2892a4a47e32296589f8dfeb9e3b9f
     });
     
     // 5. Update ticket with checkout session ID for webhook reconciliation
@@ -208,3 +182,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+

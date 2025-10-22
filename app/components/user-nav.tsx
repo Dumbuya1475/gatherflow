@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-import Link from 'next/link';
-=======
-
 import Link from 'next/link';
 import { cookies } from 'next/headers';
->>>>>>> 5b980ee66e2892a4a47e32296589f8dfeb9e3b9f
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,12 +16,8 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
 export async function UserNav() {
-<<<<<<< HEAD
-  const supabase = createClient();
-=======
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
->>>>>>> 5b980ee66e2892a4a47e32296589f8dfeb9e3b9f
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
