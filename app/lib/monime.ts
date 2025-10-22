@@ -32,6 +32,7 @@ export async function createMonimeCheckout(
   });
 
   try {
+    console.log("Creating Monime checkout session with params:", JSON.stringify(params, null, 2));
     const checkout: Result<CreateCheckout> = await client.checkoutSession.create(
       params.name,
       params.lineItems,
