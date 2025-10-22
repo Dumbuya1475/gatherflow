@@ -20,8 +20,7 @@ export async function POST(req: NextRequest) {
       .from("tickets")
       .update({ 
         status: "approved", 
-        qr_token: crypto.randomUUID(),
-        monime_payment_status: 'paid' 
+        qr_token: crypto.randomUUID()
       })
       .eq("id", ticketId)
       .select()
