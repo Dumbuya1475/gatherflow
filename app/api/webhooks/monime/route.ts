@@ -37,8 +37,10 @@ async function verifyMonimeSignature(req: NextRequest): Promise<{isValid: boolea
     const isValid = digest === signature;
     
     console.log("HMAC verification:", isValid ? "✅ PASSED" : "❌ FAILED");
-    console.log("Expected:", digest.substring(0, 20) + "...");
-    console.log("Received:", signature.substring(0, 20) + "...");
+    console.log("Expected (full):", digest);
+    console.log("Received (full):", signature);
+    console.log("Body length:", bodyText.length);
+    console.log("Secret length:", secret.length);
     console.log("=== END DEBUG ===");
     
     if (!isValid) {
@@ -71,9 +73,10 @@ export async function POST(req: NextRequest) {
 
   let event;
   try {
-    const rawBody = await req.text();
-    event = JSON.parse(bodyText || rawBody);
+    // Use bodyText from verification (already read from request)
+    event = JSON.parse(bodyText);
   } catch (err) {
+    console.error("JSON parsing error:", err);
     return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
   }
 
