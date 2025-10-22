@@ -133,11 +133,20 @@ export async function POST(req: NextRequest) {
     // 4. Create Monime checkout session
     const checkoutSession = await createMonimeCheckout({
       name: `Ticket for ${event.title}`,
-      amount: Math.round(event.price! * 100), // Amount in minor units (cents)
-      quantity: 1,
+      lineItems: [
+        {
+          name: event.title,
+          amount: Math.round(event.price! * 100),
+          quantity: 1,
+        },
+      ],
       successUrl: successUrl,
       cancelUrl: cancelUrl,
-      description: event.description || event.title,
+      metadata: {
+        ticketId: ticketId,
+        userId: finalUserId,
+        eventId: eventId,
+      }
     });
     
     // 5. Update ticket with checkout session ID for webhook reconciliation
