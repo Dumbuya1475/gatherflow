@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     // 1. Get event details
     const { data: event, error: eventError } = await supabase
       .from('events')
-      .select('id, title, price, requires_approval, fee_bearer')
+      .select('id, title, description, price, requires_approval, fee_bearer')
       .eq('id', eventId)
       .single();
 
@@ -125,24 +125,19 @@ export async function POST(req: NextRequest) {
         }
       }
     }
+    
+    const appUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
+    const successUrl = `${appUrl}/events/${eventId}/register/success?ticketId=${ticketId}`;
+    const cancelUrl = `${appUrl}/events/${eventId}/register?payment_cancelled=true`;
 
     // 4. Create Monime checkout session
-    const financialAccountId = process.env.MONIME_FINANCIAL_ACCOUNT_ID;
-    if (!financialAccountId) {
-        return NextResponse.json({ error: 'MONIME_FINANCIAL_ACCOUNT_ID is not configured.' }, { status: 500 });
-    }
-
     const checkoutSession = await createMonimeCheckout({
       name: `Ticket for ${event.title}`,
-      metadata: {
-        ticket_id: ticketId,
-        event_id: eventId,
-        user_id: finalUserId,
-      },
-      price: Math.round(event.price! * 100),
+      amount: Math.round(event.price! * 100), // Amount in minor units (cents)
       quantity: 1,
-      description: event.title,
-      financialAccountId: financialAccountId,
+      successUrl: successUrl,
+      cancelUrl: cancelUrl,
+      description: event.description || event.title,
     });
     
     // 5. Update ticket with checkout session ID for webhook reconciliation

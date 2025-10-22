@@ -1,15 +1,18 @@
 
 'use server';
+
 import { createClient } from 'monime-package';
-import type { ApiError } from 'monime-package';
+import type { Result } from 'monime-package/dist/client';
+import type { CreateCheckout, OneCheckout } from 'monime-package/dist/resources/checkout';
 
 interface MonimeCheckoutParams {
-  metadata: Record<string, any>;
   name: string;
-  price: number;
+  amount: number;
   quantity: number;
+  successUrl: string;
+  cancelUrl: string;
   description?: string;
-  financialAccountId: string;
+  financialAccountId?: string;
 }
 
 interface MonimeCheckoutResponse {
@@ -31,17 +34,12 @@ export async function createMonimeCheckout(
   });
 
   try {
-
-    const appUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
-    const successUrl = `${appUrl}/events/${params.metadata.event_id}/register/success?ticketId=${params.metadata.ticket_id}`;
-    const cancelUrl = `${appUrl}/events/${params.metadata.event_id}/register?payment_cancelled=true`;
-    
-    const checkout = await client.checkoutSession.create(
+    const checkout: Result<CreateCheckout> = await client.checkoutSession.create(
       params.name,
-      params.price, // SDK expects amount in minor units
+      params.amount,
       params.quantity,
-      successUrl,
-      cancelUrl,
+      params.successUrl,
+      params.cancelUrl,
       params.description,
       params.financialAccountId
     );
@@ -52,11 +50,12 @@ export async function createMonimeCheckout(
         url: checkout.data.result.redirectUrl!,
       };
     } else {
-      console.error("Monime SDK Error:", checkout.error?.message);
-      throw new Error(checkout.error?.message || 'Failed to create Monime checkout session using SDK.');
+      const errorMessage = checkout.error?.message || 'Failed to create Monime checkout session using SDK.';
+      console.error("Monime SDK Error:", checkout.error);
+      throw new Error(errorMessage);
     }
   } catch (error) {
-    if (error instanceof Error) {
+      if (error instanceof Error) {
         console.error("Checkout Error in createMonimeCheckout:", error.message);
         throw new Error(`Monime API error: ${error.message}`);
     }
