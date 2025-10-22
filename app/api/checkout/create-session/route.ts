@@ -130,6 +130,11 @@ export async function POST(req: NextRequest) {
     const successUrl = `${appUrl}/events/${eventId}/register/success?ticketId=${ticketId}`;
     const cancelUrl = `${appUrl}/events/${eventId}/register?payment_cancelled=true`;
 
+        if (event.is_paid && (event.price === null || event.price === undefined || isNaN(event.price) || event.price <= 0)) {
+      console.error('Checkout Error: Paid event has invalid price.', event.price);
+      return NextResponse.json({ error: 'Paid event has an invalid price configuration.' }, { status: 400 });
+    }
+
     // 4. Create Monime checkout session
     const checkoutSession = await createMonimeCheckout({
       name: `Ticket for ${event.title}`,

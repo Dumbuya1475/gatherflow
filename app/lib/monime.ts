@@ -7,12 +7,10 @@ import type { CreateCheckout, OneCheckout } from 'monime-package/dist/resources/
 
 interface MonimeCheckoutParams {
   name: string;
-  amount: number;
-  quantity: number;
+  lineItems: { name: string; amount: number; quantity: number }[];
   successUrl: string;
   cancelUrl: string;
-  description?: string;
-  financialAccountId?: string;
+  metadata: Record<string, any>;
 }
 
 interface MonimeCheckoutResponse {
@@ -25,7 +23,7 @@ export async function createMonimeCheckout(
 ): Promise<MonimeCheckoutResponse> {
   const accessToken = process.env.MONIME_ACCESS_TOKEN;
   if (!accessToken) {
-    throw new Error('MONIME_API_KEY environment variable is not set.');
+    throw new Error('MONIME_ACCESS_TOKEN environment variable is not set.');
   }
 
   const client = createClient({
@@ -36,12 +34,10 @@ export async function createMonimeCheckout(
   try {
     const checkout: Result<CreateCheckout> = await client.checkoutSession.create(
       params.name,
-      params.amount,
-      params.quantity,
+      params.lineItems,
       params.successUrl,
       params.cancelUrl,
-      params.description,
-      params.financialAccountId
+      params.metadata
     );
 
     if (checkout.success && checkout.data?.result.redirectUrl) {
