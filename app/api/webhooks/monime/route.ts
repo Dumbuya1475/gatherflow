@@ -29,18 +29,42 @@ async function verifyMonimeSignature(req: NextRequest): Promise<{isValid: boolea
   const bodyText = await req.text();
   
   try {
-    // Try HMAC-SHA256 verification (Shared Secret method)
+    // Parse Monime's timestamped signature format: "t=timestamp,v1=signature"
+    const signatureParts = signature.split(',');
+    let timestamp = '';
+    let receivedSignature = '';
+    
+    for (const part of signatureParts) {
+      const [key, value] = part.split('=');
+      if (key === 't') {
+        timestamp = value;
+      } else if (key === 'v1') {
+        receivedSignature = value;
+      }
+    }
+    
+    console.log("Parsed timestamp:", timestamp);
+    console.log("Parsed signature:", receivedSignature);
+    
+    if (!timestamp || !receivedSignature) {
+      console.error("Invalid signature format - missing timestamp or signature");
+      return {isValid: false, bodyText};
+    }
+    
+    // Construct the signed payload: timestamp.body
+    const signedPayload = `${timestamp}.${bodyText}`;
+    
+    // Compute HMAC-SHA256 and encode as base64
     const hmac = crypto.createHmac("sha256", secret);
-    hmac.update(bodyText);
-    const digest = hmac.digest("hex");
-
-    const isValid = digest === signature;
+    hmac.update(signedPayload);
+    const expectedSignature = hmac.digest("base64");
+    
+    const isValid = expectedSignature === receivedSignature;
     
     console.log("HMAC verification:", isValid ? "✅ PASSED" : "❌ FAILED");
-    console.log("Expected (full):", digest);
-    console.log("Received (full):", signature);
-    console.log("Body length:", bodyText.length);
-    console.log("Secret length:", secret.length);
+    console.log("Expected signature:", expectedSignature);
+    console.log("Received signature:", receivedSignature);
+    console.log("Signed payload length:", signedPayload.length);
     console.log("=== END DEBUG ===");
     
     return {isValid, bodyText};

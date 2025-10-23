@@ -1,6 +1,6 @@
 
 import { createClient } from '@/lib/supabase/server';
-import { getTicketDetails } from '@/lib/actions/tickets.tsx';
+import { getTicketDetails } from '@/lib/actions/tickets';
 import { TicketView } from '@/components/tickets/ticket-view';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
