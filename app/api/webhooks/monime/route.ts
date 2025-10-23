@@ -43,14 +43,7 @@ async function verifyMonimeSignature(req: NextRequest): Promise<{isValid: boolea
     console.log("Secret length:", secret.length);
     console.log("=== END DEBUG ===");
     
-    if (!isValid) {
-      console.warn("⚠️ Invalid webhook signature - but continuing anyway for now");
-      // TODO: Re-enable this after confirming correct secret
-      // return {isValid: false, bodyText};
-    }
-
-    // For now, return true to allow processing
-    return {isValid: true, bodyText};
+    return {isValid, bodyText};
     
   } catch (error) {
     console.error("Signature verification error:", error);
@@ -61,14 +54,11 @@ async function verifyMonimeSignature(req: NextRequest): Promise<{isValid: boolea
 export async function POST(req: NextRequest) {
   const { isValid, bodyText } = await verifyMonimeSignature(req);
 
-  // TEMPORARY: Log signature validation for debugging
   console.log("Webhook signature validation:", isValid);
-  console.log("MONIME_WEBHOOK_SECRET exists:", !!process.env.MONIME_WEBHOOK_SECRET);
   
   if (!isValid) {
-    // TEMPORARY: Continue anyway for testing
-    console.warn("⚠️ SECURITY WARNING: Processing webhook despite invalid signature (testing only!)");
-    // return NextResponse.json({ error: "Invalid signature." }, { status: 403 });
+    console.error("❌ Invalid webhook signature - rejecting request");
+    return NextResponse.json({ error: "Invalid signature." }, { status: 403 });
   }
 
   let event;
