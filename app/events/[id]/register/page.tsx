@@ -18,7 +18,7 @@ export default async function RegisterForEventPage({ params, searchParams }: Reg
     const { data: event, error } = await getEventDetails(eventId);
     const { data: formFields } = await getEventFormFields(eventId);
     
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
     
