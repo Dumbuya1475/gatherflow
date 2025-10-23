@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 
 // Get Event Details
 export async function getEventDetails(eventId: number) {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createServiceRoleClient(cookieStore);
     const { data, error } = await supabase
         .from('events')
@@ -39,7 +39,7 @@ export async function getEventDetails(eventId: number) {
 
 // Get Event Form Fields
 export async function getEventFormFields(eventId: number) {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
     const { data, error } = await supabase
         .from('event_form_fields')

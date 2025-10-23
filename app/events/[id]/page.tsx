@@ -18,7 +18,7 @@ import { cookies } from 'next/headers';
 
 async function getTicketId(eventId: number, userId?: string) {
     if (!userId) return null;
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
     const { data: ticket } = await supabase
         .from('tickets')
@@ -33,7 +33,7 @@ async function getTicketId(eventId: number, userId?: string) {
 export default async function EventDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const eventId = parseInt(id, 10);
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
 

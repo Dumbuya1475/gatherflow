@@ -25,7 +25,7 @@ function getResend() {
 
 export async function sendEmailAction(eventId: number, subject: string, message: string, recipientSegment: string) {
     try {
-        const cookieStore = cookies();
+        const cookieStore = await cookies();
         const supabase = createClient(cookieStore);
         const { data: { user } } = await supabase.auth.getUser();
 

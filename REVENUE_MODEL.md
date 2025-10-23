@@ -1,206 +1,231 @@
 # GatherFlow Revenue Model
 
 ## Overview
-GatherFlow is a ticketing and event management platform designed to generate sustainable revenue through multiple streams while providing value to event organizers and attendees in Sierra Leone and beyond.
+GatherFlow is a ticketing and event management platform focused on generating sustainable revenue through **transaction fees on ticket sales**. Simple, transparent, and scalable.
 
 ---
 
-## Revenue Streams
+## Primary Revenue Stream: Transaction Fees
 
-### 1. **Transaction Fees (Primary Revenue)**
-Charge a percentage fee on each ticket sale processed through the platform.
+### **Pricing: 3.5% + NLE 3 per ticket** 🎫
 
-#### Pricing Structure:
-- **Free Tier**: 5% + SLE 500 per ticket
-  - For small events (<100 tickets)
-  - Basic features only
-  
-- **Standard Tier**: 3.5% + SLE 300 per ticket
-  - For medium events (100-500 tickets)
-  - Advanced analytics
-  - Email marketing tools
-  - Custom branding
-  
-- **Premium Tier**: 2.5% + SLE 200 per ticket
-  - For large events (500+ tickets)
-  - All Standard features
-  - Priority support
-  - API access
-  - Dedicated account manager
+Simple flat-rate pricing for all events. No tiers, no complexity.
 
-**Example Calculation:**
-- Ticket price: SLE 50,000 (SLE 500 = $0.50)
-- Standard fee: (50,000 × 3.5%) + 300 = SLE 2,050
-- Organizer receives: SLE 47,950
-- GatherFlow revenue per ticket: SLE 2,050
-
-**Projected Monthly Revenue:**
-- 1,000 tickets/month × SLE 2,050 = **SLE 2,050,000/month** (~$205/month)
-- 5,000 tickets/month × SLE 2,050 = **SLE 10,250,000/month** (~$1,025/month)
+**Why this pricing?**
+- Competitive with international platforms (Eventbrite: 2.5% + $0.99)
+- More affordable than local competitors (5-10%)
+- Transparent and easy to understand
+- Profitable at all price points
 
 ---
 
-### 2. **Subscription Plans for Organizers**
-Monthly/annual subscriptions for event organizers who want reduced fees and premium features.
+## Real-World Examples
 
-#### Plans:
+### **Example 1: Small Community Event**
+- **Ticket Price**: NLE 10
+- **Tickets Sold**: 10 people
+- **Platform Fee**: (10 × 3.5%) + 3 = **NLE 3.35** per ticket
 
-**Starter Plan - FREE**
-- 5% + SLE 500 per ticket fee
-- Up to 2 events per month
-- Basic analytics
-- Standard support
-
-**Growth Plan - SLE 250,000/month** (~$25/month)
-- 3% + SLE 250 per ticket fee (30% reduction)
-- Unlimited events
-- Advanced analytics & reports
-- Email marketing (up to 1,000 contacts)
-- Custom event page branding
-- Priority email support
-
-**Pro Plan - SLE 500,000/month** (~$50/month)
-- 2% + SLE 150 per ticket fee (50% reduction)
-- Everything in Growth
-- Email marketing (up to 5,000 contacts)
-- WhatsApp notifications integration
-- API access
-- Dedicated account manager
-- 24/7 priority support
-
-**Enterprise Plan - Custom Pricing**
-- 1.5% + SLE 100 per ticket fee
-- White-label solution
-- Custom integrations
-- SLA guarantees
-- On-site support for major events
-
-**Projected Subscription Revenue:**
-- 50 Growth subscribers = SLE 12,500,000/month (~$1,250/month)
-- 10 Pro subscribers = SLE 5,000,000/month (~$500/month)
-- 2 Enterprise subscribers = SLE 5,000,000/month (~$500/month)
-- **Total: SLE 22,500,000/month** (~$2,250/month)
+**Revenue Breakdown:**
+| Metric | Amount |
+|--------|--------|
+| Total Ticket Sales | NLE 100 |
+| Total Platform Fees (10 tickets) | **NLE 33.50** |
+| Organizer Receives | NLE 66.50 |
+| GatherFlow Revenue | **NLE 33.50** |
 
 ---
 
-### 3. **Payment Processing Markup**
-Add a small markup on top of Monime's payment processing fees.
+### **Example 2: Medium-Sized Workshop**
+- **Ticket Price**: NLE 50
+- **Tickets Sold**: 50 people
+- **Platform Fee**: (50 × 3.5%) + 3 = **NLE 4.75** per ticket
 
-- Monime fee: ~2.9% + SLE 200
-- GatherFlow markup: 0.5%
-- Total to customer: 3.4% + SLE 200 (competitive with international rates)
-- GatherFlow keeps: 0.5% on payment amount
-
-**Example:**
-- SLE 50,000 ticket × 0.5% = SLE 250 additional revenue per ticket
-- 5,000 tickets/month = **SLE 1,250,000/month** (~$125/month)
+**Revenue Breakdown:**
+| Metric | Amount |
+|--------|--------|
+| Total Ticket Sales | NLE 2,500 |
+| Total Platform Fees (50 tickets) | **NLE 237.50** |
+| Organizer Receives | NLE 2,262.50 |
+| GatherFlow Revenue | **NLE 237.50** |
 
 ---
 
-### 4. **Featured Event Listings**
-Allow organizers to promote their events prominently on the platform.
+### **Example 3: Popular Concert**
+- **Ticket Price**: NLE 100
+- **Tickets Sold**: 100 people
+- **Platform Fee**: (100 × 3.5%) + 3 = **NLE 6.50** per ticket
 
-#### Promotion Packages:
+**Revenue Breakdown:**
+| Metric | Amount |
+|--------|--------|
+| Total Ticket Sales | NLE 10,000 |
+| Total Platform Fees (100 tickets) | **NLE 650** |
+| Organizer Receives | NLE 9,350 |
+| GatherFlow Revenue | **NLE 650** |
 
-**Homepage Banner - SLE 500,000/week** (~$50/week)
-- Featured on homepage
-- Highlighted in search results
-- Social media promotion
+---
 
-**Category Featured - SLE 250,000/week** (~$25/week)
-- Top of category listings
-- Highlighted badge
+## Revenue Scaling Table
 
-**Email Newsletter Feature - SLE 300,000/campaign** (~$30/campaign)
-- Featured in weekly newsletter to all users
-- Estimated reach: 5,000-10,000+ subscribers
+Here's how revenue scales across different ticket prices and volumes:
+
+| Ticket Price | Tickets Sold | Total Sales | Platform Fee/Ticket | **GatherFlow Revenue** | Organizer Gets |
+|--------------|--------------|-------------|---------------------|----------------------|----------------|
+| NLE 10 | 10 | NLE 100 | NLE 3.35 | **NLE 33.50** | NLE 66.50 |
+| NLE 10 | 50 | NLE 500 | NLE 3.35 | **NLE 167.50** | NLE 332.50 |
+| NLE 10 | 100 | NLE 1,000 | NLE 3.35 | **NLE 335** | NLE 665 |
+| NLE 50 | 10 | NLE 500 | NLE 4.75 | **NLE 47.50** | NLE 452.50 |
+| NLE 50 | 50 | NLE 2,500 | NLE 4.75 | **NLE 237.50** | NLE 2,262.50 |
+| NLE 50 | 100 | NLE 5,000 | NLE 4.75 | **NLE 475** | NLE 4,525 |
+| NLE 100 | 10 | NLE 1,000 | NLE 6.50 | **NLE 65** | NLE 935 |
+| NLE 100 | 50 | NLE 5,000 | NLE 6.50 | **NLE 325** | NLE 4,675 |
+| NLE 100 | 100 | NLE 10,000 | NLE 6.50 | **NLE 650** | NLE 9,350 |
+| NLE 100 | 500 | NLE 50,000 | NLE 6.50 | **NLE 3,250** | NLE 46,750 |
+| NLE 100 | 1,000 | NLE 100,000 | NLE 6.50 | **NLE 6,500** | NLE 93,500 |
+
+---
+
+## Monthly Revenue Projections
+
+### **Conservative Scenario (Year 1)**
+**Assumptions:**
+- 20 events per month
+- Average 50 tickets per event
+- Average ticket price: NLE 50
+- Total: 1,000 tickets/month
+
+**Monthly Revenue:**
+- 1,000 tickets × NLE 4.75 average fee = **NLE 4,750/month**
+- **Annual Revenue: NLE 57,000** (~$570/year at 100:1 rate)
+
+---
+
+### **Moderate Scenario (Year 1-2)**
+**Assumptions:**
+- 50 events per month
+- Average 60 tickets per event
+- Average ticket price: NLE 75
+- Total: 3,000 tickets/month
+
+**Monthly Revenue:**
+- 3,000 tickets × NLE 5.63 average fee = **NLE 16,890/month**
+- **Annual Revenue: NLE 202,680** (~$2,027/year)
+
+---
+
+### **Aggressive Scenario (Year 2-3)**
+**Assumptions:**
+- 100 events per month
+- Average 100 tickets per event
+- Average ticket price: NLE 100
+- Total: 10,000 tickets/month
+
+**Monthly Revenue:**
+- 10,000 tickets × NLE 6.50 average fee = **NLE 65,000/month**
+- **Annual Revenue: NLE 780,000** (~$7,800/year)
+
+---
+
+## Additional Revenue Streams (Secondary)
+
+### 2. **Payment Processing Markup**
+Add 0.5% on top of Monime's processing fees.
+
+**Example (NLE 100 ticket):**
+- Monime fee: ~3%
+- Our markup: 0.5%
+- Extra revenue: NLE 100 × 0.5% = **NLE 0.50** per ticket
 
 **Projected Revenue:**
-- 4 homepage features/month = SLE 2,000,000/month (~$200/month)
-- 8 category features/month = SLE 2,000,000/month (~$200/month)
-- 4 newsletter features/month = SLE 1,200,000/month (~$120/month)
-- **Total: SLE 5,200,000/month** (~$520/month)
+- 10,000 tickets/month = **NLE 5,000/month** extra
 
 ---
 
-### 5. **Value-Added Services**
+### 3. **Featured Event Listings** (Optional)
 
-**Professional Event Photography/Videography**
-- Partner with local photographers
-- Take 20-30% commission on bookings
-- Estimated revenue: SLE 2,000,000/month (~$200/month)
+Allow organizers to promote their events:
 
-**Event Insurance**
-- Partner with insurance companies
-- Earn commission on policies sold
-- Estimated revenue: SLE 1,000,000/month (~$100/month)
+**Pricing:**
+- **Homepage Banner**: NLE 500/week (~$5)
+- **Category Featured**: NLE 250/week (~$2.50)
+- **Email Newsletter**: NLE 300/campaign (~$3)
 
-**Merchandise & Print Services**
-- Custom tickets, wristbands, posters
-- 30-40% markup on production costs
-- Estimated revenue: SLE 1,500,000/month (~$150/month)
-
-**SMS Marketing Add-on - SLE 100,000/month** (~$10/month for 1,000 messages)
-- Bulk SMS to attendees
-- Pay-per-message pricing
-- Estimated revenue: SLE 2,000,000/month (~$200/month)
-
-**Total Value-Added Services: SLE 6,500,000/month** (~$650/month)
-
----
-
-### 6. **Affiliate & Partnership Revenue**
-
-**Venue Partnerships**
-- Earn referral fees from venue bookings
-- 5-10% commission on venue rentals
-- Estimated revenue: SLE 3,000,000/month (~$300/month)
-
-**Sponsor Matching Platform**
-- Connect events with sponsors
-- Take 15% of sponsorship deals facilitated
-- Estimated revenue: SLE 5,000,000/month (~$500/month)
-
-**Equipment Rental Partnerships**
-- Sound, lighting, stage equipment referrals
-- 10% commission
-- Estimated revenue: SLE 2,000,000/month (~$200/month)
-
-**Total Partnership Revenue: SLE 10,000,000/month** (~$1,000/month)
+**Conservative Projection:**
+- 2 homepage features/month = NLE 1,000
+- 4 category features/month = NLE 1,000
+- 2 newsletter features/month = NLE 600
+- **Total: NLE 2,600/month**
 
 ---
 
 ## Total Projected Monthly Revenue
 
-| Revenue Stream | Conservative (SLE) | Aggressive (SLE) |
-|----------------|-------------------|------------------|
-| Transaction Fees | 2,050,000 | 20,500,000 |
-| Subscriptions | 10,000,000 | 30,000,000 |
-| Payment Processing Markup | 500,000 | 2,500,000 |
-| Featured Listings | 2,000,000 | 8,000,000 |
-| Value-Added Services | 3,000,000 | 10,000,000 |
-| Partnerships | 5,000,000 | 15,000,000 |
-| **TOTAL** | **SLE 22,550,000** | **SLE 86,000,000** |
-| **(USD equivalent)** | **~$2,255/month** | **~$8,600/month** |
+| Scenario | Transaction Fees | Processing Markup | Featured Listings | **Total** |
+|----------|-----------------|-------------------|-------------------|-----------|
+| **Conservative** | NLE 4,750 | NLE 500 | NLE 1,000 | **NLE 6,250/month** |
+| **Moderate** | NLE 16,890 | NLE 1,500 | NLE 2,600 | **NLE 20,990/month** |
+| **Aggressive** | NLE 65,000 | NLE 5,000 | NLE 5,000 | **NLE 75,000/month** |
+
+**Annual Targets:**
+- **Year 1 (Conservative)**: NLE 75,000/year (~$750)
+- **Year 2 (Moderate)**: NLE 251,880/year (~$2,519)
+- **Year 3 (Aggressive)**: NLE 900,000/year (~$9,000)
+
+---
+
+## Cost Structure
+
+### Fixed Costs (Monthly)
+- **Hosting (Vercel)**: NLE 500 (~$5/month)
+- **Database (Supabase)**: NLE 250 (~$2.50/month)
+- **Email (Resend)**: NLE 200 (~$2/month)
+- **Domain & SSL**: NLE 50 (~$0.50/month)
+- **Total Fixed Costs**: **NLE 1,000/month** (~$10/month)
+
+### Variable Costs
+- **Monime Payment Processing**: ~3% per transaction
+  - Built into pricing, organizer/buyer covers this
+- **Customer Support**: Handle yourself initially (NLE 0)
+- **Marketing**: 10% of revenue (reinvest in growth)
+
+### Profit Margins
+
+| Scenario | Revenue | Fixed Costs | Marketing (10%) | **Net Profit** | **Margin** |
+|----------|---------|-------------|-----------------|---------------|------------|
+| Conservative | NLE 6,250 | NLE 1,000 | NLE 625 | **NLE 4,625** | **74%** |
+| Moderate | NLE 20,990 | NLE 1,000 | NLE 2,099 | **NLE 17,891** | **85%** |
+| Aggressive | NLE 75,000 | NLE 1,000 | NLE 7,500 | **NLE 66,500** | **89%** |
+
+**Key Insight**: High profit margins (70-90%) because main costs are covered by payment fees!
 
 ---
 
 ## Pricing Philosophy
 
-### Value-Based Pricing
-- Price based on value delivered, not just costs
-- Organizers who sell more tickets get better rates (volume discounts)
-- Still profitable at all tiers
+### **Simple & Transparent**
+- **One flat rate**: 3.5% + NLE 3 per ticket
+- No tiers, no hidden fees
+- Same price for everyone
+- Easy to calculate revenue
 
-### Competitive Positioning
-- **vs. Eventbrite**: 2.5% + $0.99 per ticket (USA) → Our 3.5% + SLE 300 is competitive
-- **vs. Local competitors**: Most charge 5-10% → We're more affordable
-- **vs. Manual sales**: Save time, reduce fraud, professional appearance → Justify fees
+### **Organizer Chooses Who Pays**
+Organizers can pass fees to buyers or absorb them:
 
-### Transparent Pricing
-- No hidden fees
-- Clear fee breakdown shown to organizers
-- **Flexible Fee Model** - Organizers choose who pays the platform fee
+**Option 1: Organizer Absorbs Fee**
+- Buyer pays: NLE 100
+- Organizer receives: NLE 93.50
+- Platform gets: NLE 6.50
+
+**Option 2: Buyer Pays Fee (Recommended)**
+- Buyer pays: NLE 106.50
+- Organizer receives: NLE 100 (full amount!)
+- Platform gets: NLE 6.50
+
+Most organizers choose Option 2 (buyer pays) because:
+- ✅ They receive 100% of advertised price
+- ✅ Industry standard (Eventbrite does this)
+- ✅ Transparent to buyers
 
 ---
 
@@ -432,121 +457,265 @@ This transparency helps organizers make informed decisions!
 
 ## Growth Strategy
 
-### Year 1 (Launch Phase)
+### **Year 1: Launch & Validate** (0-12 months)
 **Goals:**
-- 100 events/month
-- 5,000 tickets sold/month
-- 30 paying subscribers
-- **Revenue Target: SLE 25,000,000/month** (~$2,500/month)
+- Get first 20 events using the platform
+- Sell 1,000 tickets total
+- Prove the concept works
+- Build reputation in Freetown
 
-### Year 2 (Growth Phase)
-**Goals:**
-- 500 events/month
-- 25,000 tickets sold/month
-- 150 paying subscribers
-- **Revenue Target: SLE 100,000,000/month** (~$10,000/month)
+**Target Revenue:** NLE 75,000/year (~$750)
 
-### Year 3 (Scale Phase)
+**Key Metrics:**
+- Average 2-3 events per month
+- 50-80 tickets per month
+- Focus on small to medium events
+- Get testimonials and case studies
+
+---
+
+### **Year 2: Scale Locally** (12-24 months)
 **Goals:**
-- 2,000 events/month
-- 100,000 tickets sold/month
-- 500 paying subscribers
-- Expand to neighboring countries
-- **Revenue Target: SLE 400,000,000/month** (~$40,000/month)
+- Grow to 50 events per month
+- Sell 3,000 tickets per month
+- Become #1 platform in Freetown
+- Expand to Bo, Kenema, Makeni
+
+**Target Revenue:** NLE 250,000/year (~$2,500)
+
+**Key Metrics:**
+- 50+ active organizers
+- 10-15 events per week
+- Featured listings revenue starts
+- Word-of-mouth growth
+
+---
+
+### **Year 3: Dominate & Expand** (24-36 months)
+**Goals:**
+- 100 events per month
+- 10,000 tickets per month
+- Cover all major Sierra Leone cities
+- Start expanding to Guinea, Liberia
+
+**Target Revenue:** NLE 900,000/year (~$9,000)
+
+**Key Metrics:**
+- 200+ active organizers
+- Daily events on platform
+- International event organizers
+- Partnerships with major venues
 
 ---
 
 ## Key Metrics to Track
 
-### Financial Metrics
-- Monthly Recurring Revenue (MRR)
-- Average Revenue Per User (ARPU)
-- Customer Acquisition Cost (CAC)
-- Lifetime Value (LTV)
-- LTV:CAC ratio (target: 3:1)
-- Gross Margin %
-- Net Profit Margin %
+### **Financial Metrics**
+- **Total Tickets Sold** - Core volume metric
+- **Average Ticket Price** - Track pricing trends
+- **Gross Merchandise Value (GMV)** - Total value of all tickets
+- **Platform Revenue** - Your actual earnings
+- **Profit Margin** - Revenue minus costs
+- **Revenue Per Event** - How much each event generates
 
-### Operational Metrics
-- Total tickets sold
-- Total Gross Merchandise Value (GMV)
-- Number of active organizers
-- Number of events created
-- Average ticket price
-- Subscription conversion rate
-- Churn rate (target: <5%/month)
+### **Operational Metrics**
+- **Number of Events** - Total events on platform
+- **Active Organizers** - Organizers who created events this month
+- **Tickets Per Event** - Average event size
+- **Conversion Rate** - Checkout starts → completed purchases
+- **Payment Success Rate** - Successful vs failed payments
 
-### Growth Metrics
-- Month-over-month growth %
-- New vs. returning organizers
-- Email list growth
-- Social media engagement
-- Website traffic
+### **Growth Metrics**
+- **Month-over-Month Growth** - % increase in tickets sold
+- **New vs Returning Organizers** - Customer retention
+- **Event Categories** - Which types of events are popular
+- **Geographic Spread** - Which cities/areas most active
+
+### **Customer Satisfaction**
+- **Organizer Net Promoter Score (NPS)** - Would they recommend?
+- **Support Response Time** - How fast you help customers
+- **Churn Rate** - Organizers who stop using platform
+- **Repeat Event Rate** - Organizers who create multiple events
+
+---
+
+## Competitive Advantage
+
+### **Why GatherFlow Will Win**
+
+**1. Local Payment Integration** ✅
+- Monime supports Orange Money, SLCB, Ecobank
+- Buyers can pay with familiar methods
+- No international cards needed
+- Instant payment confirmation
+
+**2. Simplicity** ✅
+- One flat pricing model (3.5% + NLE 3)
+- No complicated tiers or contracts
+- Easy to understand for organizers
+- Quick setup, fast payouts
+
+**3. Low Cost** ✅
+- Cheaper than manual ticketing
+- More affordable than competitors
+- Free to get started
+- Only pay when you sell tickets
+
+**4. Professional Features** ✅
+- QR code tickets (prevent fraud)
+- Email confirmations
+- Real-time analytics
+- Event management dashboard
+
+**5. First-Mover Advantage** ✅
+- Few competitors in Sierra Leone
+- Building brand recognition early
+- Network effects (more events = more buyers)
+- Become the default platform
 
 ---
 
 ## Risk Mitigation
 
-### Revenue Diversification
-- Multiple revenue streams reduce dependence on any single source
-- Mix of transaction-based and subscription-based revenue
-- Both B2B (organizers) and B2C (attendees) monetization
+### **Revenue Risks**
+- **Risk**: Low event volume
+- **Mitigation**: Target high-volume organizers first, focus on recurring events
 
-### Competitive Moats
-- First-mover advantage in Sierra Leone
-- Local payment integration (Monime)
-- Network effects (more events → more attendees → more events)
-- Proprietary event data and analytics
+- **Risk**: Price sensitivity
+- **Mitigation**: Allow fee to be passed to buyers, prove value vs manual sales
 
-### Scalability
-- Cloud infrastructure scales automatically
-- Subscription model provides predictable revenue
-- API allows third-party integrations
+- **Risk**: Payment failures
+- **Mitigation**: Multiple payment methods (cards, MoMo, banks), retry logic
+
+### **Operational Risks**
+- **Risk**: Webhook/technical failures
+- **Mitigation**: Monitoring, alerts, manual approval backup, comprehensive testing
+
+- **Risk**: Fraud/fake tickets
+- **Mitigation**: QR codes, scanner app, real-time verification, organizer controls
+
+- **Risk**: Customer support overload
+- **Mitigation**: Self-service docs, FAQ, automated emails, simple UI
+
+### **Market Risks**
+- **Risk**: Competitor launches
+- **Mitigation**: First-mover advantage, better local integration, lower prices
+
+- **Risk**: Slow adoption
+- **Mitigation**: Free tier, commission-free first events, referral program
 
 ---
 
 ## Implementation Roadmap
 
-### Phase 1 (Current - Month 3)
-- ✅ Core ticketing platform
+### **Phase 1: MVP Launch** (Month 1-2) 🚀
+- ✅ Core ticketing platform working
 - ✅ Monime payment integration
-- ✅ Basic analytics
-- 🔄 Launch free tier
-- 🔄 Marketing to early adopters
+- ✅ QR code generation
+- ✅ Email confirmations
+- 🔄 Fix webhook auto-approval (in progress!)
+- 🔄 Add fee toggle (organizer vs buyer pays)
+- 🔄 Test with 3-5 pilot events
 
-### Phase 2 (Month 4-6)
-- Launch Growth subscription plan
-- Implement email marketing tools
-- Add featured listing options
-- Partner with 5-10 major venues
-- Launch referral program
-
-### Phase 3 (Month 7-12)
-- Launch Pro subscription plan
-- Add SMS marketing
-- Build sponsor matching platform
-- Add API access
-- Launch mobile apps (iOS/Android)
-
-### Phase 4 (Year 2)
-- Launch Enterprise plan
-- White-label solution
-- Expand to Guinea, Liberia
-- Advanced AI-powered analytics
-- Blockchain ticketing (NFT tickets)
+**Goal:** Prove the concept works end-to-end
 
 ---
 
-## Conclusion
+### **Phase 2: Growth Features** (Month 3-6)
+- Event discovery page (browse all events)
+- Search and filters (by date, category, location)
+- Event analytics dashboard for organizers
+- Mobile-responsive checkout
+- Social sharing buttons
+- Email marketing to attendees
+- Scanner app for ticket validation
 
-GatherFlow's revenue model is designed for sustainable growth through:
-1. **Multiple revenue streams** - reducing risk
-2. **Scalable pricing tiers** - serving all market segments
-3. **Value-added services** - increasing ARPU
-4. **Strategic partnerships** - expanding reach
-5. **Technology leverage** - keeping costs low
+**Goal:** Get to 20+ events per month
 
-**Conservative Year 1 Target: SLE 300,000,000 annual revenue** (~$30,000/year)
-**Aggressive Year 3 Target: SLE 4,800,000,000 annual revenue** (~$480,000/year)
+---
 
-With proper execution, GatherFlow can become the leading event platform in West Africa while maintaining healthy profit margins and providing excellent value to customers.
+### **Phase 3: Revenue Features** (Month 7-12)
+- Featured event listings (paid promotion)
+- Homepage banners for advertisers
+- Email newsletter sponsorships
+- Premium organizer features
+- Bulk ticket purchasing
+- Group discounts
+- Early bird pricing
+
+**Goal:** Hit NLE 10,000+/month revenue
+
+---
+
+### **Phase 4: Scale & Expand** (Year 2)
+- Mobile apps (iOS/Android)
+- API for third-party integrations
+- White-label for large venues
+- Expand to other cities
+- Advanced fraud detection
+- Multi-currency support
+- Partnership integrations
+
+**Goal:** Become #1 platform in Sierra Leone
+
+---
+
+## Bottom Line
+
+### **Simple Business Model**
+- **Revenue**: 3.5% + NLE 3 per ticket sold
+- **Costs**: ~NLE 1,000/month (hosting, email, domain)
+- **Profit Margin**: 70-90%
+- **Scalable**: More tickets = more revenue (no extra costs)
+
+### **Realistic Targets**
+
+**Year 1:**
+- 1,000 tickets sold
+- NLE 75,000 revenue (~$750)
+- 20 events
+- Break even + profit
+
+**Year 2:**
+- 3,000 tickets/month
+- NLE 250,000 revenue (~$2,500)
+- 50 events/month
+- Hire first employee
+
+**Year 3:**
+- 10,000 tickets/month
+- NLE 900,000 revenue (~$9,000)
+- 100 events/month
+- Expand regionally
+
+### **Success Criteria**
+
+**You'll know it's working when:**
+1. ✅ 5+ events created per month
+2. ✅ 80%+ payment success rate
+3. ✅ Organizers create repeat events
+4. ✅ Word-of-mouth referrals happening
+5. ✅ Revenue covers costs + your time
+
+### **Next Actions**
+
+**This Week:**
+1. Fix webhook auto-approval 🔧
+2. Test full payment flow 🧪
+3. Add fee toggle feature ⚙️
+
+**This Month:**
+1. Get 3 pilot events live 🎯
+2. Sell first 50 tickets 🎫
+3. Collect organizer feedback 💬
+
+**This Quarter:**
+1. Launch publicly 🚀
+2. 20 events on platform 📈
+3. NLE 5,000+ revenue 💰
+
+---
+
+**GatherFlow is not trying to be Eventbrite.** We're solving a real problem for Sierra Leone event organizers: making it easier to sell tickets, collect payments, and manage attendees. 
+
+**Keep it simple. Ship fast. Iterate based on feedback.** 🚀

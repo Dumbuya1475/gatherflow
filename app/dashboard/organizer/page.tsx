@@ -31,7 +31,7 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 
 async function getOrganizerStats() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const {
     data: { user },

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 
 export async function uploadFile(file: File, bucket: string): Promise<{ publicUrl: string | null, error: { message: string } | null }> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   
   if (!file) {
@@ -49,7 +49,7 @@ export async function uploadFile(file: File, bucket: string): Promise<{ publicUr
 }
 
 export async function deleteFile(bucket: string, filePath: string): Promise<void> {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
     const { error } = await supabase.storage
       .from(bucket)

@@ -7,7 +7,7 @@ import { LandingPageClient } from '@/components/landing-page-client';
 import { cookies } from 'next/headers';
 
 async function getRecentEvents() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   
   const { data: events, error } = await supabase
@@ -50,7 +50,7 @@ async function getRecentEvents() {
 
 
 export default async function LandingPage() {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
     const recentEvents = await getRecentEvents();

@@ -20,7 +20,7 @@ async function getDashboardStats(user: any) {
   }
 
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
 
     const { count: totalEvents, error: totalEventsError } = await supabase
@@ -103,7 +103,7 @@ async function getDashboardStats(user: any) {
 }
 
 async function getAttendeeDashboardStats(user: any) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const { data: tickets, error } = await supabase
     .from('tickets')
@@ -152,7 +152,7 @@ async function getAttendeeDashboardStats(user: any) {
 }
 
 export default async function DashboardPage() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
     const {
         data: { user },

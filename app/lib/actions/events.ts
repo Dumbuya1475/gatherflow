@@ -10,7 +10,7 @@ import { cookies } from 'next/headers';
 
 // 1. Create Event Action
 export async function createEventAction(formData: FormData) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServiceRoleClient(cookieStore);
   const { data: { user } } = await createClient(cookieStore).auth.getUser();
 
@@ -122,7 +122,7 @@ export async function createEventAction(formData: FormData) {
 
 // 2. Update Event Action (with redirect)
 export async function updateEventAction(eventId: number, formData: FormData) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServiceRoleClient(cookieStore);
   const { data: { user } } = await createClient(cookieStore).auth.getUser();
 
@@ -215,7 +215,7 @@ export async function updateEventAction(eventId: number, formData: FormData) {
 
 // 5. Update Ticket Appearance
 export async function updateTicketAppearance(eventId: number, formData: FormData) {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: 'You must be logged in.' };
@@ -257,7 +257,7 @@ export async function updateTicketAppearance(eventId: number, formData: FormData
 
 // 6. Get Event Attendees (Secure)
 export async function getEventAttendees(eventId: number) {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
     const { data, error } = await supabase.rpc('get_attendees_for_event', { event_id_param: eventId });
 
@@ -269,7 +269,7 @@ export async function getEventAttendees(eventId: number) {
 
 // 7. Delete Event Action
 export async function deleteEventAction(formData: FormData) {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createServiceRoleClient(cookieStore);
     const eventId = formData.get('eventId');
     const { data: { user } } = await createClient(cookieStore).auth.getUser();
