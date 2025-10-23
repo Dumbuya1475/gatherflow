@@ -9,7 +9,8 @@ export default async function RegistrationSuccessPage({
 }: {
     searchParams: { ticketId?: string };
 }) {
-    const ticketId = searchParams.ticketId;
+    const resolvedSearchParams = await Promise.resolve(searchParams);
+    const ticketId = resolvedSearchParams.ticketId;
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-secondary p-4 sm:p-6 md:p-8">

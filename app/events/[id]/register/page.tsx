@@ -12,8 +12,9 @@ interface RegisterForEventPageProps {
 }
 
 export default async function RegisterForEventPage({ params, searchParams }: RegisterForEventPageProps) {
-    // Explicitly await params as a workaround for a persistent Next.js static analysis issue.
+    // Await both params and searchParams for Next.js 15 compatibility
     const resolvedParams = await Promise.resolve(params);
+    const resolvedSearchParams = await Promise.resolve(searchParams);
     const eventId = parseInt(resolvedParams.id, 10);
     const { data: event, error } = await getEventDetails(eventId);
     const { data: formFields } = await getEventFormFields(eventId);
@@ -23,7 +24,7 @@ export default async function RegisterForEventPage({ params, searchParams }: Reg
     const { data: { user } } = await supabase.auth.getUser();
     
     // Handle payment cancellation - mark unpaid tickets as cancelled
-    if (searchParams?.payment_cancelled === 'true' && user) {
+    if (resolvedSearchParams?.payment_cancelled === 'true' && user) {
         await supabase
             .from('tickets')
             .update({ status: 'cancelled' })

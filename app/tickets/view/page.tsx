@@ -15,7 +15,8 @@ interface ViewTicketPageProps {
 }
 
 export default async function ViewTicketPage({ searchParams }: ViewTicketPageProps) {
-    const { ticketId, email } = searchParams;
+    const resolvedSearchParams = await Promise.resolve(searchParams);
+    const { ticketId, email } = resolvedSearchParams;
 
     if (!ticketId) {
         return (
