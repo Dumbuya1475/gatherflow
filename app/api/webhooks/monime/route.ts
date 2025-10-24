@@ -253,7 +253,7 @@ export async function POST(req: NextRequest) {
       
       console.log("Checkout session cancelled:", checkoutSessionId);
       
-      // Find and mark ticket as cancelled
+      // Find and update payment status to cancelled (keep ticket status as unpaid)
       const { data: ticket } = await supabase
         .from("tickets")
         .select("id, event_id")
@@ -265,12 +265,11 @@ export async function POST(req: NextRequest) {
         await supabase
           .from("tickets")
           .update({ 
-            status: "cancelled",
             monime_payment_status: 'cancelled'
           })
           .eq("id", ticket.id);
         
-        console.log("Ticket marked as cancelled:", ticket.id);
+        console.log("Ticket payment status updated to cancelled:", ticket.id);
       }
 
       return NextResponse.json({ received: true });

@@ -18,11 +18,10 @@ export async function POST(req: NextRequest) {
     console.log('Event ID:', eventId);
     
     if (ticketId) {
-      // Mark ticket as cancelled
+      // Update payment status to cancelled (keep ticket status as unpaid)
       const { error: updateError } = await supabase
         .from('tickets')
         .update({ 
-          status: 'cancelled',
           monime_payment_status: 'cancelled'
         })
         .eq('id', ticketId)
@@ -31,7 +30,7 @@ export async function POST(req: NextRequest) {
       if (updateError) {
         console.error('Payment cancel: Failed to update ticket:', updateError);
       } else {
-        console.log('Payment cancel: Ticket cancelled:', ticketId);
+        console.log('Payment cancel: Payment status updated to cancelled:', ticketId);
       }
     }
 
