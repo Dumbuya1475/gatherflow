@@ -3,6 +3,34 @@ import { createServiceRoleClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import crypto from 'crypto';
 
+// Handle GET requests (direct browser access)
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const ticketId = searchParams.get('ticketId');
+  
+  if (!ticketId) {
+    return NextResponse.redirect(new URL('/events', req.url));
+  }
+
+  const cookieStore = await cookies();
+  const supabase = createServiceRoleClient(cookieStore);
+  
+  const { data: ticket } = await supabase
+    .from('tickets')
+    .select('event_id')
+    .eq('id', ticketId)
+    .single();
+
+  if (!ticket) {
+    return NextResponse.redirect(new URL('/events', req.url));
+  }
+
+  // Redirect to the success page
+  const successPageUrl = new URL(`/events/${ticket.event_id}/register/success?ticketId=${ticketId}`, req.url);
+  return NextResponse.redirect(successPageUrl);
+}
+
+// Handle POST requests (from Monime)
 export async function POST(req: NextRequest) {
   try {
     const cookieStore = await cookies();

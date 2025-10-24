@@ -2,6 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 
+// Handle GET requests (direct browser access)
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const eventId = searchParams.get('eventId');
+  
+  const redirectUrl = eventId 
+    ? new URL(`/events/${eventId}/register?payment_cancelled=true`, req.url)
+    : new URL('/events', req.url);
+  
+  return NextResponse.redirect(redirectUrl);
+}
+
+// Handle POST requests (from Monime)
 export async function POST(req: NextRequest) {
   try {
     const cookieStore = await cookies();

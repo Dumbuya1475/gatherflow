@@ -58,7 +58,7 @@ async function verifyMonimeSignature(req: NextRequest): Promise<{isValid: boolea
     if (timestamp && receivedSignature) {
       // Small replay protection: timestamp should be within 5 minutes
       const tsNum = Number.parseInt(timestamp, 10);
-      if (Number.isNaN(tsNum)) {=
+      if (Number.isNaN(tsNum)) {
         console.warn('Webhook signature timestamp is not a number');
         return { isValid: false, bodyText };
       }
