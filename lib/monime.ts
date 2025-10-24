@@ -40,7 +40,8 @@ export async function createMonimeCheckout(
     quantity: item.quantity,
     successUrl,
     cancelUrl,
-    description: item.name
+    description: item.name,
+    metadata
   });
 
   const response = await monime.checkoutSession.create(
@@ -49,8 +50,10 @@ export async function createMonimeCheckout(
     item.quantity,
     successUrl,
     cancelUrl,
-    item.name // description
-    // Note: financialAccountId, primaryColor, images are optional parameters
+    item.name, // description
+    metadata.financialAccountId, // optional financialAccountId
+    undefined, // primaryColor
+    undefined  // images
   );
 
   console.log('Monime response:', { success: response.success, error: response.error });
