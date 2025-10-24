@@ -18,7 +18,8 @@ CREATE TYPE public.ticket_status AS ENUM (
     'rejected',
     'checked_in',
     'checked_out',
-    'expired'
+    'expired',
+    'unpaid'
 );
 
 CREATE TYPE public.field_type AS ENUM (
