@@ -571,7 +571,7 @@ export type Composites<
             "checkboxes",
             "dropdown",
           ],
-          ticket_status: ["pending", "approved", "rejected", "unpaid"],
+          ticket_status: ["pending", "approved", "rejected", "expired", "checked_in", "checked_out", "unpaid"],
         },
       },
     } as const
@@ -938,7 +938,7 @@ export const Constants = {
         "checkboxes",
         "dropdown",
       ],
-      ticket_status: ["pending", "approved", "rejected", "unpaid"],
+      ticket_status: ["pending", "approved", "rejected", "expired", "checked_in", "checked_out", "unpaid"],
     },
   },
 } as const
