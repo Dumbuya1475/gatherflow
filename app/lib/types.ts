@@ -29,7 +29,7 @@ export type Attendee = {
     first_name: string | null;
     last_name: string | null;
     email: string | null;
-    status: 'pending' | 'approved' | 'rejected' | 'checked_in' | 'checked_out' | 'unknown' | 'unpaid';
+    status: 'pending' | 'approved' | 'rejected' | 'expired' | 'checked_in' | 'checked_out' | 'unpaid';
     avatar_url: string | null;
     form_responses?: AttendeeFormResponse[];
 }

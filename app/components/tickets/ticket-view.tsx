@@ -13,7 +13,9 @@ import { format } from 'date-fns';
 
 import { UpgradeAccountPrompt } from "./upgrade-account-prompt";
 
-interface TicketWithEvent extends Ticket {
+interface TicketWithEvent extends Omit<Ticket, 'status'> {
+    // Extend the base Ticket status union locally to include UI-only statuses used in this component
+    status: Ticket['status'] | 'pending' | 'rejected';
     events: Event & { organizer?: { first_name: string | null, last_name: string | null } | null } | null;
     profiles: { first_name?: string, last_name?: string, is_guest?: boolean, id?: string, email?: string } | null;
     form_responses: { field_value: string, event_form_fields: { field_name: string } }[];
@@ -213,9 +215,7 @@ export function TicketView({ ticket }: { ticket: TicketWithEvent }) {
                         <div className="text-center text-gray-500 p-8 border-2 border-dashed border-gray-300 rounded-lg">
                             <div className="text-lg font-medium">QR Code Unavailable</div>
                             <div className="text-sm mt-2">
-                                {ticket.status === 'pending' && "Waiting for approval"}
-                                {ticket.status === 'rejected' && "Access denied"}
-                                {ticket.status === 'approved' && "QR code generation failed"}
+                                {ticket.status === 'approved' ? "QR code generation failed" : "QR code unavailable"}
                             </div>
                         </div>
                     )}

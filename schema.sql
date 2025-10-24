@@ -16,8 +16,6 @@ CREATE TYPE public.ticket_status AS ENUM (
     'pending',
     'approved',
     'rejected',
-    'checked_in',
-    'checked_out',
     'expired',
     'unpaid'
 );

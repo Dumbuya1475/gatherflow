@@ -72,9 +72,6 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
                             data-ai-hint="event concert"
                             className="object-cover"
                             unoptimized={!!event.cover_image?.includes('supabase.co')}
-                            onError={(e) => {
-                                e.currentTarget.src = 'https://picsum.photos/1200/400';
-                            }}
                         />
                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                     </div>
