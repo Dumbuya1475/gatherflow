@@ -69,7 +69,8 @@ CREATE TABLE public.events (
     ticket_background_image text,
     fee_bearer text DEFAULT 'buyer'::text,
     status text DEFAULT 'draft'::text,
-    payout_completed boolean DEFAULT false NOT NULL
+    payout_completed boolean DEFAULT false NOT NULL,
+    category text DEFAULT 'other' CHECK (category IN ('conference', 'workshop', 'festival', 'concert', 'seminar', 'networking', 'sports', 'community', 'other'))
 );
 
 -- Tickets Table

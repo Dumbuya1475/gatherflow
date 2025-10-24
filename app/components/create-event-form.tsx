@@ -46,6 +46,7 @@ const eventFormSchema = z.object({
   description: z.string().min(10, {
     message: 'Description must be at least 10 characters.',
   }),
+  category: z.enum(['conference', 'workshop', 'festival', 'concert', 'seminar', 'networking', 'sports', 'community', 'other']).default('other'),
   date: z.date({
     required_error: 'A start date and time is required.',
   }),
@@ -336,6 +337,38 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                   </FormControl>
                   <FormDescription>
                     You can use AI to generate a compelling description.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Event Category</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="conference">Conference</SelectItem>
+                      <SelectItem value="workshop">Workshop</SelectItem>
+                      <SelectItem value="festival">Festival</SelectItem>
+                      <SelectItem value="concert">Concert</SelectItem>
+                      <SelectItem value="seminar">Seminar</SelectItem>
+                      <SelectItem value="networking">Networking</SelectItem>
+                      <SelectItem value="sports">Sports</SelectItem>
+                      <SelectItem value="community">Community</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Choose the category that best describes your event.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

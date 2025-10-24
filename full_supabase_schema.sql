@@ -62,6 +62,7 @@ CREATE TABLE public.events (
     fee_bearer text,
     status text,
     payout_completed boolean DEFAULT false NOT NULL,
+    category text DEFAULT 'other' CHECK (category IN ('conference', 'workshop', 'festival', 'concert', 'seminar', 'networking', 'sports', 'community', 'other')),
     PRIMARY KEY (id),
     FOREIGN KEY (organizer_id) REFERENCES public.profiles (id) ON DELETE CASCADE
 );

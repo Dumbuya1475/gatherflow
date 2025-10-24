@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { EventWithAttendees } from "@/lib/types";
 import { ShareButton } from "./_components/share-button";
 import { ResendTicketForm } from "./_components/resend-ticket-form";
+import { PublicHeader } from "@/components/public-header";
 import { cookies } from 'next/headers';
 
 
@@ -52,17 +53,19 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
     const isFull = event.capacity ? event.attendees >= event.capacity : false;
 
     return (
-        <div className="bg-secondary min-h-screen">
-            <div className="container mx-auto py-8 sm:py-12 md:py-16">
-                 <div className="mb-6 flex justify-between items-center">
-                    <Button asChild variant="outline">
-                        <Link href={user ? "/dashboard/events" : "/"}>
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Events
-                        </Link>
-                    </Button>
-                    <ShareButton event={event} />
-                </div>
+        <>
+            <PublicHeader />
+            <div className="bg-secondary min-h-screen">
+                <div className="container mx-auto py-8 sm:py-12 md:py-16">
+                    <div className="mb-6 flex justify-between items-center">
+                        <Button asChild variant="outline">
+                            <Link href={user ? "/dashboard/events" : "/"}>
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Back to Events
+                            </Link>
+                        </Button>
+                        <ShareButton event={event} />
+                    </div>
                 <Card className="overflow-hidden">
                     <div className="relative h-64 md:h-96 w-full">
                         <Image
@@ -154,7 +157,8 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
                 <div className="mt-8">
                     <ResendTicketForm eventId={event.id} />
                 </div>
+                </div>
             </div>
-        </div>
+        </>
     )
 }
