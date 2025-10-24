@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     const { data: existingTicket, error: findTicketError } = await supabase
       .from('tickets')
-      .select('id')
+      .select('id, status, monime_checkout_session_id')
       .eq('event_id', eventId)
       .eq('user_id', finalUserId)
       .maybeSingle();
@@ -90,6 +90,20 @@ export async function POST(req: NextRequest) {
 
     if (existingTicket) {
       ticketId = existingTicket.id;
+      
+      // If ticket exists but is unpaid, clear the old checkout session
+      // This allows creating a new checkout (avoids 409 Idempotency error)
+      if (existingTicket.status === 'unpaid' && existingTicket.monime_checkout_session_id) {
+        console.log('Clearing old checkout session for ticket:', ticketId);
+        const { error: clearError } = await supabase
+          .from('tickets')
+          .update({ monime_checkout_session_id: null })
+          .eq('id', ticketId);
+        
+        if (clearError) {
+          console.error('Failed to clear old checkout session:', clearError);
+        }
+      }
     } else {
       const { data: newTicket, error: createTicketError } = await supabase
         .from('tickets')

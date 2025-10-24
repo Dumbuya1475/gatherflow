@@ -1,13 +1,14 @@
-import { getTicketDetails } from "@/lib/actions/tickets.tsx";
+import { getTicketDetails } from "@/lib/actions/tickets";
 import { TicketView } from "@/components/tickets/ticket-view";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function ViewTicketPage({
     params,
 }: {
-    params: { id: string };
+    params: Promise<{ id: string }>;
 }) {
-    const ticketId = params.id ? parseInt(params.id, 10) : null;
+    const resolvedParams = await params;
+    const ticketId = resolvedParams.id ? parseInt(resolvedParams.id, 10) : null;
 
     if (!ticketId) {
         return (
