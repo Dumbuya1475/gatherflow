@@ -37,7 +37,7 @@ async function getAllPublicEvents(user: any) {
       console.error('Error fetching attendee counts:', countError);
   }
 
-  const countMap = new Map(counts?.map(c => [c.event_id_out, c.attendee_count]));
+  const countMap = new Map(counts?.map((c: { event_id_out: number; attendee_count: number }) => [c.event_id_out, c.attendee_count]));
 
   const eventsWithCounts = events.map(event => ({
       ...event,

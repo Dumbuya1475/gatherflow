@@ -87,7 +87,8 @@ export async function createEventAction(formData: FormData) {
   }
 
   if (rawData.customFields.length > 0) {
-    for (const [index, field] of rawData.customFields.entries()) {
+    for (const field of rawData.customFields) {
+        const fieldIndex = rawData.customFields.indexOf(field);
         const { data: newField, error: fieldError } = await supabase
             .from('event_form_fields')
             .insert({
@@ -95,7 +96,7 @@ export async function createEventAction(formData: FormData) {
                 field_name: field.field_name,
                 field_type: field.field_type,
                 is_required: field.is_required,
-                order: index,
+                order: fieldIndex,
             })
             .select('id')
             .single();
@@ -105,7 +106,7 @@ export async function createEventAction(formData: FormData) {
         }
 
         if (field.options && field.options.length > 0) {
-            const optionsToInsert = field.options.map(opt => ({
+            const optionsToInsert = field.options.map((opt: { value: string }) => ({
                 form_field_id: newField.id,
                 value: opt.value,
             }));
@@ -154,7 +155,7 @@ export async function updateEventAction(eventId: number, formData: FormData) {
   if (rawData.cover_image_file && rawData.cover_image_file.size > 0) {
     const { publicUrl, error: uploadError } = await uploadFile(rawData.cover_image_file, 'event-covers');
     if (uploadError) return { error: `Failed to upload cover image: ${uploadError.message}` };
-    coverImageUrl = publicUrl;
+    coverImageUrl = publicUrl ?? undefined;
   }
   
   const { error: eventUpdateError } = await supabase
@@ -183,18 +184,19 @@ export async function updateEventAction(eventId: number, formData: FormData) {
   if (deleteFieldsError) return { error: `Failed to update custom fields (step 1): ${deleteFieldsError.message}` };
 
   if (rawData.customFields.length > 0) {
-    for (const [index, field] of rawData.customFields.entries()) {
+    for (const field of rawData.customFields) {
+        const fieldIndex = rawData.customFields.indexOf(field);
         const { data: newField, error: fieldError } = await supabase
             .from('event_form_fields').insert({
                 event_id: eventId,
                 field_name: field.field_name,
                 field_type: field.field_type,
                 is_required: field.is_required,
-                order: index,
+                order: fieldIndex,
             }).select('id').single();
         if (fieldError) return { error: `Failed to update custom fields (step 2): ${fieldError.message}` };
         if (field.options && field.options.length > 0) {
-            const optionsToInsert = field.options.map(opt => ({ form_field_id: newField.id, value: opt.value }));
+            const optionsToInsert = field.options.map((opt: { value: string }) => ({ form_field_id: newField.id, value: opt.value }));
             const { error: optionsError } = await supabase.from('event_form_field_options').insert(optionsToInsert);
             if (optionsError) return { error: `Failed to update custom fields (step 3): ${optionsError.message}` };
         }
@@ -234,7 +236,7 @@ export async function updateTicketAppearance(eventId: number, formData: FormData
         if (uploadError) {
             return { error: `Failed to upload logo: ${uploadError.message}` };
         }
-        logoUrl = publicUrl;
+        logoUrl = publicUrl ?? undefined;
     }
 
     const updates: { ticket_brand_color?: string, ticket_brand_logo?: string } = {};

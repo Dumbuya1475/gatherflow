@@ -94,7 +94,6 @@ export async function POST(req: NextRequest) {
       // If ticket exists but is unpaid, clear the old checkout session
       // This allows creating a new checkout (avoids 409 Idempotency error)
       if (existingTicket.status === 'unpaid' && existingTicket.monime_checkout_session_id) {
-        console.log('Clearing old checkout session for ticket:', ticketId);
         const { error: clearError } = await supabase
           .from('tickets')
           .update({ monime_checkout_session_id: null })
@@ -142,15 +141,8 @@ export async function POST(req: NextRequest) {
     
     const appUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     // Monime POSTs to these URLs, so they must be API routes
-    const successUrl = `${appUrl}/api/payment/success?ticketId=${ticketId}`;
+    const successUrl = `${appUrl}/api/payment/success?ticketId=${ticketId}&eventId=${eventId}`;
     const cancelUrl = `${appUrl}/api/payment/cancel?ticketId=${ticketId}&eventId=${eventId}`;
-
-    console.log('=== CHECKOUT URLs ===');
-    console.log('App URL:', appUrl);
-    console.log('Success URL:', successUrl);
-    console.log('Cancel URL:', cancelUrl);
-    console.log('Ticket ID:', ticketId);
-    console.log('Event ID:', eventId);
 
     if (event.price === null || event.price === undefined || isNaN(event.price) || event.price <= 0) {
       console.error('Checkout Error: Paid event has invalid price.', event.price);
@@ -178,9 +170,6 @@ export async function POST(req: NextRequest) {
         eventId: eventId.toString(),
       }
     });
-    
-    console.log('Checkout session created:', checkoutSession.id);
-    console.log('Checkout URL:', checkoutSession.url);
     
     // 5. Update ticket with checkout session ID for webhook reconciliation
     const { error: updateTicketError } = await supabase

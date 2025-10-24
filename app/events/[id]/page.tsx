@@ -54,8 +54,9 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
         redirect(`/dashboard/events/${eventId}/view`);
     }
     
-    const ticketId = await getTicketId(event.id, user?.id);
-    const isOwner = user && user.id === event.organizer_id;
+    const userId = user?.id ?? undefined;
+    const ticketId = await getTicketId(event.id, userId);
+    const isOwner = userId ? userId === event.organizer_id : false;
     const isFull = event.capacity ? event.attendees >= event.capacity : false;
 
     return (
