@@ -12,7 +12,7 @@ interface FeaturedEvent {
   title: string;
   date: string;
   location: string | null;
-  price: number;
+  price: number | null;
   cover_image: string | null;
 }
 
@@ -120,7 +120,7 @@ export function FeaturedEventsCarousel({ events }: FeaturedEventsCarouselProps) 
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-bold text-white">
-                  ${currentEvent.price.toFixed(2)}
+                  ${currentEvent.price?.toFixed(2) || '0.00'}
                 </span>
                 <span className="text-sm text-white/70">per ticket</span>
               </div>
