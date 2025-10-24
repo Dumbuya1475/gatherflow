@@ -45,14 +45,14 @@ async function verifyMonimeSignature(req: NextRequest): Promise<{isValid: boolea
     }
 
     // Helper: constant-time compare buffers
-    function safeEqual(a: Buffer, b: Buffer): boolean {
+    const safeEqual = (a: Buffer, b: Buffer): boolean => {
       if (a.length !== b.length) return false;
       try {
         return crypto.timingSafeEqual(a, b);
       } catch (e) {
         return false;
       }
-    }
+    };
 
     // If we have timestamped signature, validate timestamp and signed payload
     if (timestamp && receivedSignature) {
