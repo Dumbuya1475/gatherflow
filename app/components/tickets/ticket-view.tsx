@@ -33,7 +33,14 @@ const BrandedTicket = ({ ticket }: { ticket: TicketWithEvent }) => {
             <div className="bg-black bg-opacity-50 p-8">
                 <div className="text-center mb-8">
                     {events.ticket_brand_logo && (
-                        <Image src={events.ticket_brand_logo} alt="Brand Logo" width={120} height={120} className="mx-auto mb-4 rounded-full" />
+                        <Image 
+                            src={events.ticket_brand_logo} 
+                            alt="Brand Logo" 
+                            width={120} 
+                            height={120} 
+                            className="mx-auto mb-4 rounded-full"
+                            unoptimized={!!events.ticket_brand_logo?.includes('supabase.co')}
+                        />
                     )}
                     <h1 className="text-4xl font-bold text-white font-headline">{events.title}</h1>
                     <p className="text-lg text-gray-200">{events.description}</p>
