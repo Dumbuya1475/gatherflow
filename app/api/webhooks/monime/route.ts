@@ -29,133 +29,107 @@ async function verifyMonimeSignature(req: NextRequest): Promise<{isValid: boolea
   const bodyText = await req.text();
   
   try {
-    // Parse Monime's timestamped signature format: "t=timestamp,v1=signature"
-    const signatureParts = signature.split(',');
-    let timestamp = '';
-    let receivedSignature = '';
-    
+    // Monime sends timestamped signatures like: "t=TIMESTAMP,v1=BASE64_SIGNATURE"
+    // We'll support that format and also fall back to plain HMAC over the body
+    let timestamp: string | null = null;
+    let receivedSignature: string | null = null;
+
+    const signatureParts = signature.split(',').map(p => p.trim());
     for (const part of signatureParts) {
-      const [key, value] = part.split('=');
+      const eq = part.indexOf('=');
+      if (eq === -1) continue;
+      const key = part.slice(0, eq);
+      const val = part.slice(eq + 1);
+      if (key === 't') timestamp = val;
+      if (key === 'v1') receivedSignature = val;
+    }
+
+    // Helper: constant-time compare buffers
+    function safeEqual(a: Buffer, b: Buffer): boolean {
+      if (a.length !== b.length) return false;
       try {
-        // Monime sends timestamped signatures like: "t=TIMESTAMP,v1=BASE64_SIGNATURE"
-        // We'll support that format and also fall back to plain HMAC over the body
-        let timestamp: string | null = null;
-        let receivedSignature: string | null = null;
+        return crypto.timingSafeEqual(a, b);
+      } catch (e) {
+        return false;
+      }
+    }
 
-        const signatureParts = signature.split(',').map(p => p.trim());
-        for (const part of signatureParts) {
-          const eq = part.indexOf('=');
-          if (eq === -1) continue;
-          const key = part.slice(0, eq);
-          const val = part.slice(eq + 1);
-          if (key === 't') timestamp = val;
-          if (key === 'v1') receivedSignature = val;
-        }
-
-        // Helper: constant-time compare buffers
-        function safeEqual(a: Buffer, b: Buffer) {
-          if (a.length !== b.length) return false;
-          try {
-            return crypto.timingSafeEqual(a, b);
-          } catch (e) {
-            return false;
-          }
-        }
-
-        // If we have timestamped signature, validate timestamp and signed payload
-        if (timestamp && receivedSignature) {
-          // Small replay protection: timestamp should be within 5 minutes
-          const tsNum = Number.parseInt(timestamp, 10);
-          if (Number.isNaN(tsNum)) {
-            console.warn('Webhook signature timestamp is not a number');
-            return { isValid: false, bodyText };
-          }
-          const now = Math.floor(Date.now() / 1000);
-          const skew = Math.abs(now - tsNum);
-          const MAX_SKEW = 60 * 5; // 5 minutes
-          if (skew > MAX_SKEW) {
-            console.warn('Webhook signature timestamp outside allowed window', { skew });
-            return { isValid: false, bodyText };
-          }
-
-          const signedPayload = `${timestamp}.${bodyText}`;
-
-          const hmac = crypto.createHmac('sha256', secret);
-          hmac.update(signedPayload);
-          const expectedBuf = hmac.digest(); // Buffer
-
-          // Try to decode receivedSignature as base64 first
-          let receivedBuf: Buffer | null = null;
-          try {
-            receivedBuf = Buffer.from(receivedSignature, 'base64');
-          } catch (e) {
-            receivedBuf = null;
-          }
-
-          let isValid = false;
-          if (receivedBuf && expectedBuf.length === receivedBuf.length) {
-            isValid = safeEqual(expectedBuf, receivedBuf);
-          } else {
-            // Fallback: compare hex encodings (some providers send hex)
-            const expectedHex = expectedBuf.toString('hex');
-            // Received signature might contain additional metadata; strip non-hex
-            const cleaned = receivedSignature.replace(/[^0-9a-fA-F]/g, '');
-            if (cleaned && cleaned.length === expectedHex.length) {
-              isValid = crypto.timingSafeEqual(Buffer.from(expectedHex, 'hex'), Buffer.from(cleaned, 'hex'));
-            }
-          }
-
-          console.log('HMAC verification (timestamped):', isValid ? '✅ PASSED' : '❌ FAILED');
-          console.log('Parsed timestamp:', timestamp);
-          console.log('Expected (hex):', expectedBuf.toString('hex'));
-          console.log('Received (raw):', receivedSignature);
-          console.log('=== END DEBUG ===');
-
-          return { isValid, bodyText };
-        }
-
-        // Fallback: single-value signature (plain HMAC over body) - try hex and base64
-        const hmacBody = crypto.createHmac('sha256', secret);
-        hmacBody.update(bodyText);
-        const expectedHex = hmacBody.digest('hex');
-        const expectedBase64 = Buffer.from(expectedHex, 'hex').toString('base64');
-
-        let validFallback = false;
-        // signature may be given directly as hex or base64 or contain a scheme
-        const sigVal = signature.replace(/^[^=]*=?/, '');
-        if (signature === expectedHex || sigVal === expectedBase64) {
-          validFallback = true;
-        }
-
-        console.log('HMAC verification (fallback):', validFallback ? '✅ PASSED' : '❌ FAILED');
-        console.log('Expected (hex):', expectedHex);
-        console.log('Expected (base64):', expectedBase64);
-        console.log('Received (full):', signature);
-        console.log('=== END DEBUG ===');
-
-        return { isValid: validFallback, bodyText };
-
-      } catch (error) {
-        console.error('Signature verification error:', error);
+    // If we have timestamped signature, validate timestamp and signed payload
+    if (timestamp && receivedSignature) {
+      // Small replay protection: timestamp should be within 5 minutes
+      const tsNum = Number.parseInt(timestamp, 10);
+      if (Number.isNaN(tsNum)) {
+        console.warn('Webhook signature timestamp is not a number');
         return { isValid: false, bodyText };
       }
-    console.log("Method 4 (body + hex):", expected4);
-    console.log("Received signature:", receivedSignature);
-    
-    if (isValid) {
-      if (expected1 === receivedSignature) console.log("✅ Matched Method 1");
-      if (expected2 === receivedSignature) console.log("✅ Matched Method 2");
-      if (expected3 === receivedSignature) console.log("✅ Matched Method 3");
-      if (expected4 === receivedSignature) console.log("✅ Matched Method 4");
+      const now = Math.floor(Date.now() / 1000);
+      const skew = Math.abs(now - tsNum);
+      const MAX_SKEW = 60 * 5; // 5 minutes
+      if (skew > MAX_SKEW) {
+        console.warn('Webhook signature timestamp outside allowed window', { skew });
+        return { isValid: false, bodyText };
+      }
+
+      const signedPayload = `${timestamp}.${bodyText}`;
+
+      const hmac = crypto.createHmac('sha256', secret);
+      hmac.update(signedPayload);
+      const expectedBuf = hmac.digest(); // Buffer
+
+      // Try to decode receivedSignature as base64 first
+      let receivedBuf: Buffer | null = null;
+      try {
+        receivedBuf = Buffer.from(receivedSignature, 'base64');
+      } catch (e) {
+        receivedBuf = null;
+      }
+
+      let isValid = false;
+      if (receivedBuf && expectedBuf.length === receivedBuf.length) {
+        isValid = safeEqual(expectedBuf, receivedBuf);
+      } else {
+        // Fallback: compare hex encodings (some providers send hex)
+        const expectedHex = expectedBuf.toString('hex');
+        // Received signature might contain additional metadata; strip non-hex
+        const cleaned = receivedSignature.replace(/[^0-9a-fA-F]/g, '');
+        if (cleaned && cleaned.length === expectedHex.length) {
+          isValid = crypto.timingSafeEqual(Buffer.from(expectedHex, 'hex'), Buffer.from(cleaned, 'hex'));
+        }
+      }
+
+      console.log('HMAC verification (timestamped):', isValid ? '✅ PASSED' : '❌ FAILED');
+      console.log('Parsed timestamp:', timestamp);
+      console.log('Expected (hex):', expectedBuf.toString('hex'));
+      console.log('Received (raw):', receivedSignature);
+      console.log('=== END DEBUG ===');
+
+      return { isValid, bodyText };
     }
-    
-    console.log("=== END DEBUG ===");
-    
-    return {isValid, bodyText};
-    
+
+    // Fallback: single-value signature (plain HMAC over body) - try hex and base64
+    const hmacBody = crypto.createHmac('sha256', secret);
+    hmacBody.update(bodyText);
+    const expectedHex = hmacBody.digest('hex');
+    const expectedBase64 = Buffer.from(expectedHex, 'hex').toString('base64');
+
+    let validFallback = false;
+    // signature may be given directly as hex or base64 or contain a scheme
+    const sigVal = signature.replace(/^[^=]*=?/, '');
+    if (signature === expectedHex || sigVal === expectedBase64) {
+      validFallback = true;
+    }
+
+    console.log('HMAC verification (fallback):', validFallback ? '✅ PASSED' : '❌ FAILED');
+    console.log('Expected (hex):', expectedHex);
+    console.log('Expected (base64):', expectedBase64);
+    console.log('Received (full):', signature);
+    console.log('=== END DEBUG ===');
+
+    return { isValid: validFallback, bodyText };
+
   } catch (error) {
-    console.error("Signature verification error:", error);
-    return {isValid: false, bodyText};
+    console.error('Signature verification error:', error);
+    return { isValid: false, bodyText };
   }
 }
 
