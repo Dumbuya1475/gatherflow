@@ -76,6 +76,7 @@ export default async function LandingPage() {
     const supabase = createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
     const recentEvents = await getRecentEvents();
+    const featuredEvents = await getFeaturedEvents();
 
-    return <LandingPageClient recentEvents={recentEvents} user={user} />;
+    return <LandingPageClient recentEvents={recentEvents} featuredEvents={featuredEvents} user={user} />;
 }

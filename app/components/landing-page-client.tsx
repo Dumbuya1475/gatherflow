@@ -12,6 +12,22 @@ import type { EventWithAttendees } from '@/lib/types';
 import { EventCard } from '@/components/event-card';
 import type { User } from '@supabase/supabase-js';
 import NewPricingSection from '@/components/new-pricing-section';
+import { FeaturedEventsCarousel } from '@/components/featured-events-carousel';
+
+interface FeaturedEvent {
+  id: string;
+  title: string;
+  date: string;
+  location: string | null;
+  price: number;
+  cover_image: string | null;
+}
+
+interface LandingPageClientProps {
+  recentEvents: EventWithAttendees[];
+  featuredEvents: FeaturedEvent[];
+  user: User | null;
+}
 
 const features = [
   {
@@ -50,7 +66,7 @@ const stats = [
 
 
 
-export function LandingPageClient({ recentEvents, user }: LandingPageClientProps) {
+export function LandingPageClient({ recentEvents, featuredEvents, user }: LandingPageClientProps) {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -110,19 +126,8 @@ export function LandingPageClient({ recentEvents, user }: LandingPageClientProps
                   </Button>
                 </div>
               </div>
-              <div className="mx-auto aspect-video overflow-hidden rounded-xl sm:w-full lg:order-last animate-in fade-in-0 slide-in-from-right-4 duration-1000 delay-200 group">
-                <div className="relative h-full w-full bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl overflow-hidden shadow-2xl group-hover:shadow-3xl transition-shadow duration-500">
-                  <video 
-                    className="w-full h-full object-cover rounded-xl transform group-hover:scale-105 transition-transform duration-700"
-                    src="/GatherFlow_Logo.mp4" 
-                    poster="/GatherFlow_Logo.png"
-                    autoPlay 
-                    loop 
-                    muted 
-                    playsInline
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent rounded-xl"></div>
-                </div>
+              <div className="mx-auto aspect-video overflow-hidden rounded-xl sm:w-full lg:order-last animate-in fade-in-0 slide-in-from-right-4 duration-1000 delay-200">
+                <FeaturedEventsCarousel events={featuredEvents} />
               </div>
             </div>
           </div>
