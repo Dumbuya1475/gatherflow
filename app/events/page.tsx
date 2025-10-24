@@ -123,7 +123,6 @@ export default function AllEventsPage() {
         setUser(currentUser);
 
         const eventsData = await getAllPublicEvents(currentUser);
-        console.log("All public events:", JSON.stringify(eventsData, null, 2));
         setAllEvents(eventsData);
         setIsLoading(false);
     }
@@ -210,7 +209,7 @@ export default function AllEventsPage() {
             ) : filteredEvents.length > 0 ? (
               <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-4 mt-12">
                 {filteredEvents.map((event) => (
-                  <EventCard key={event.id} event={event} isLoggedIn={!!user} isMyEvent={user ? event.organizer_id === user.id : false}/>
+                  <EventCard key={event.id} event={event} isLoggedIn={!!user} isMyEvent={false}/>
                 ))}
               </div>
             ) : (
@@ -221,7 +220,6 @@ export default function AllEventsPage() {
             )}
           </div>
         </section>
-        <pre>{JSON.stringify(allEvents, null, 2)}</pre>
       </main>
       <Footer />
     </div>
