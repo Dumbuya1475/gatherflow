@@ -116,7 +116,7 @@ export function FeaturedEventsCarousel({ events }: FeaturedEventsCarouselProps) 
                 </div>
               )}
             </div>
-
+=
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-bold text-white">

@@ -122,14 +122,13 @@ export async function POST(req: NextRequest) {
         
         if (responsesError) {
           console.error('Checkout Warning: Could not save form responses.', responsesError);
-          // Don't fail the whole transaction, but log it.
         }
       }
     }
     
     const appUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const successUrl = `${appUrl}/events/${eventId}/register/success?ticketId=${ticketId}`;
-    const cancelUrl = `${appUrl}/events/${eventId}/register?payment_cancelled=true`;
+    const successUrl = `${appUrl}/api/payment/success?ticketId=${ticketId}`;
+    const cancelUrl = `${appUrl}/api/payment/cancel?ticketId=${ticketId}&eventId=${eventId}`;
 
     if (event.price === null || event.price === undefined || isNaN(event.price) || event.price <= 0) {
       console.error('Checkout Error: Paid event has invalid price.', event.price);
@@ -143,7 +142,7 @@ export async function POST(req: NextRequest) {
         {
           name: event.title,
           price: {
-            currency: 'SLL',
+            currency: 'SLE',
             value: Math.round(event.price! * 100),
           },
           quantity: 1,
