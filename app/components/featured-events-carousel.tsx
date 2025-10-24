@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { format } from 'date-fns';
 
 interface FeaturedEvent {
   id: string;
@@ -107,7 +107,7 @@ export function FeaturedEventsCarousel({ events }: FeaturedEventsCarouselProps) 
             <div className="flex flex-wrap gap-3 text-sm text-white/90">
               <div className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
-                <span>{formatDate(currentEvent.date)}</span>
+                <span>{format(new Date(currentEvent.date), 'MMM d, yyyy')}</span>
               </div>
               {currentEvent.location && (
                 <div className="flex items-center gap-1">
