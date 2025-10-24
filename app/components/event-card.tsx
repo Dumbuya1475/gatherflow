@@ -72,6 +72,13 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
             e.currentTarget.src = 'https://picsum.photos/600/400';
           }}
           />
+          <div className="absolute top-2 left-2">
+            {event.category && event.category !== 'other' && (
+              <Badge variant="default" className="bg-primary/90 backdrop-blur-sm capitalize">
+                {event.category}
+              </Badge>
+            )}
+          </div>
           <div className="absolute top-2 right-2 flex gap-2">
              <Badge variant="secondary" className="bg-secondary/80 backdrop-blur-sm">
                 <Clock className="mr-1 h-3 w-3" />

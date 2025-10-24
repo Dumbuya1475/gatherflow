@@ -3,9 +3,12 @@ import { CreateEventForm } from '@/components/create-event-form';
 import { getEventDetails } from '@/lib/server/queries/events';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 
-export default async function EditEventPage({ params }: { params: { id: string } }) {
-  const supabase = createClient();
+export default async function EditEventPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
   const eventId = parseInt(params.id, 10);
   const { data: event, error } = await getEventDetails(eventId);

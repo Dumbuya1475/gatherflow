@@ -37,6 +37,7 @@ export async function createEventAction(formData: FormData) {
   const rawData = {
     title: formData.get('title') as string,
     description: formData.get('description') as string,
+    category: (formData.get('category') as string) || 'other',
     date: formData.get('date') as string,
     end_date: formData.get('end_date') as string,
     location: formData.get('location') as string,
@@ -64,6 +65,7 @@ export async function createEventAction(formData: FormData) {
     .insert({
       title: rawData.title,
       description: rawData.description,
+      category: rawData.category,
       date: rawData.date,
       end_date: rawData.end_date,
       location: rawData.location,
@@ -133,6 +135,7 @@ export async function updateEventAction(eventId: number, formData: FormData) {
   const rawData = {
     title: formData.get('title') as string,
     description: formData.get('description') as string,
+    category: (formData.get('category') as string) || 'other',
     date: formData.get('date') as string,
     end_date: formData.get('end_date') as string,
     location: formData.get('location') as string,
@@ -159,6 +162,7 @@ export async function updateEventAction(eventId: number, formData: FormData) {
     .update({
       title: rawData.title,
       description: rawData.description,
+      category: rawData.category,
       date: rawData.date,
       end_date: rawData.end_date,
       location: rawData.location,

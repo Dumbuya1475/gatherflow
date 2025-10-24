@@ -4,6 +4,7 @@
 import React from 'react';
 import { getEventDetails } from "@/lib/server/queries/events";
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, MapPin, Users, Ticket, ArrowLeft, Eye, DollarSign, Share2, Globe, Lock } from "lucide-react";
@@ -46,6 +47,11 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
 
     if (!event.is_public && event.organizer_id !== user?.id) {
         return <div className="flex items-center justify-center min-h-screen text-center text-red-500 p-8">Error: This event is private and can only be viewed by the organizer.</div>
+    }
+    // If a user is logged in, prefer the dashboard-style view which includes the sidebar.
+    if (user) {
+        // Redirect to the dashboard view for this event (preview under dashboard layout)
+        redirect(`/dashboard/events/${eventId}/view`);
     }
     
     const ticketId = await getTicketId(event.id, user?.id);

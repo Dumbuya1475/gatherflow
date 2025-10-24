@@ -168,6 +168,7 @@ export type Database = {
           fee_bearer: string | null
           status: string | null
           payout_completed: boolean | null
+          category: string | null
         }
         Insert: {
           id?: number
@@ -191,6 +192,7 @@ export type Database = {
           fee_bearer?: string | null
           status?: string | null
           payout_completed?: boolean | null
+          category?: string | null
         }
         Update: {
           id?: number
@@ -214,6 +216,7 @@ export type Database = {
           fee_bearer?: string | null
           status?: string | null
           payout_completed?: boolean | null
+          category?: string | null
         }
         Relationships: [
           {
