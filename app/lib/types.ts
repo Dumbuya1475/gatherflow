@@ -3,6 +3,9 @@ import type { Database } from './database.types';
 export type Event = Database['public']['Tables']['events']['Row'];
 export type Profile = Database['public']['Tables']['profiles']['Row'] & { email?: string };
 export type Ticket = Database['public']['Tables']['tickets']['Row'];
+export type Organization = Database['public']['Tables']['organizations']['Row'];
+export type OrganizationMember = Database['public']['Tables']['organization_members']['Row'];
+export type Follower = Database['public']['Tables']['followers']['Row'];
 
 type OrganizerProfile = {
     first_name: string | null;
@@ -15,6 +18,15 @@ export type EventWithAttendees = Event & {
   ticket_id?: number;
   type?: 'attended' | 'organized';
   organizer?: Profile | null;
+  organization?: Organization | null;
+};
+
+export type OrganizationWithOwner = Organization & {
+  owner?: Profile | null;
+  member_count?: number;
+  follower_count?: number;
+  is_following?: boolean;
+  is_member?: boolean;
 };
 
 export type AttendeeFormResponse = {

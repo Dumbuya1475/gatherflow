@@ -145,6 +145,132 @@ export type Database = {
           },
         ]
       }
+      followers: {
+        Row: {
+          id: string
+          created_at: string
+          follower_id: string
+          following_user_id: string | null
+          following_organization_id: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          follower_id: string
+          following_user_id?: string | null
+          following_organization_id?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          follower_id?: string
+          following_user_id?: string | null
+          following_organization_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "followers_follower_id_fkey"
+            columns: ["follower_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "followers_following_user_id_fkey"
+            columns: ["following_user_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "followers_following_organization_id_fkey"
+            columns: ["following_organization_id"]
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_members: {
+        Row: {
+          id: string
+          created_at: string
+          organization_id: string
+          user_id: string
+          role: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          organization_id: string
+          user_id: string
+          role?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          organization_id?: string
+          user_id?: string
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_members_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          id: string
+          created_at: string
+          name: string
+          description: string | null
+          logo_url: string | null
+          cover_image_url: string | null
+          website: string | null
+          location: string | null
+          owner_id: string
+          is_verified: boolean | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          name: string
+          description?: string | null
+          logo_url?: string | null
+          cover_image_url?: string | null
+          website?: string | null
+          location?: string | null
+          owner_id: string
+          is_verified?: boolean | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          name?: string
+          description?: string | null
+          logo_url?: string | null
+          cover_image_url?: string | null
+          website?: string | null
+          location?: string | null
+          owner_id?: string
+          is_verified?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizations_owner_id_fkey"
+            columns: ["owner_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           id: number
@@ -169,6 +295,8 @@ export type Database = {
           status: string | null
           payout_completed: boolean | null
           category: string | null
+          organization_id: string | null
+          event_type: string | null
         }
         Insert: {
           id?: number
@@ -193,6 +321,8 @@ export type Database = {
           status?: string | null
           payout_completed?: boolean | null
           category?: string | null
+          organization_id?: string | null
+          event_type?: string | null
         }
         Update: {
           id?: number
@@ -217,12 +347,20 @@ export type Database = {
           status?: string | null
           payout_completed?: boolean | null
           category?: string | null
+          organization_id?: string | null
+          event_type?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "events_organizer_id_fkey"
             columns: ["organizer_id"]
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_organization_id_fkey"
+            columns: ["organization_id"]
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
