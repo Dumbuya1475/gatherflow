@@ -7,12 +7,11 @@ import { ManageEventView } from "./_components/manage-event-view";
 import { cookies } from "next/headers";
 
 interface ManageEventPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function ManageEventPage({ params }: ManageEventPageProps) {
-  // Explicitly await params as a workaround for a persistent Next.js static analysis issue.
-  const resolvedParams = await Promise.resolve(params);
+  const resolvedParams = await params;
   const eventId = parseInt(resolvedParams.id, 10);
   
   // Fetch data in parallel

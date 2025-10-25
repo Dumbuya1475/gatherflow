@@ -46,9 +46,6 @@ const eventFormSchema = z.object({
   description: z.string().min(10, {
     message: 'Description must be at least 10 characters.',
   }),
-  category: z.enum(['conference', 'workshop', 'festival', 'concert', 'seminar', 'networking', 'sports', 'community', 'other']).default('other'),
-  event_type: z.enum(['individual', 'organization']).default('individual'),
-  organization_id: z.string().uuid().optional().nullable(),
   date: z.date({
     required_error: 'A start date and time is required.',
   }),
@@ -87,14 +84,6 @@ const eventFormSchema = z.object({
 }, {
     message: "Price must be a positive number for paid events.",
     path: ["price"],
-}).refine(data => {
-    if (data.event_type === 'organization') {
-        return data.organization_id !== undefined && data.organization_id !== null;
-    }
-    return true;
-}, {
-    message: "Please select an organization for organization events.",
-    path: ["organization_id"],
 });
 
 
@@ -105,7 +94,7 @@ interface CreateEventFormProps {
     defaultValues?: Partial<EventFormValues>;
 }
 
-function CustomFieldOptions({ nestIndex, form }: { nestIndex: number, form: ReturnType<typeof useForm<EventFormValues>> }) {
+function CustomFieldOptions({ nestIndex, form }: { nestIndex: number, form: any }) {
   const { control, watch } = form;
   const fieldType = watch(`customFields.${nestIndex}.field_type`);
 
@@ -163,28 +152,8 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
   const [preview, setPreview] = useState<{[key: string]: string | null}>({
     cover_image: event?.cover_image || null,
   });
-  const [organizations, setOrganizations] = useState<Array<{id: string, name: string}>>([]);
-  const [loadingOrgs, setLoadingOrgs] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
-
-  // Fetch user's organizations
-  useEffect(() => {
-    async function fetchOrganizations() {
-      try {
-        const response = await fetch('/api/organizations/my-organizations');
-        if (response.ok) {
-          const data = await response.json();
-          setOrganizations(data.organizations || []);
-        }
-      } catch (error) {
-        console.error('Failed to fetch organizations:', error);
-      } finally {
-        setLoadingOrgs(false);
-      }
-    }
-    fetchOrganizations();
-  }, []);
 
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
@@ -192,8 +161,6 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
       ...defaultValues,
       title: defaultValues?.title || '',
       description: defaultValues?.description || '',
-      event_type: defaultValues?.event_type || 'individual',
-      organization_id: defaultValues?.organization_id || undefined,
       location: defaultValues?.location || '',
       targetAudience: defaultValues?.targetAudience || 'General Audience',
       scanners: defaultValues?.scanners || [],
@@ -203,7 +170,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
       fee_bearer: defaultValues?.fee_bearer === 'organizer' ? 'organizer' : 'buyer',
       is_public: defaultValues?.is_public ?? true,
       requires_approval: defaultValues?.requires_approval || false,
-      current_cover_image: event?.cover_image || undefined,
+      current_cover_image: event?.cover_image,
     },
   });
 
@@ -323,7 +290,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
 
   return (
     <Card>
-      <CardContent className="pt-6 ">
+      <CardContent className="pt-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <FormField
@@ -339,83 +306,6 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                 </FormItem>
               )}
             />
-
-            <FormField
-              control={form.control}
-              name="event_type"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Create event as</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value || 'individual'}
-                      className="flex flex-col space-y-1"
-                    >
-                      <div className="flex items-center space-x-3 space-y-0">
-                        <RadioGroupItem value="individual" id="individual" />
-                        <Label htmlFor="individual" className="font-normal cursor-pointer">
-                          Individual / Personal Event
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-3 space-y-0">
-                        <RadioGroupItem 
-                          value="organization" 
-                          id="organization"
-                          disabled={loadingOrgs || organizations.length === 0}
-                        />
-                        <Label 
-                          htmlFor="organization" 
-                          className={cn(
-                            "font-normal cursor-pointer",
-                            (loadingOrgs || organizations.length === 0) && "text-muted-foreground"
-                          )}
-                        >
-                          Organization Event
-                          {!loadingOrgs && organizations.length === 0 && (
-                            <span className="text-xs ml-2">(You need to create an organization first)</span>
-                          )}
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormDescription>
-                    Choose whether this event is hosted by you personally or by an organization you manage.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {form.watch('event_type') === 'organization' && (
-              <FormField
-                control={form.control}
-                name="organization_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Select Organization</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose an organization" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {organizations.map((org) => (
-                          <SelectItem key={org.id} value={org.id}>
-                            {org.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Select which organization is hosting this event.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
             
             <FormField
               control={form.control}
@@ -446,38 +336,6 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                   </FormControl>
                   <FormDescription>
                     You can use AI to generate a compelling description.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Event Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="conference">Conference</SelectItem>
-                      <SelectItem value="workshop">Workshop</SelectItem>
-                      <SelectItem value="festival">Festival</SelectItem>
-                      <SelectItem value="concert">Concert</SelectItem>
-                      <SelectItem value="seminar">Seminar</SelectItem>
-                      <SelectItem value="networking">Networking</SelectItem>
-                      <SelectItem value="sports">Sports</SelectItem>
-                      <SelectItem value="community">Community</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    Choose the category that best describes your event.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
