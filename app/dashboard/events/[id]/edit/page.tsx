@@ -24,7 +24,7 @@ export default async function EditEventPage(props: { params: Promise<{ id: strin
     end_date: event.end_date ? new Date(event.end_date) : undefined,
     targetAudience: 'Users', // This field is not in the db, providing a default
     current_cover_image: event.cover_image || undefined,
-    scanners: (event.scanners || []).map((s: any) => ({ email: s.profiles.email })),
+    scanners: (event.scanners || []).map((s: { profiles: { email: string } }) => ({ email: s.profiles.email })),
     customFields: event.event_form_fields,
   }
 

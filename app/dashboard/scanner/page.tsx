@@ -125,11 +125,11 @@ function ScannerView({ event, onBack }: { event: EventWithAttendees, onBack: () 
 
       console.log('✅ Scan successful:', result.message);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Scan failed:', error);
       setFlash('error');
       
-      const errorMessage = error?.message || 'Could not verify ticket.';
+      const errorMessage = error instanceof Error ? error.message : 'Could not verify ticket.';
       
       toast({
         variant: 'destructive',

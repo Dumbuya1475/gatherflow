@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cookies } from 'next/headers';
 
 
-async function getDashboardStats(user: any) {
+async function getDashboardStats(user: { id: string } | null) {
   if (!user) {
     return { isOrganizer: false, totalEvents: 0, activeEvents: 0, totalAttendees: 0, checkInsToday: 0, recentEvents: [] };
   }
@@ -102,7 +102,7 @@ async function getDashboardStats(user: any) {
   }
 }
 
-async function getAttendeeDashboardStats(user: any) {
+async function getAttendeeDashboardStats(user: { id: string }) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const { data: tickets, error } = await supabase
@@ -169,7 +169,14 @@ export default async function DashboardPage() {
 
   const isEventLimitReached = activeEvents >= 3;
 
-  const StatCard = ({ title, value, description, icon: Icon, delay, trend, className = "" }: any) => (
+  const StatCard = ({ title, value, description, icon: Icon, trend, className = "" }: { 
+    title: string; 
+    value: number | string; 
+    description: string; 
+    icon: React.ElementType; 
+    trend?: string; 
+    className?: string;
+  }) => (
     <Card className={`group relative overflow-hidden bg-background/50 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-lg transition-all duration-500 cursor-pointer ${className}`}>
       <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.02] to-secondary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
       <div className="absolute -top-10 -right-10 w-20 h-20 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"></div>

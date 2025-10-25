@@ -67,7 +67,7 @@ export async function sendEmailAction(eventId: number, subject: string, message:
         });
 
         return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error in sendEmailAction:', error);
         return { success: false, error: error.message || 'An unexpected error occurred.' };
     }

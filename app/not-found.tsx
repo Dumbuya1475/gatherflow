@@ -17,7 +17,7 @@ export default function NotFound() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            Oops! The page you're looking for seems to have ventured into the unknown.
+            Oops! The page you&apos;re looking for seems to have ventured into the unknown.
           </p>
         </CardContent>
         <CardFooter className="flex-col gap-4">

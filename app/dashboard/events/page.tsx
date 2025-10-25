@@ -72,7 +72,7 @@ async function getRegisteredEvents(userId: string): Promise<EventWithAttendees[]
     // Type assertion: events from !inner join is actually a single object, not an array
     type TicketWithEvent = {
         id: number;
-        events: any & { organizer_id: string; tickets: { count: number }[] };
+        events: Record<string, unknown> & { organizer_id: string; tickets: { count: number }[] };
     };
     
     const typedTickets = tickets as unknown as TicketWithEvent[];
@@ -104,16 +104,19 @@ async function getRegisteredEvents(userId: string): Promise<EventWithAttendees[]
     const profileMap = new Map(profiles?.map(p => [p.id, p]));
 
     // Fetch organization data
-          const organizationIds = new Set(
-        organizedEvents
-          .filter((event: Record<string, unknown>) => event.organization_id)
+    const organizationIds = new Set(
+      organizedEvents
+        .filter((event: Record<string, unknown>) => event.organization_id)
+        .map((event: Record<string, unknown>) => event.organization_id)
+    );
+    
     let organizationMap = new Map();
 
-    if (organizationIds.length > 0) {
+    if (organizationIds.size > 0) {
       const { data: organizations } = await supabase
         .from('organizations')
         .select('id, name, description')
-        .in('id', organizationIds);
+        .in('id', Array.from(organizationIds));
       
       if (organizations) {
         organizationMap = new Map(organizations.map(o => [o.id, o]));
@@ -132,7 +135,7 @@ async function getRegisteredEvents(userId: string): Promise<EventWithAttendees[]
 }
 
 
-async function getAllEvents(user: any): Promise<EventWithAttendees[]> {
+async function getAllEvents(_user: unknown): Promise<EventWithAttendees[]> {
   const supabase = createClient();
 
   const { data: events, error } = await supabase
@@ -200,7 +203,7 @@ async function getPastEvents(userId: string): Promise<EventWithAttendees[]> {
     
     // Type assertion: events from !inner join is actually a single object, not an array
     type TicketWithEvent = {
-        events: any & { date: string; tickets: { count: number }[] };
+        events: Record<string, unknown> & { date: string; tickets: { count: number }[] };
     };
     
     const typedAttendedTickets = (attendedTickets || []) as unknown as TicketWithEvent[];
@@ -271,7 +274,7 @@ function EventsLoadingSkeleton() {
 
 
 export default function EventsPage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<unknown>(null);
   const [allEvents, setAllEvents] = useState<EventWithAttendees[]>([]);
   const [myEvents, setMyEvents] = useState<EventWithAttendees[]>([]);
   const [registeredEvents, setRegisteredEvents] = useState<EventWithAttendees[]>([]);

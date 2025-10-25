@@ -13,7 +13,7 @@ import { Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 
-async function getAllPublicEvents(user: any) {
+async function getAllPublicEvents(_user: unknown) {
   const supabase = createClient();
   const { data: events, error } = await supabase
     .from('events')
@@ -127,7 +127,7 @@ function EventsLoadingSkeleton() {
 
 export default function AllEventsPage() {
   const [allEvents, setAllEvents] = useState<EventWithAttendees[]>([]);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<unknown>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState('');

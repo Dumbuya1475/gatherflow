@@ -15,7 +15,7 @@ const monime = createClient({
 });
 
 interface MonimeCheckoutParams {
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   name: string;
   lineItems: Array<{ name: string; price: { currency: string; value: number }; quantity: number }>;
   successUrl: string;
@@ -67,7 +67,7 @@ interface MonimePayoutParams {
   amount: number;
   currency: string;
   recipientPhone: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 export async function createMonimePayout(

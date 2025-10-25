@@ -85,7 +85,12 @@ export async function registerAndCreateTicket(
     
     const initialStatus = eventData.requires_approval ? 'pending' : 'approved';
     
-    const ticketData: any = {
+    const ticketData: {
+      event_id: number;
+      user_id: string;
+      status: string;
+      qr_token?: string;
+    } = {
       event_id: eventId,
       user_id: user.id,
       status: initialStatus,
@@ -241,7 +246,12 @@ export async function registerGuestForEvent(
 
   const initialStatus = eventData.requires_approval ? 'pending' : 'approved';
   
-  const ticketData: any = {
+  const ticketData: {
+    event_id: number;
+    user_id: string;
+    status: string;
+    qr_token?: string;
+  } = {
     event_id: eventId,
     user_id: profile.id,
     status: initialStatus,
@@ -552,7 +562,12 @@ export async function scanTicketAction(qrToken: string, eventId: number) {
     }
 
     // 5. Determine scan action
-    let updateData: any = {};
+    let updateData: {
+      checked_in?: boolean;
+      checked_in_at?: string;
+      checked_out?: boolean;
+      checked_out_at?: string;
+    } = {};
     let message = '';
     const now = new Date().toISOString();
 
