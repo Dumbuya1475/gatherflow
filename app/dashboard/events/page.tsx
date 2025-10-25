@@ -104,7 +104,9 @@ async function getRegisteredEvents(userId: string): Promise<EventWithAttendees[]
     const profileMap = new Map(profiles?.map(p => [p.id, p]));
 
     // Fetch organization data
-    const organizationIds = events.map(event => event.organization_id).filter(Boolean) as string[];
+          const organizationIds = new Set(
+        organizedEvents
+          .filter((event: Record<string, unknown>) => event.organization_id)
     let organizationMap = new Map();
 
     if (organizationIds.length > 0) {
