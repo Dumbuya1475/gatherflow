@@ -60,9 +60,27 @@ async function getAllPublicEvents(user: any) {
 
   const profileMap = new Map(profiles?.map(p => [p.id, p]));
 
+  // Fetch organization data
+  const organizationIds = events.map(event => event.organization_id).filter(Boolean) as string[];
+  let organizationMap = new Map();
+
+  if (organizationIds.length > 0) {
+    const { data: organizations, error: orgError } = await supabase
+      .from('organizations')
+      .select('id, name, description')
+      .in('id', organizationIds);
+
+    if (orgError) {
+      console.error('Error fetching organizations:', orgError);
+    } else {
+      organizationMap = new Map(organizations?.map(o => [o.id, o]));
+    }
+  }
+
   const eventsWithOrganizer = eventsWithCounts.map(event => ({
     ...event,
     organizer: event.organizer_id ? profileMap.get(event.organizer_id) : null,
+    organization: event.organization_id ? organizationMap.get(event.organization_id) : null,
   }));
 
   if (!user) {

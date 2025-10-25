@@ -228,7 +228,7 @@ export function TicketView({ ticket }: { ticket: TicketWithEvent }) {
     };
 
     return (
-        <div className="container mx-auto max-w-4xl py-8">
+        <div className="container mx-auto max-w-5xl py-8">
             <div className="space-y-6">
                 <div>
                     <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
@@ -246,7 +246,7 @@ export function TicketView({ ticket }: { ticket: TicketWithEvent }) {
                     </p>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-8">
+                <div className="grid md:grid-cols-2 gap-8 space-y-0">
                     <Card>
                         <CardHeader>
                             <CardTitle className="font-headline text-2xl">{ticket.events.title}</CardTitle>

@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
@@ -83,8 +82,9 @@ export async function POST(request: Request) {
       expiredCount: totalExpired 
     });
 
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('Cron job: An unexpected error occurred:', e);
-    return new NextResponse(`An unexpected error occurred: ${e.message}`, { status: 500 });
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return new NextResponse(`An unexpected error occurred: ${errorMessage}`, { status: 500 });
   }
 }

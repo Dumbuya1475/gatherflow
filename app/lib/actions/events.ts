@@ -47,6 +47,8 @@ export async function createEventAction(formData: FormData) {
     fee_bearer: formData.get('fee_bearer') as 'organizer' | 'buyer',
     is_public: formData.get('is_public') === 'true',
     requires_approval: formData.get('requires_approval') === 'true',
+    event_type: (formData.get('event_type') as string) || 'individual',
+    organization_id: formData.get('organization_id') as string | null,
     customFields: JSON.parse(formData.get('customFields') as string || '[]') as EventFormFieldWithOptions[],
     cover_image_file: formData.get('cover_image_file') as File,
   };
@@ -75,6 +77,8 @@ export async function createEventAction(formData: FormData) {
       fee_bearer: rawData.fee_bearer,
       is_public: rawData.is_public,
       requires_approval: rawData.requires_approval,
+      event_type: rawData.event_type,
+      organization_id: rawData.organization_id || null,
       organizer_id: user.id,
       cover_image: coverImageUrl,
     })
@@ -146,6 +150,8 @@ export async function updateEventAction(eventId: number, formData: FormData) {
     fee_bearer: formData.get('fee_bearer') as 'organizer' | 'buyer',
     is_public: formData.get('is_public') === 'true',
     requires_approval: formData.get('requires_approval') === 'true',
+    event_type: (formData.get('event_type') as string) || 'individual',
+    organization_id: formData.get('organization_id') as string | null,
     customFields: JSON.parse(formData.get('customFields') as string || '[]') as EventFormFieldWithOptions[],
     cover_image_file: formData.get('cover_image_file') as File,
     scanners: JSON.parse(formData.get('scanners') as string || '[]') as string[],
@@ -173,6 +179,8 @@ export async function updateEventAction(eventId: number, formData: FormData) {
       fee_bearer: rawData.fee_bearer,
       is_public: rawData.is_public,
       requires_approval: rawData.requires_approval,
+      event_type: rawData.event_type,
+      organization_id: rawData.organization_id || null,
       cover_image: coverImageUrl,
     })
     .eq('id', eventId)

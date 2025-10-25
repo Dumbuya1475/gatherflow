@@ -34,9 +34,25 @@ async function getMyEvents(userId: string): Promise<EventWithAttendees[]> {
     return [];
   }
 
+  // Fetch organization data for events
+  const organizationIds = events?.map(event => event.organization_id).filter(Boolean) as string[];
+  let organizationMap = new Map();
+
+  if (organizationIds.length > 0) {
+    const { data: organizations } = await supabase
+      .from('organizations')
+      .select('id, name, description')
+      .in('id', organizationIds);
+    
+    if (organizations) {
+      organizationMap = new Map(organizations.map(o => [o.id, o]));
+    }
+  }
+
   return events.map(event => ({
     ...event,
     attendees: event.tickets[0]?.count || 0,
+    organization: event.organization_id ? organizationMap.get(event.organization_id) : null,
   }));
 }
 
@@ -53,18 +69,25 @@ async function getRegisteredEvents(userId: string): Promise<EventWithAttendees[]
         return [];
     }
     
-    const events = tickets
+    // Type assertion: events from !inner join is actually a single object, not an array
+    type TicketWithEvent = {
+        id: number;
+        events: any & { organizer_id: string; tickets: { count: number }[] };
+    };
+    
+    const typedTickets = tickets as unknown as TicketWithEvent[];
+    const events = typedTickets
         .filter(ticket => ticket.events)
         .map(ticket => ticket.events);
     
-    const organizerIds = events.map(event => event!.organizer_id).filter(Boolean) as string[];
+    const organizerIds = events.map(event => event.organizer_id).filter(Boolean) as string[];
 
     if (organizerIds.length === 0) {
-        return tickets
+        return typedTickets
         .filter(ticket => ticket.events)
         .map(ticket => ({
-            ...ticket.events!,
-            attendees: ticket.events!.tickets[0]?.count || 0,
+            ...ticket.events,
+            attendees: ticket.events.tickets[0]?.count || 0,
             ticket_id: ticket.id,
         }));
     }
@@ -80,13 +103,29 @@ async function getRegisteredEvents(userId: string): Promise<EventWithAttendees[]
     
     const profileMap = new Map(profiles?.map(p => [p.id, p]));
 
-    return tickets
+    // Fetch organization data
+    const organizationIds = events.map(event => event.organization_id).filter(Boolean) as string[];
+    let organizationMap = new Map();
+
+    if (organizationIds.length > 0) {
+      const { data: organizations } = await supabase
+        .from('organizations')
+        .select('id, name, description')
+        .in('id', organizationIds);
+      
+      if (organizations) {
+        organizationMap = new Map(organizations.map(o => [o.id, o]));
+      }
+    }
+
+    return typedTickets
       .filter(ticket => ticket.events) // Ensure event data is not null
       .map(ticket => ({
-        ...ticket.events!,
-        attendees: ticket.events!.tickets[0]?.count || 0,
+        ...ticket.events,
+        attendees: ticket.events.tickets[0]?.count || 0,
         ticket_id: ticket.id,
-        organizer: ticket.events!.organizer_id ? profileMap.get(ticket.events!.organizer_id) : null,
+        organizer: ticket.events.organizer_id ? profileMap.get(ticket.events.organizer_id) : null,
+        organization: ticket.events.organization_id ? organizationMap.get(ticket.events.organization_id) : null,
     }));
 }
 
@@ -157,9 +196,15 @@ async function getPastEvents(userId: string): Promise<EventWithAttendees[]> {
         console.error('Error fetching past attended events:', attendedError);
     }
     
-    const attendedEvents = (attendedTickets || [])
+    // Type assertion: events from !inner join is actually a single object, not an array
+    type TicketWithEvent = {
+        events: any & { date: string; tickets: { count: number }[] };
+    };
+    
+    const typedAttendedTickets = (attendedTickets || []) as unknown as TicketWithEvent[];
+    const attendedEvents = typedAttendedTickets
       .filter(t => t.events && new Date(t.events.date) < new Date())
-      .map(t => ({...t.events!, type: 'attended' as const, attendees: t.events!.tickets[0]?.count || 0 }));
+      .map(t => ({...t.events, type: 'attended' as const, attendees: t.events.tickets[0]?.count || 0 }));
 
 
     // Fetch events the user organized

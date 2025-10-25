@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useEffect, useMemo } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye, Eye, Pencil, DollarSign, Timer, User, X, Clock } from 'lucide-react';
+import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye, Eye, Pencil, DollarSign, Timer, User, X, Clock, Building2 } from 'lucide-react';
 import type { EventWithAttendees } from '@/lib/types';
 import { unregisterForEventAction } from '@/lib/actions/tickets';
 import { useToast } from '@/hooks/use-toast';
@@ -51,9 +51,14 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
 
 
     const organizerName = useMemo(() => {
+        // Show organization name if this is an organization event
+        if (event.organization) {
+            return event.organization.name;
+        }
+        // Otherwise show individual organizer
         if (!event.organizer) return 'Anonymous';
         return `${event.organizer.first_name || ''} ${event.organizer.last_name || ''}`.trim() || 'Anonymous';
-    }, [event.organizer]);
+    }, [event.organizer, event.organization]);
     
     const isFull = event.capacity ? event.attendees >= event.capacity : false;
 
@@ -105,8 +110,10 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
             <span className="truncate leading-tight whitespace-normal font-headline">{event.location}</span>
           </div>
            <div className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            <span className="truncate">Organized by {organizerName}</span>
+            {event.organization ? <Building2 className="h-4 w-4" /> : <User className="h-4 w-4" />}
+            <span className="truncate">
+              {event.organization ? `By ${organizerName}` : `Organized by ${organizerName}`}
+            </span>
           </div>
         </div>
       </CardContent>
@@ -176,7 +183,7 @@ export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent 
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Keep Ticket</AlertDialogCancel>
-                               <form action={unregisterForEventAction} className="inline-block">
+                               <form action={async (formData: FormData) => { await unregisterForEventAction(undefined, formData); }} className="inline-block">
                                 <input type="hidden" name="ticketId" value={event.ticket_id} />
                                 <AlertDialogAction type="submit">Yes, Cancel</AlertDialogAction>
                               </form>

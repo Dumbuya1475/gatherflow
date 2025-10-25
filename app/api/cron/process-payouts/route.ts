@@ -3,8 +3,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { createMonimePayout } from '@@/lib/monime';
 import { cookies } from 'next/headers';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-async function processEventPayout(event: any, supabaseAdmin: any) {
+interface Event {
+  id: number;
+  organizer_id: string;
+  price: number;
+  fee_bearer: 'organizer' | 'buyer';
+  [key: string]: unknown;
+}
+
+async function processEventPayout(event: Event, supabaseAdmin: SupabaseClient) {
   // Get all paid tickets
   const { data: tickets } = await supabaseAdmin
     .from('tickets')
