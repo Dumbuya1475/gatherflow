@@ -51,16 +51,20 @@ async function getDashboardStats(user: { id: string } | null) {
     if (events && events.length > 0) {
         const eventIds = events.map(e => e.id);
         const supabaseAdmin = createServiceRoleClient(cookieStore);
-        const { data: counts, error: ticketsCountError } = await supabaseAdmin
+        const { data: countsRaw, error: ticketsCountError } = await supabaseAdmin
             .rpc('get_event_attendee_counts', { event_ids: eventIds });
+
+        type CountRow = { event_id_out: number; attendee_count: number | string | null };
 
         if (ticketsCountError) {
             console.error("Error calling get_event_attendee_counts RPC:", ticketsCountError);
             throw ticketsCountError;
         }
 
-        if (counts) {
-            countsByEvent = counts.reduce((acc, { event_id_out, attendee_count }) => {
+        const counts = countsRaw as CountRow[] | null;
+
+        if (counts && counts.length > 0) {
+            countsByEvent = counts.reduce((acc, { event_id_out, attendee_count }: CountRow) => {
                 acc[event_id_out] = Number(attendee_count || 0);
                 return acc;
             }, {} as Record<number, number>);
@@ -115,7 +119,14 @@ async function getAttendeeDashboardStats(user: { id: string }) {
     return { registeredEventsCount: 0, upcomingEvents: [], attendedEventsCount: 0 };
   }
 
-  const eventIds = tickets.map(t => t.events.id);
+  // Supabase can return the joined relation as an object or as an array depending on the query/relationship.
+  // Normalize ticket.events to always be an object to avoid "property 'id' does not exist on type any[]".
+  const normalizedTickets = tickets.map((t: any) => {
+    const evt = Array.isArray(t.events) ? t.events[0] : t.events;
+    return { ...t, events: evt };
+  });
+
+  const eventIds = normalizedTickets.map(t => t.events?.id).filter(Boolean) as number[];
   let countsByEvent: Record<number, number> = {};
 
   if (eventIds.length > 0) {
@@ -126,20 +137,23 @@ async function getAttendeeDashboardStats(user: { id: string }) {
     if (countError) {
         console.error('Error fetching attendee counts:', countError);
     } else if (counts) {
-      countsByEvent = counts.reduce((acc, { event_id_out, attendee_count }) => {
+      countsByEvent = (counts as any[]).reduce((acc, { event_id_out, attendee_count }) => {
           acc[event_id_out] = Number(attendee_count || 0);
           return acc;
       }, {} as Record<number, number>);
     }
   }
 
-  const ticketsWithCounts = tickets.map(ticket => ({
-      ...ticket,
-      events: {
-          ...ticket.events,
-          attendees: countsByEvent[ticket.events.id] || 0,
-      }
-  }));
+  const ticketsWithCounts = normalizedTickets.map(ticket => {
+      const evt = ticket.events || {};
+      return {
+          ...ticket,
+          events: {
+              ...evt,
+              attendees: countsByEvent[evt.id] || 0,
+          }
+      };
+  });
 
   const registeredEventsCount = ticketsWithCounts.length;
   const upcomingEvents = ticketsWithCounts
@@ -263,12 +277,12 @@ export default async function DashboardPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <div className="animate-in slide-in-from-bottom-4 duration-700 delay-100">
               <StatCard
-                title="Total Events"
-                value={totalEvents}
-                description="All events you have created"
-                icon={CalendarIcon}
-                trend={totalEvents > 0 ? "+12%" : null}
-              />
+                  title="Total Events"
+                  value={totalEvents}
+                  description="All events you have created"
+                  icon={CalendarIcon}
+                  trend={totalEvents > 0 ? "+12%" : undefined}
+                />
             </div>
             <div className="animate-in slide-in-from-bottom-4 duration-700 delay-200">
               <StatCard
@@ -281,12 +295,12 @@ export default async function DashboardPage() {
             </div>
             <div className="animate-in slide-in-from-bottom-4 duration-700 delay-300">
               <StatCard
-                title="Total Attendees"
-                value={totalAttendees}
-                description="Across all your events"
-                icon={Users}
-                trend={totalAttendees > 0 ? "+24%" : null}
-              />
+                  title="Total Attendees"
+                  value={totalAttendees}
+                  description="Across all your events"
+                  icon={Users}
+                  trend={totalAttendees > 0 ? "+24%" : undefined}
+                />
             </div>
             <div className="animate-in slide-in-from-bottom-4 duration-700 delay-400">
               <StatCard

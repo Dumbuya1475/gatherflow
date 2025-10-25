@@ -15,7 +15,7 @@ const monime = createClient({
 });
 
 interface MonimeCheckoutParams {
-  metadata: Record<string, unknown>;
+  metadata: { financialAccountId?: string } & Record<string, unknown>;
   name: string;
   lineItems: Array<{ name: string; price: { currency: string; value: number }; quantity: number }>;
   successUrl: string;

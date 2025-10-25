@@ -13,7 +13,7 @@ import { Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 
-async function getAllPublicEvents(_user: unknown) {
+async function getAllPublicEvents(user: unknown) {
   const supabase = createClient();
   const { data: events, error } = await supabase
     .from('events')

@@ -61,6 +61,12 @@ const nextConfig: NextConfig = {
       },
     });
 
+    // Handle express critical dependency warning
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      express: false,
+    };
+
     return config;
   },
 };

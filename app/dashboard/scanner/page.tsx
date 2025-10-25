@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Camera, CameraOff, ChevronLeft, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import jsQR from 'jsqr';
-import { getScannableEvents, scanTicketAction } from '@/lib/actions/tickets.tsx';
+import { getScannableEvents, scanTicketAction } from '@/lib/actions/tickets';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { EventCard } from '@/components/event-card';

@@ -1,19 +1,6 @@
-  // Fee constants
-  const PLATFORM_FEE_PERCENT = 0.05;
-  const MONIME_FEE_PERCENT = 0.029;
-  const MONIME_FEE_FLAT = 0.30;
-
-  // Watch price and fee_bearer for dynamic total
-  const price = form.watch('price') ?? 0;
-  const feeBearer = form.watch('fee_bearer');
-  // Calculate total buyer pays if buyer pays fee
-  const platformFee = price * PLATFORM_FEE_PERCENT;
-  const monimeFee = price * MONIME_FEE_PERCENT + MONIME_FEE_FLAT;
-  const buyerTotal = feeBearer === 'buyer' ? price + platformFee + monimeFee : price;
-
 'use client';
 
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
@@ -46,7 +33,6 @@ import { generatePromotionAction } from '@/lib/actions/server/ai';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -98,7 +84,6 @@ const eventFormSchema = z.object({
     path: ["price"],
 });
 
-
 type EventFormValues = z.infer<typeof eventFormSchema>;
 
 interface CreateEventFormProps {
@@ -106,7 +91,7 @@ interface CreateEventFormProps {
     defaultValues?: Partial<EventFormValues>;
 }
 
-function CustomFieldOptions({ nestIndex, form }: { nestIndex: number, form: any }) {
+function CustomFieldOptions({ nestIndex, form }: { nestIndex: number, form: UseFormReturn<EventFormValues> }) {
   const { control, watch } = form;
   const fieldType = watch(`customFields.${nestIndex}.field_type`);
 
@@ -182,7 +167,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
       fee_bearer: defaultValues?.fee_bearer === 'organizer' ? 'organizer' : 'buyer',
       is_public: defaultValues?.is_public ?? true,
       requires_approval: defaultValues?.requires_approval || false,
-      current_cover_image: event?.cover_image,
+      current_cover_image: event?.cover_image ?? undefined,
     },
   });
 
@@ -197,6 +182,20 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
   });
 
   const isPaid = form.watch('is_paid');
+
+  // Fee constants
+  const PLATFORM_FEE_PERCENT = 0.05;
+  const MONIME_FEE_PERCENT = 0.029;
+  const MONIME_FEE_FLAT = 0.30;
+
+  // Watch price and fee_bearer for dynamic total
+  const price = form.watch('price') ?? 0;
+  const feeBearer = form.watch('fee_bearer');
+  
+  // Calculate total buyer pays if buyer pays fee
+  const platformFee = price * PLATFORM_FEE_PERCENT;
+  const monimeFee = price * MONIME_FEE_PERCENT + MONIME_FEE_FLAT;
+  const buyerTotal = feeBearer === 'buyer' ? price + platformFee + monimeFee : price;
 
   useEffect(() => {
     if (isPaid) {
@@ -298,7 +297,6 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
       // react-hook-form's handleSubmit usually manages isSubmitting, but this is a safeguard.
     }
   }
-  
 
   return (
     <Card>
@@ -395,8 +393,6 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
               )}
             />
 
-            
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <FormField
                 control={form.control}
@@ -439,8 +435,8 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                                     const time = e.target.value;
                                     const [hours, minutes] = time.split(':').map(Number);
                                     const baseDate = field.value instanceof Date ? field.value : new Date();
-                                    const newDate = new Date(baseDate); // make a new copy
-                                                                        newDate.setHours(hours);
+                                    const newDate = new Date(baseDate);
+                                    newDate.setHours(hours);
                                     newDate.setMinutes(minutes);
                                     field.onChange(newDate);
                                 }}
@@ -493,8 +489,8 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                                     const time = e.target.value;
                                     const [hours, minutes] = time.split(':').map(Number);
                                     const baseDate = field.value instanceof Date ? field.value : new Date();
-                                    const newDate = new Date(baseDate); // make a new copy
-                                                                        newDate.setHours(hours);
+                                    const newDate = new Date(baseDate);
+                                    newDate.setHours(hours);
                                     newDate.setMinutes(minutes);
                                     field.onChange(newDate);
                                 }}
@@ -567,65 +563,67 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
               />
 
               {isPaid && (
-                <div className="grid md:grid-cols-2 gap-8">
-                  <FormField
-                    control={form.control}
-                    name="price"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Price (SLE)</FormLabel>
-                        <FormControl>
-                          <div className="flex items-center gap-2">
-                            <Input type="number" placeholder="e.g., 50" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} value={field.value ?? ''} />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="fee_bearer"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Service Fee</FormLabel>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="flex space-x-4 pt-2"
-                          >
-                            <FormItem className="flex items-center space-x-2">
-                              <FormControl>
-                                <RadioGroupItem value="buyer" />
-                              </FormControl>
-                              <Label htmlFor="is_paid-paid">Buyer pays fee</Label>
-                            </FormItem>
-                            <FormItem className="flex items-center space-x-2">
-                              <FormControl>
-                                <RadioGroupItem value="organizer" />
-                              </FormControl>
-                              <Label htmlFor="is_paid-paid">I'll pay fee</Label>
-                            </FormItem>
-                          </RadioGroup>
-                        </FormControl>
-                        <Button variant="link" asChild className="p-0 h-auto">
-                          <Link href="/dashboard/pricing" target="_blank">
-                            (Preview fee structure)
-                          </Link>
-                        </Button>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                {/* Show total price for buyer if buyer pays fee */}
-                {feeBearer === 'buyer' && price > 0 && (
-                  <div className="mt-2 text-sm text-muted-foreground">
-                    <strong>Total buyer pays:</strong> SLE {buyerTotal.toFixed(2)} &nbsp;
-                    <span>(includes platform fee SLE {platformFee.toFixed(2)} and Monime fee SLE {monimeFee.toFixed(2)})</span>
+                <>
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <FormField
+                      control={form.control}
+                      name="price"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Price (SLE)</FormLabel>
+                          <FormControl>
+                            <div className="flex items-center gap-2">
+                              <Input type="number" placeholder="e.g., 50" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} value={field.value ?? ''} />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="fee_bearer"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Service Fee</FormLabel>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                              className="flex space-x-4 pt-2"
+                            >
+                              <FormItem className="flex items-center space-x-2">
+                                <FormControl>
+                                  <RadioGroupItem value="buyer" />
+                                </FormControl>
+                                <Label htmlFor="is_paid-paid">Buyer pays fee</Label>
+                              </FormItem>
+                              <FormItem className="flex items-center space-x-2">
+                                <FormControl>
+                                  <RadioGroupItem value="organizer" />
+                                </FormControl>
+                                <Label htmlFor="is_paid-paid">I'll pay fee</Label>
+                              </FormItem>
+                            </RadioGroup>
+                          </FormControl>
+                          <Button variant="link" asChild className="p-0 h-auto">
+                            <Link href="/dashboard/pricing" target="_blank">
+                              (Preview fee structure)
+                            </Link>
+                          </Button>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                )}
+                  {feeBearer === 'buyer' && price > 0 && (
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      <strong>Total buyer pays:</strong> SLE {buyerTotal.toFixed(2)} &nbsp;
+                      <span>(includes platform fee SLE {platformFee.toFixed(2)} and Monime fee SLE {monimeFee.toFixed(2)})</span>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             <FormField
@@ -825,5 +823,3 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
     </Card>
   );
 }
-
-    

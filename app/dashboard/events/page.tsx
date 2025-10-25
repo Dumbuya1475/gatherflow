@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -70,31 +69,31 @@ async function getRegisteredEvents(userId: string): Promise<EventWithAttendees[]
     }
     
     // Type assertion: events from !inner join is actually a single object, not an array
-    type TicketWithEvent = {
-        id: number;
-        events: Record<string, unknown> & { organizer_id: string; tickets: { count: number }[] };
-    };
+        type TicketWithEvent = {
+            id: number;
+            events: EventWithAttendees & { tickets: { count: number }[] };
+        };
+        
+        const typedTickets = tickets as unknown as TicketWithEvent[];
+        const events = typedTickets
+            .filter(ticket => ticket.events)
+            .map(ticket => ticket.events);
+        
+        const organizerIds = events.map(event => event.organizer_id).filter(Boolean) as string[];
     
-    const typedTickets = tickets as unknown as TicketWithEvent[];
-    const events = typedTickets
-        .filter(ticket => ticket.events)
-        .map(ticket => ticket.events);
-    
-    const organizerIds = events.map(event => event.organizer_id).filter(Boolean) as string[];
-
-    if (organizerIds.length === 0) {
-        return typedTickets
-        .filter(ticket => ticket.events)
-        .map(ticket => ({
-            ...ticket.events,
-            attendees: ticket.events.tickets[0]?.count || 0,
-            ticket_id: ticket.id,
-        }));
-    }
+        if (organizerIds.length === 0) {
+            return typedTickets
+            .filter(ticket => ticket.events)
+            .map(ticket => ({
+                ...(ticket.events as EventWithAttendees),
+                attendees: ticket.events.tickets[0]?.count || 0,
+                ticket_id: ticket.id,
+            })) as EventWithAttendees[];
+        }
 
     const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name')
+        .select('id, created_at, updated_at, first_name, last_name, username, full_name, avatar_url, website, email, is_guest, phone')
         .in('id', organizerIds);
     
     if (profileError) {
@@ -135,7 +134,7 @@ async function getRegisteredEvents(userId: string): Promise<EventWithAttendees[]
 }
 
 
-async function getAllEvents(_user: unknown): Promise<EventWithAttendees[]> {
+async function getAllEvents(currentUser: { id: string } | null): Promise<EventWithAttendees[]> {
   const supabase = createClient();
 
   const { data: events, error } = await supabase
@@ -166,7 +165,7 @@ async function getAllEvents(_user: unknown): Promise<EventWithAttendees[]> {
     attendees: event.tickets[0]?.count || 0,
   }));
   
-  if (!user) {
+  if (!currentUser) {
     return eventsWithOrganizer;
   }
 
@@ -174,7 +173,7 @@ async function getAllEvents(_user: unknown): Promise<EventWithAttendees[]> {
     .from('tickets')
     .select('event_id, id')
     .in('event_id', events.map(e => e.id))
-    .eq('user_id', user.id);
+    .eq('user_id', currentUser.id);
   
   if (ticketError) {
       console.error('Error fetching user tickets for all events:', ticketError);
@@ -274,7 +273,7 @@ function EventsLoadingSkeleton() {
 
 
 export default function EventsPage() {
-  const [user, setUser] = useState<unknown>(null);
+  const [user, setUser] = useState<{ id: string } | null>(null);
   const [allEvents, setAllEvents] = useState<EventWithAttendees[]>([]);
   const [myEvents, setMyEvents] = useState<EventWithAttendees[]>([]);
   const [registeredEvents, setRegisteredEvents] = useState<EventWithAttendees[]>([]);
