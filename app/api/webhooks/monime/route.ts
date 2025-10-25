@@ -185,16 +185,16 @@ export async function POST(req: NextRequest) {
         .eq("id", ticket.event_id)
         .single();
 
-      let ticketPrice = eventData?.price || 0;
-      let feeBearerType = eventData?.fee_bearer || 'buyer';
+      const ticketPrice = eventData?.price || 0;
+      const feeBearerType = eventData?.fee_bearer || 'buyer';
       
       // Calculate fees (adjust these based on your Monime fee structure)
       const platformFeeRate = 0.05; // 5% platform fee
       const processorFeeRate = 0.029; // 2.9% + $0.30 Monime fee
       const processorFixedFee = 0.30;
       
-      let platformFee = ticketPrice * platformFeeRate;
-      let processorFee = (ticketPrice * processorFeeRate) + processorFixedFee;
+      const platformFee = ticketPrice * platformFeeRate;
+      const processorFee = (ticketPrice * processorFeeRate) + processorFixedFee;
       let amountPaid = ticketPrice;
       let organizerAmount = ticketPrice;
 

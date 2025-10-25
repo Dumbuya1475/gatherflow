@@ -57,7 +57,7 @@ const eventFormSchema = z.object({
     message: 'Target audience must be at least 2 characters.',
   }),
   cover_image_file: z
-    .any()
+    .custom<File | null | undefined>()
     .refine((file) => file === undefined || file === null || (file instanceof File && ACCEPTED_IMAGE_TYPES.includes(file.type)), {
         message: "Only .jpg, .jpeg, .png and .webp formats are supported.",
     })
@@ -100,7 +100,7 @@ function CustomFieldOptions({ nestIndex, form }: { nestIndex: number, form: UseF
     name: `customFields.${nestIndex}.options`,
   });
 
-  if (!['multiple-choice', 'checkboxes', 'dropdown'].includes(fieldType)) {
+  if (!['multiple-choice', 'checkboxes', 'dropdown'].includes(fieldType ?? '')) {
     return null;
   }
 
@@ -150,7 +150,6 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
     cover_image: event?.cover_image || null,
   });
   const { toast } = useToast();
-  const router = useRouter();
 
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
@@ -602,7 +601,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                                 <FormControl>
                                   <RadioGroupItem value="organizer" />
                                 </FormControl>
-                                <Label htmlFor="is_paid-paid">I'll pay fee</Label>
+                                <Label htmlFor="is_paid-paid">I&apos;ll pay fee</Label>
                               </FormItem>
                             </RadioGroup>
                           </FormControl>

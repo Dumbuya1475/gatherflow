@@ -120,8 +120,13 @@ async function getAttendeeDashboardStats(user: { id: string }) {
   }
 
   // Supabase can return the joined relation as an object or as an array depending on the query/relationship.
-  // Normalize ticket.events to always be an object to avoid "property 'id' does not exist on type any[]".
-  const normalizedTickets = tickets.map((t: any) => {
+  // Normalize ticket.events to always be an object to avoid "property 'id' does not exist on type".
+  interface Ticket {
+    events: { id: number; date: string; title: string; location?: string } | Array<{ id: number; date: string; title: string; location?: string }>;
+    id: string;
+  }
+
+  const normalizedTickets = tickets.map((t: Ticket) => {
     const evt = Array.isArray(t.events) ? t.events[0] : t.events;
     return { ...t, events: evt };
   });
@@ -137,7 +142,8 @@ async function getAttendeeDashboardStats(user: { id: string }) {
     if (countError) {
         console.error('Error fetching attendee counts:', countError);
     } else if (counts) {
-      countsByEvent = (counts as any[]).reduce((acc, { event_id_out, attendee_count }) => {
+      type CountResult = { event_id_out: number; attendee_count: number | string };
+      countsByEvent = (counts as CountResult[]).reduce((acc, { event_id_out, attendee_count }) => {
           acc[event_id_out] = Number(attendee_count || 0);
           return acc;
       }, {} as Record<number, number>);
