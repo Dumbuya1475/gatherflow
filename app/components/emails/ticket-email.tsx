@@ -2,7 +2,7 @@ import { TicketView } from '@/components/tickets/ticket-view';
 import { Ticket } from '@/lib/types';
 
 // This is the React component that will be rendered to HTML for the email
-export const TicketEmail = ({ ticket }: { ticket: any }) => {
+export const TicketEmail = ({ ticket }: { ticket: { events?: { title?: string }; [key: string]: unknown } }) {
   const eventName = ticket.events?.title || 'our event';
 
   return (

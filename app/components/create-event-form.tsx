@@ -105,7 +105,7 @@ interface CreateEventFormProps {
     defaultValues?: Partial<EventFormValues>;
 }
 
-function CustomFieldOptions({ nestIndex, form }: { nestIndex: number, form: any }) {
+function CustomFieldOptions({ nestIndex, form }: { nestIndex: number, form: ReturnType<typeof useForm<EventFormValues>> }) {
   const { control, watch } = form;
   const fieldType = watch(`customFields.${nestIndex}.field_type`);
 

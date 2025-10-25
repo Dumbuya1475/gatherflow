@@ -27,10 +27,10 @@ async function processEventPayout(event: Event, supabaseAdmin: SupabaseClient) {
   }
 
   // Calculate total payout
-  const totalGrossAmount = tickets.reduce((sum: any, ticket: any) => sum + ticket.amount_paid, 0);
-  const totalPlatformFees = tickets.reduce((sum: any, ticket: any) => sum + ticket.platform_fee, 0);
-  const totalMonimeFees = tickets.reduce((sum: any, ticket: any) => sum + ticket.payment_processor_fee, 0);
-  const netPayout = tickets.reduce((sum: any, ticket: any) => sum + ticket.organizer_amount, 0);
+  const totalGrossAmount = tickets.reduce((sum: number, ticket: { amount_paid: number }) => sum + ticket.amount_paid, 0);
+  const totalPlatformFees = tickets.reduce((sum: number, ticket: { platform_fee: number }) => sum + ticket.platform_fee, 0);
+  const totalMonimeFees = tickets.reduce((sum: number, ticket: { payment_processor_fee: number }) => sum + ticket.payment_processor_fee, 0);
+  const netPayout = tickets.reduce((sum: number, ticket: { organizer_amount: number }) => sum + ticket.organizer_amount, 0);
 
   // Get organizer's profile to get phone number
   const { data: organizerProfile, error: profileError } = await supabaseAdmin
@@ -135,10 +135,11 @@ export async function GET(req: NextRequest) {
       processed: processedCount,
       total: events?.length || 0
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cron job error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: error.message },
+      { error: errorMessage },
       { status: 500 }
     );
   }

@@ -176,12 +176,49 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ received: true, message: "Ticket already processed." });
       }
 
-      // 2. Mark ticket as 'approved' and generate QR token
+      // 2. Get payment details from checkout session
+      // You'll need to fetch the checkout session details from Monime to get exact amounts
+      // For now, we'll calculate based on the ticket data
+      const { data: eventData } = await supabase
+        .from("events")
+        .select("price, fee_bearer")
+        .eq("id", ticket.event_id)
+        .single();
+
+      let ticketPrice = eventData?.price || 0;
+      let feeBearerType = eventData?.fee_bearer || 'buyer';
+      
+      // Calculate fees (adjust these based on your Monime fee structure)
+      const platformFeeRate = 0.05; // 5% platform fee
+      const processorFeeRate = 0.029; // 2.9% + $0.30 Monime fee
+      const processorFixedFee = 0.30;
+      
+      let platformFee = ticketPrice * platformFeeRate;
+      let processorFee = (ticketPrice * processorFeeRate) + processorFixedFee;
+      let amountPaid = ticketPrice;
+      let organizerAmount = ticketPrice;
+
+      if (feeBearerType === 'buyer') {
+        // Buyer pays fees
+        amountPaid = ticketPrice + platformFee + processorFee;
+      } else {
+        // Organizer pays fees (deducted from ticket price)
+        organizerAmount = ticketPrice - platformFee - processorFee;
+      }
+
+      // 3. Mark ticket as 'approved', save payment details, and generate QR token
       const { error: updateError } = await supabase
         .from("tickets")
         .update({ 
             status: "approved", 
-            qr_token: crypto.randomUUID()
+            qr_token: crypto.randomUUID(),
+            monime_payment_status: 'paid',
+            ticket_price: ticketPrice,
+            amount_paid: amountPaid,
+            platform_fee: platformFee,
+            payment_processor_fee: processorFee,
+            organizer_amount: organizerAmount,
+            fee_bearer: feeBearerType
           })
         .eq("id", ticket.id);
 
@@ -190,7 +227,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Failed to update ticket status." }, { status: 500 });
       }
 
-      // 3. Send confirmation email with QR code
+      // 4. Send confirmation email with QR code
       const { data: ticketDetails } = await getTicketDetails(ticket.id);
       if (ticketDetails) {
         await sendTicketEmail(
@@ -200,7 +237,7 @@ export async function POST(req: NextRequest) {
         );
       }
       
-      // 4. Revalidate paths
+      // 5. Revalidate paths
       revalidatePath(`/events/${ticket.event_id}`);
       revalidatePath(`/dashboard/events/${ticket.event_id}/manage`);
 

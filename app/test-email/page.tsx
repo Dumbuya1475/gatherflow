@@ -9,10 +9,11 @@ export default function TestEmailPage() {
     const to = 'dumbuya366@gmail.com';
     const subject = 'Test Email from GatherFlow';
     const html = '<h1>Hello!</h1><p>This is a test email to confirm your Resend setup is working.</p>';
+    const jsxContent = <div dangerouslySetInnerHTML={{ __html: html }} />;
 
     console.log(`Attempting to send email to ${to}...`);
 
-    const result = await sendTicketEmail(to, subject, html);
+    const result = await sendTicketEmail(to, subject, jsxContent);
 
     if (result.success) {
       alert('Test email sent successfully! Check your inbox.');
