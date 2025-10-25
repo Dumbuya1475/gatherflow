@@ -1,3 +1,15 @@
+  // Fee constants
+  const PLATFORM_FEE_PERCENT = 0.05;
+  const MONIME_FEE_PERCENT = 0.029;
+  const MONIME_FEE_FLAT = 0.30;
+
+  // Watch price and fee_bearer for dynamic total
+  const price = form.watch('price') ?? 0;
+  const feeBearer = form.watch('fee_bearer');
+  // Calculate total buyer pays if buyer pays fee
+  const platformFee = price * PLATFORM_FEE_PERCENT;
+  const monimeFee = price * MONIME_FEE_PERCENT + MONIME_FEE_FLAT;
+  const buyerTotal = feeBearer === 'buyer' ? price + platformFee + monimeFee : price;
 
 'use client';
 
@@ -555,8 +567,8 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
               />
 
               {isPaid && (
-                  <div className="grid md:grid-cols-2 gap-8">
-                    <FormField
+                <div className="grid md:grid-cols-2 gap-8">
+                  <FormField
                     control={form.control}
                     name="price"
                     render={({ field }) => (
@@ -589,7 +601,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                               </FormControl>
                               <Label htmlFor="is_paid-paid">Buyer pays fee</Label>
                             </FormItem>
-                             <FormItem className="flex items-center space-x-2">
+                            <FormItem className="flex items-center space-x-2">
                               <FormControl>
                                 <RadioGroupItem value="organizer" />
                               </FormControl>
@@ -597,17 +609,23 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                             </FormItem>
                           </RadioGroup>
                         </FormControl>
-                         <Button variant="link" asChild className="p-0 h-auto">
-                            <Link href="/dashboard/pricing" target="_blank">
-                              (Preview fee structure)
-                            </Link>
-                          </Button>
+                        <Button variant="link" asChild className="p-0 h-auto">
+                          <Link href="/dashboard/pricing" target="_blank">
+                            (Preview fee structure)
+                          </Link>
+                        </Button>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                </div>
+                {/* Show total price for buyer if buyer pays fee */}
+                {feeBearer === 'buyer' && price > 0 && (
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    <strong>Total buyer pays:</strong> SLE {buyerTotal.toFixed(2)} &nbsp;
+                    <span>(includes platform fee SLE {platformFee.toFixed(2)} and Monime fee SLE {monimeFee.toFixed(2)})</span>
                   </div>
-              )}
+                )}
             </div>
 
             <FormField

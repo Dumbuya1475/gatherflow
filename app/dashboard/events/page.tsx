@@ -105,7 +105,7 @@ async function getRegisteredEvents(userId: string): Promise<EventWithAttendees[]
 
     // Fetch organization data
     const organizationIds = new Set(
-      organizedEvents
+      events
         .filter((event: Record<string, unknown>) => event.organization_id)
         .map((event: Record<string, unknown>) => event.organization_id)
     );
