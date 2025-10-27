@@ -7,7 +7,7 @@ import { LandingPageClient } from '@/components/landing-page-client';
 import { cookies } from 'next/headers';
 
 async function getRecentEvents() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   
   const { data: events, error } = await supabase
@@ -48,12 +48,35 @@ async function getRecentEvents() {
     }));
 }
 
+async function getFeaturedEvents() {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+  
+  // Get 5 upcoming public events with cover images for the carousel
+  const { data: events, error } = await supabase
+    .from('events')
+    .select('id, title, date, location, price, cover_image')
+    .eq('is_public', true)
+    .gt('date', new Date().toISOString())
+    .not('cover_image', 'is', null) // Only events with cover images
+    .order('date', { ascending: true })
+    .limit(5);
+
+  if (error) {
+    console.error('Error fetching featured events:', error);
+    return [];
+  }
+
+  return events || [];
+}
+
 
 export default async function LandingPage() {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
     const recentEvents = await getRecentEvents();
+    const featuredEvents = await getFeaturedEvents();
 
-    return <LandingPageClient recentEvents={recentEvents} user={user} />;
+    return <LandingPageClient recentEvents={recentEvents} featuredEvents={featuredEvents} user={user} />;
 }

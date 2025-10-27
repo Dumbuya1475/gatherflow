@@ -1,6 +1,6 @@
 
 import { createClient } from '@/lib/supabase/server';
-import { getTicketDetails } from '@/lib/actions/tickets.tsx';
+import { getTicketDetails } from '@/lib/actions/tickets';
 import { TicketView } from '@/components/tickets/ticket-view';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
@@ -15,7 +15,8 @@ interface ViewTicketPageProps {
 }
 
 export default async function ViewTicketPage({ searchParams }: ViewTicketPageProps) {
-    const { ticketId, email } = searchParams;
+    const resolvedSearchParams = await Promise.resolve(searchParams);
+    const { ticketId, email } = resolvedSearchParams;
 
     if (!ticketId) {
         return (
@@ -45,7 +46,7 @@ export default async function ViewTicketPage({ searchParams }: ViewTicketPagePro
     }
     
     // For guest users, we validate with email. For logged-in users, we check ownership.
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
 

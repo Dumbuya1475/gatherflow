@@ -2,11 +2,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServiceRoleClient } from '@/lib/supabase/server';
-import { createMonimeCheckout } from '@/lib/monime';
+import { createMonimeCheckout } from '@@/lib/monime';
 
 export async function POST(req: NextRequest) {
   try {
+<<<<<<< HEAD
     const supabase = createServiceRoleClient(cookies());
+=======
+    const cookieStore = await cookies();
+    const supabase = createServiceRoleClient(cookieStore);
+>>>>>>> acf4190db2be594e87fe17a09f3fda6aae85f225
 
     const { eventId, userId, formResponses, firstName, lastName, email } = await req.json();
 
@@ -77,7 +82,7 @@ export async function POST(req: NextRequest) {
 
     const { data: existingTicket, error: findTicketError } = await supabase
       .from('tickets')
-      .select('id')
+      .select('id, status, monime_checkout_session_id')
       .eq('event_id', eventId)
       .eq('user_id', finalUserId)
       .maybeSingle();
@@ -89,6 +94,19 @@ export async function POST(req: NextRequest) {
 
     if (existingTicket) {
       ticketId = existingTicket.id;
+      
+      // If ticket exists but is unpaid, clear the old checkout session
+      // This allows creating a new checkout (avoids 409 Idempotency error)
+      if (existingTicket.status === 'unpaid' && existingTicket.monime_checkout_session_id) {
+        const { error: clearError } = await supabase
+          .from('tickets')
+          .update({ monime_checkout_session_id: null })
+          .eq('id', ticketId);
+        
+        if (clearError) {
+          console.error('Failed to clear old checkout session:', clearError);
+        }
+      }
     } else {
       const { data: newTicket, error: createTicketError } = await supabase
         .from('tickets')
@@ -110,7 +128,7 @@ export async function POST(req: NextRequest) {
       
       // Save form responses only when creating a new ticket
       if (formResponses && formResponses.length > 0) {
-        const responsesToInsert = formResponses.map((response: any) => ({
+        const responsesToInsert = formResponses.map((response: { form_field_id: string; field_value: string }) => ({
           ticket_id: ticketId,
           form_field_id: response.form_field_id,
           field_value: response.field_value,
@@ -121,22 +139,27 @@ export async function POST(req: NextRequest) {
         
         if (responsesError) {
           console.error('Checkout Warning: Could not save form responses.', responsesError);
-          // Don't fail the whole transaction, but log it.
         }
       }
     }
     
-    const appUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
-    const successUrl = `${appUrl}/events/${eventId}/register/success?ticketId=${ticketId}`;
-    const cancelUrl = `${appUrl}/events/${eventId}/register?payment_cancelled=true`;
+    const appUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    // Monime POSTs to these URLs, so they must be API routes
+    const successUrl = `${appUrl}/api/payment/success?ticketId=${ticketId}&eventId=${eventId}`;
+    const cancelUrl = `${appUrl}/api/payment/cancel?ticketId=${ticketId}&eventId=${eventId}`;
 
+<<<<<<< HEAD
     if (!event.price || isNaN(event.price) || event.price <= 0) {
+=======
+    if (event.price === null || event.price === undefined || isNaN(event.price) || event.price <= 0) {
+>>>>>>> acf4190db2be594e87fe17a09f3fda6aae85f225
       console.error('Checkout Error: Paid event has invalid price.', event.price);
       return NextResponse.json({ error: 'Paid event has an invalid price configuration.' }, { status: 400 });
     }
 
     // 4. Create Monime checkout session
     const checkoutSession = await createMonimeCheckout({
+<<<<<<< HEAD
         name: `Ticket for ${event.title}`,
         amount: Math.round(event.price! * 100), // Convert to minor units (cents)
         quantity: 1,
@@ -148,6 +171,26 @@ export async function POST(req: NextRequest) {
             userId: finalUserId,
             eventId: eventId,
         }
+=======
+      name: `Ticket for ${event.title}`,
+      lineItems: [
+        {
+          name: event.title,
+          price: {
+            currency: 'SLE',
+            value: Math.round(event.price! * 100),
+          },
+          quantity: 1,
+        },
+      ],
+      successUrl: successUrl,
+      cancelUrl: cancelUrl,
+      metadata: {
+        ticketId: ticketId.toString(),
+        userId: finalUserId,
+        eventId: eventId.toString(),
+      }
+>>>>>>> acf4190db2be594e87fe17a09f3fda6aae85f225
     });
     
     // 5. Update ticket with checkout session ID for webhook reconciliation
@@ -166,11 +209,13 @@ export async function POST(req: NextRequest) {
       checkoutUrl: checkoutSession.url,
       ticketId: ticketId,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Checkout Error: Unhandled exception in POST handler.', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
 }
+

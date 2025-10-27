@@ -1,11 +1,6 @@
-
-import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
-<<<<<<< HEAD
-=======
 import { cookies } from 'next/headers';
->>>>>>> 5b980ee66e2892a4a47e32296589f8dfeb9e3b9f
 
 // This is the endpoint that will be called by a cron job scheduler
 export async function POST(request: Request) {
@@ -14,22 +9,38 @@ export async function POST(request: Request) {
   if (authToken !== process.env.CRON_SECRET) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
-<<<<<<< HEAD
 
-  // Initialize client inside the request handler
-  const supabaseAdmin = createServiceRoleClient();
-=======
-  const cookieStore = cookies();
-  // Initialize client inside the request handler
+  const cookieStore = await cookies();
   const supabaseAdmin = createServiceRoleClient(cookieStore);
->>>>>>> 5b980ee66e2892a4a47e32296589f8dfeb9e3b9f
 
   try {
-    // 2. Calculate the cutoff date (2 days ago)
+    // 2. Calculate the cutoff date (2 days ago for events, 30 minutes for unpaid tickets)
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - 2);
+    
+    const unpaidCutoffDate = new Date();
+    unpaidCutoffDate.setMinutes(unpaidCutoffDate.getMinutes() - 30); // 30 minutes ago
 
-    // 3. Find tickets to expire
+    // 3a. Expire old unpaid/cancelled tickets (30 minutes old)
+    const { data: unpaidTickets, error: unpaidFetchError } = await supabaseAdmin
+      .from('tickets')
+      .select('id, created_at')
+      .in('status', ['unpaid', 'cancelled'])
+      .lt('created_at', unpaidCutoffDate.toISOString());
+
+    if (!unpaidFetchError && unpaidTickets && unpaidTickets.length > 0) {
+      const unpaidTicketIds = unpaidTickets.map(t => t.id);
+      
+      // Mark as expired instead of deleting (for record keeping)
+      await supabaseAdmin
+        .from('tickets')
+        .update({ status: 'expired' })
+        .in('id', unpaidTicketIds);
+      
+      console.log(`Cron job: Expired ${unpaidTickets.length} unpaid/cancelled tickets`);
+    }
+
+    // 3b. Find tickets to expire where event has ended
     // Find tickets where the event has ended more than 2 days ago
     // and the status is not already expired or another final state.
     const { data: ticketsToExpire, error: fetchError } = await supabaseAdmin
@@ -64,10 +75,16 @@ export async function POST(request: Request) {
       return new NextResponse(`Error updating tickets: ${updateError.message}`, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, message: `Successfully expired ${count} tickets.`, expiredCount: count });
+    const totalExpired = (unpaidTickets?.length || 0) + (count || 0);
+    return NextResponse.json({ 
+      success: true, 
+      message: `Successfully expired ${totalExpired} tickets (${unpaidTickets?.length || 0} unpaid/cancelled, ${count || 0} past events).`, 
+      expiredCount: totalExpired 
+    });
 
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('Cron job: An unexpected error occurred:', e);
-    return new NextResponse(`An unexpected error occurred: ${e.message}`, { status: 500 });
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return new NextResponse(`An unexpected error occurred: ${errorMessage}`, { status: 500 });
   }
 }

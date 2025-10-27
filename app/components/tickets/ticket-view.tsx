@@ -13,7 +13,9 @@ import { format } from 'date-fns';
 
 import { UpgradeAccountPrompt } from "./upgrade-account-prompt";
 
-interface TicketWithEvent extends Ticket {
+interface TicketWithEvent extends Omit<Ticket, 'status'> {
+    // Extend the base Ticket status union locally to include UI-only statuses used in this component
+    status: Ticket['status'] | 'pending' | 'rejected';
     events: Event & { organizer?: { first_name: string | null, last_name: string | null } | null } | null;
     profiles: { first_name?: string, last_name?: string, is_guest?: boolean, id?: string, email?: string } | null;
     form_responses: { field_value: string, event_form_fields: { field_name: string } }[];
@@ -33,7 +35,14 @@ const BrandedTicket = ({ ticket }: { ticket: TicketWithEvent }) => {
             <div className="bg-black bg-opacity-50 p-8">
                 <div className="text-center mb-8">
                     {events.ticket_brand_logo && (
-                        <Image src={events.ticket_brand_logo} alt="Brand Logo" width={120} height={120} className="mx-auto mb-4 rounded-full" />
+                        <Image 
+                            src={events.ticket_brand_logo} 
+                            alt="Brand Logo" 
+                            width={120} 
+                            height={120} 
+                            className="mx-auto mb-4 rounded-full"
+                            unoptimized={!!events.ticket_brand_logo?.includes('supabase.co')}
+                        />
                     )}
                     <h1 className="text-4xl font-bold text-white font-headline">{events.title}</h1>
                     <p className="text-lg text-gray-200">{events.description}</p>
@@ -206,9 +215,7 @@ export function TicketView({ ticket }: { ticket: TicketWithEvent }) {
                         <div className="text-center text-gray-500 p-8 border-2 border-dashed border-gray-300 rounded-lg">
                             <div className="text-lg font-medium">QR Code Unavailable</div>
                             <div className="text-sm mt-2">
-                                {ticket.status === 'pending' && "Waiting for approval"}
-                                {ticket.status === 'rejected' && "Access denied"}
-                                {ticket.status === 'approved' && "QR code generation failed"}
+                                {ticket.status === 'approved' ? "QR code generation failed" : "QR code unavailable"}
                             </div>
                         </div>
                     )}
@@ -221,7 +228,7 @@ export function TicketView({ ticket }: { ticket: TicketWithEvent }) {
     };
 
     return (
-        <div className="container mx-auto max-w-4xl py-8">
+        <div className="container mx-auto max-w-5xl py-8">
             <div className="space-y-6">
                 <div>
                     <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
@@ -239,7 +246,7 @@ export function TicketView({ ticket }: { ticket: TicketWithEvent }) {
                     </p>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-8">
+                <div className="grid md:grid-cols-2 gap-8 space-y-0">
                     <Card>
                         <CardHeader>
                             <CardTitle className="font-headline text-2xl">{ticket.events.title}</CardTitle>

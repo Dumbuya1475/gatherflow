@@ -4,21 +4,23 @@
 import React from 'react';
 import { getEventDetails } from "@/lib/server/queries/events";
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, MapPin, Users, Ticket, ArrowLeft, Eye, DollarSign, Share2, Globe, Lock } from "lucide-react";
+import { Calendar, MapPin, Users, Ticket, ArrowLeft, Eye, DollarSign, Share2, Globe, Lock, Building2, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { format } from 'date-fns';
 import { EventWithAttendees } from "@/lib/types";
 import { ShareButton } from "./_components/share-button";
 import { ResendTicketForm } from "./_components/resend-ticket-form";
+import { PublicHeader } from "@/components/public-header";
 import { cookies } from 'next/headers';
 
 
 async function getTicketId(eventId: number, userId?: string) {
     if (!userId) return null;
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
     const { data: ticket } = await supabase
         .from('tickets')
@@ -33,7 +35,7 @@ async function getTicketId(eventId: number, userId?: string) {
 export default async function EventDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const eventId = parseInt(id, 10);
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -46,23 +48,29 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
     if (!event.is_public && event.organizer_id !== user?.id) {
         return <div className="flex items-center justify-center min-h-screen text-center text-red-500 p-8">Error: This event is private and can only be viewed by the organizer.</div>
     }
+    // If a user is logged in, prefer the dashboard-style view which includes the sidebar.
+    if (user) {
+        // Redirect to the dashboard view for this event (preview under dashboard layout)
+        redirect(`/dashboard/events/${eventId}/view`);
+    }
     
-    const ticketId = await getTicketId(event.id, user?.id);
-    const isOwner = user && user.id === event.organizer_id;
+    // After redirect check, user is null (public view only)
     const isFull = event.capacity ? event.attendees >= event.capacity : false;
 
     return (
-        <div className="bg-secondary min-h-screen">
-            <div className="container mx-auto py-8 sm:py-12 md:py-16">
-                 <div className="mb-6 flex justify-between items-center">
-                    <Button asChild variant="outline">
-                        <Link href={user ? "/dashboard/events" : "/"}>
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Events
-                        </Link>
-                    </Button>
-                    <ShareButton event={event} />
-                </div>
+        <>
+            <PublicHeader />
+            <div className="bg-secondary min-h-screen">
+                <div className="container mx-auto py-8 sm:py-12 md:py-16">
+                    <div className="mb-6 flex justify-between items-center">
+                        <Button asChild variant="outline">
+                            <Link href={user ? "/dashboard/events" : "/"}>
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Back to Events
+                            </Link>
+                        </Button>
+                        <ShareButton event={event} />
+                    </div>
                 <Card className="overflow-hidden">
                     <div className="relative h-64 md:h-96 w-full">
                         <Image
@@ -71,6 +79,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
                             fill
                             data-ai-hint="event concert"
                             className="object-cover"
+                            unoptimized={!!event.cover_image?.includes('supabase.co')}
                         />
                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                     </div>
@@ -101,6 +110,46 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
                                     <span>{event.location}</span>
                                 </div>
                             </div>
+
+                            {event.organization && (
+                                <div>
+                                    <h3 className="text-xl font-semibold mb-2">Hosted by</h3>
+                                    <Card className="bg-muted/50">
+                                        <CardContent className="p-4">
+                                            <div className="flex items-start gap-3">
+                                                <Building2 className="h-6 w-6 text-primary mt-1" />
+                                                <div className="flex-1">
+                                                    <h4 className="font-semibold text-lg">{event.organization.name}</h4>
+                                                    {event.organization.description && (
+                                                        <p className="text-sm text-muted-foreground mt-1">
+                                                            {event.organization.description}
+                                                        </p>
+                                                    )}
+                                                    <div className="mt-2 flex flex-wrap gap-3 text-sm">
+                                                        {event.organization.website && (
+                                                            <a
+                                                                href={event.organization.website}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="flex items-center gap-1 text-primary hover:underline"
+                                                            >
+                                                                <ExternalLink className="h-3 w-3" />
+                                                                Website
+                                                            </a>
+                                                        )}
+                                                        {event.organization.location && (
+                                                            <span className="flex items-center gap-1 text-muted-foreground">
+                                                                <MapPin className="h-3 w-3" />
+                                                                {event.organization.location}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            )}
                         </div>
                         <div className="space-y-4">
                              <Card className="bg-secondary">
@@ -126,24 +175,12 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
                                             <p className="text-xs text-muted-foreground">Price</p>
                                         </div>
                                     </div>
-                                    {isOwner && (
+                                    {isFull ? (
+                                        <Button className="w-full" disabled>Event Full</Button>
+                                    ) : (
                                         <Button asChild className="w-full">
-                                            <Link href={`/dashboard/events/${event.id}/manage`}>Manage Event</Link>
+                                            <Link href={`/events/${event.id}/register`}>Register Now</Link>
                                         </Button>
-                                    )}
-                                    {!isOwner && ticketId && (
-                                         <Button asChild className="w-full">
-                                            <Link href={`/dashboard/tickets/${ticketId}`}>View Ticket</Link>
-                                        </Button>
-                                    )}
-                                     {!isOwner && !ticketId && (
-                                        isFull ? (
-                                            <Button className="w-full" disabled>Event Full</Button>
-                                        ) : (
-                                            <Button asChild className="w-full">
-                                                <Link href={`/events/${event.id}/register`}>Register Now</Link>
-                                            </Button>
-                                        )
                                     )}
                                  </CardContent>
                              </Card>
@@ -153,7 +190,8 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
                 <div className="mt-8">
                     <ResendTicketForm eventId={event.id} />
                 </div>
+                </div>
             </div>
-        </div>
+        </>
     )
 }

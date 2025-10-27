@@ -14,13 +14,13 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cookies } from 'next/headers';
 
 
-async function getDashboardStats(user: any) {
+async function getDashboardStats(user: { id: string } | null) {
   if (!user) {
     return { isOrganizer: false, totalEvents: 0, activeEvents: 0, totalAttendees: 0, checkInsToday: 0, recentEvents: [] };
   }
 
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
 
     const { count: totalEvents, error: totalEventsError } = await supabase
@@ -51,16 +51,20 @@ async function getDashboardStats(user: any) {
     if (events && events.length > 0) {
         const eventIds = events.map(e => e.id);
         const supabaseAdmin = createServiceRoleClient(cookieStore);
-        const { data: counts, error: ticketsCountError } = await supabaseAdmin
+        const { data: countsRaw, error: ticketsCountError } = await supabaseAdmin
             .rpc('get_event_attendee_counts', { event_ids: eventIds });
+
+        type CountRow = { event_id_out: number; attendee_count: number | string | null };
 
         if (ticketsCountError) {
             console.error("Error calling get_event_attendee_counts RPC:", ticketsCountError);
             throw ticketsCountError;
         }
 
-        if (counts) {
-            countsByEvent = counts.reduce((acc, { event_id_out, attendee_count }) => {
+        const counts = countsRaw as CountRow[] | null;
+
+        if (counts && counts.length > 0) {
+            countsByEvent = counts.reduce((acc, { event_id_out, attendee_count }: CountRow) => {
                 acc[event_id_out] = Number(attendee_count || 0);
                 return acc;
             }, {} as Record<number, number>);
@@ -102,8 +106,8 @@ async function getDashboardStats(user: any) {
   }
 }
 
-async function getAttendeeDashboardStats(user: any) {
-  const cookieStore = cookies();
+async function getAttendeeDashboardStats(user: { id: string }) {
+  const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const { data: tickets, error } = await supabase
     .from('tickets')
@@ -115,7 +119,19 @@ async function getAttendeeDashboardStats(user: any) {
     return { registeredEventsCount: 0, upcomingEvents: [], attendedEventsCount: 0 };
   }
 
-  const eventIds = tickets.map(t => t.events.id);
+  // Supabase can return the joined relation as an object or as an array depending on the query/relationship.
+  // Normalize ticket.events to always be an object to avoid "property 'id' does not exist on type".
+  interface Ticket {
+    events: { id: number; date: string; title: string; location?: string } | Array<{ id: number; date: string; title: string; location?: string }>;
+    id: string;
+  }
+
+  const normalizedTickets = tickets.map((t: Ticket) => {
+    const evt = Array.isArray(t.events) ? t.events[0] : t.events;
+    return { ...t, events: evt };
+  });
+
+  const eventIds = normalizedTickets.map(t => t.events?.id).filter(Boolean) as number[];
   let countsByEvent: Record<number, number> = {};
 
   if (eventIds.length > 0) {
@@ -126,20 +142,24 @@ async function getAttendeeDashboardStats(user: any) {
     if (countError) {
         console.error('Error fetching attendee counts:', countError);
     } else if (counts) {
-      countsByEvent = counts.reduce((acc, { event_id_out, attendee_count }) => {
+      type CountResult = { event_id_out: number; attendee_count: number | string };
+      countsByEvent = (counts as CountResult[]).reduce((acc, { event_id_out, attendee_count }) => {
           acc[event_id_out] = Number(attendee_count || 0);
           return acc;
       }, {} as Record<number, number>);
     }
   }
 
-  const ticketsWithCounts = tickets.map(ticket => ({
-      ...ticket,
-      events: {
-          ...ticket.events,
-          attendees: countsByEvent[ticket.events.id] || 0,
-      }
-  }));
+  const ticketsWithCounts = normalizedTickets.map(ticket => {
+      const evt = ticket.events || {};
+      return {
+          ...ticket,
+          events: {
+              ...evt,
+              attendees: countsByEvent[evt.id] || 0,
+          }
+      };
+  });
 
   const registeredEventsCount = ticketsWithCounts.length;
   const upcomingEvents = ticketsWithCounts
@@ -152,7 +172,7 @@ async function getAttendeeDashboardStats(user: any) {
 }
 
 export default async function DashboardPage() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
     const {
         data: { user },
@@ -169,7 +189,14 @@ export default async function DashboardPage() {
 
   const isEventLimitReached = activeEvents >= 3;
 
-  const StatCard = ({ title, value, description, icon: Icon, delay, trend, className = "" }: any) => (
+  const StatCard = ({ title, value, description, icon: Icon, trend, className = "" }: { 
+    title: string; 
+    value: number | string; 
+    description: string; 
+    icon: React.ElementType; 
+    trend?: string; 
+    className?: string;
+  }) => (
     <Card className={`group relative overflow-hidden bg-background/50 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-lg transition-all duration-500 cursor-pointer ${className}`}>
       <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.02] to-secondary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
       <div className="absolute -top-10 -right-10 w-20 h-20 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"></div>
@@ -256,12 +283,12 @@ export default async function DashboardPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <div className="animate-in slide-in-from-bottom-4 duration-700 delay-100">
               <StatCard
-                title="Total Events"
-                value={totalEvents}
-                description="All events you have created"
-                icon={CalendarIcon}
-                trend={totalEvents > 0 ? "+12%" : null}
-              />
+                  title="Total Events"
+                  value={totalEvents}
+                  description="All events you have created"
+                  icon={CalendarIcon}
+                  trend={totalEvents > 0 ? "+12%" : undefined}
+                />
             </div>
             <div className="animate-in slide-in-from-bottom-4 duration-700 delay-200">
               <StatCard
@@ -274,12 +301,12 @@ export default async function DashboardPage() {
             </div>
             <div className="animate-in slide-in-from-bottom-4 duration-700 delay-300">
               <StatCard
-                title="Total Attendees"
-                value={totalAttendees}
-                description="Across all your events"
-                icon={Users}
-                trend={totalAttendees > 0 ? "+24%" : null}
-              />
+                  title="Total Attendees"
+                  value={totalAttendees}
+                  description="Across all your events"
+                  icon={Users}
+                  trend={totalAttendees > 0 ? "+24%" : undefined}
+                />
             </div>
             <div className="animate-in slide-in-from-bottom-4 duration-700 delay-400">
               <StatCard

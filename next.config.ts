@@ -12,14 +12,14 @@ const withPWA = require('@ducanh2912/next-pwa').default({
 const nextConfig: NextConfig = {
   /* config options here */
   output: 'standalone',
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   images: {
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'bsmnnvxqvqmvokqtgsrd.supabase.co',
+        port: '',
+        pathname: '/**',
+      },
       {
         protocol: 'https',
         hostname: 'gxobiiqbwbhrjsynzaos.supabase.co',
@@ -60,6 +60,12 @@ const nextConfig: NextConfig = {
         filename: 'static/videos/[name].[hash][ext]',
       },
     });
+
+    // Handle express critical dependency warning
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      express: false,
+    };
 
     return config;
   },

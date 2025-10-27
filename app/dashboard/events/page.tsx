@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -34,9 +33,25 @@ async function getMyEvents(userId: string): Promise<EventWithAttendees[]> {
     return [];
   }
 
+  // Fetch organization data for events
+  const organizationIds = events?.map(event => event.organization_id).filter(Boolean) as string[];
+  let organizationMap = new Map();
+
+  if (organizationIds.length > 0) {
+    const { data: organizations } = await supabase
+      .from('organizations')
+      .select('id, name, description')
+      .in('id', organizationIds);
+    
+    if (organizations) {
+      organizationMap = new Map(organizations.map(o => [o.id, o]));
+    }
+  }
+
   return events.map(event => ({
     ...event,
     attendees: event.tickets[0]?.count || 0,
+    organization: event.organization_id ? organizationMap.get(event.organization_id) : null,
   }));
 }
 
@@ -53,25 +68,32 @@ async function getRegisteredEvents(userId: string): Promise<EventWithAttendees[]
         return [];
     }
     
-    const events = tickets
-        .filter(ticket => ticket.events)
-        .map(ticket => ticket.events);
+    // Type assertion: events from !inner join is actually a single object, not an array
+        type TicketWithEvent = {
+            id: number;
+            events: EventWithAttendees & { tickets: { count: number }[] };
+        };
+        
+        const typedTickets = tickets as unknown as TicketWithEvent[];
+        const events = typedTickets
+            .filter(ticket => ticket.events)
+            .map(ticket => ticket.events);
+        
+        const organizerIds = events.map(event => event.organizer_id).filter(Boolean) as string[];
     
-    const organizerIds = events.map(event => event!.organizer_id).filter(Boolean) as string[];
-
-    if (organizerIds.length === 0) {
-        return tickets
-        .filter(ticket => ticket.events)
-        .map(ticket => ({
-            ...ticket.events!,
-            attendees: ticket.events!.tickets[0]?.count || 0,
-            ticket_id: ticket.id,
-        }));
-    }
+        if (organizerIds.length === 0) {
+            return typedTickets
+            .filter(ticket => ticket.events)
+            .map(ticket => ({
+                ...(ticket.events as EventWithAttendees),
+                attendees: ticket.events.tickets[0]?.count || 0,
+                ticket_id: ticket.id,
+            })) as EventWithAttendees[];
+        }
 
     const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name')
+        .select('id, created_at, updated_at, first_name, last_name, username, full_name, avatar_url, website, email, is_guest, phone')
         .in('id', organizerIds);
     
     if (profileError) {
@@ -80,18 +102,39 @@ async function getRegisteredEvents(userId: string): Promise<EventWithAttendees[]
     
     const profileMap = new Map(profiles?.map(p => [p.id, p]));
 
-    return tickets
+    // Fetch organization data
+    const organizationIds = new Set(
+      events
+        .filter((event: Record<string, unknown>) => event.organization_id)
+        .map((event: Record<string, unknown>) => event.organization_id)
+    );
+    
+    let organizationMap = new Map();
+
+    if (organizationIds.size > 0) {
+      const { data: organizations } = await supabase
+        .from('organizations')
+        .select('id, name, description')
+        .in('id', Array.from(organizationIds));
+      
+      if (organizations) {
+        organizationMap = new Map(organizations.map(o => [o.id, o]));
+      }
+    }
+
+    return typedTickets
       .filter(ticket => ticket.events) // Ensure event data is not null
       .map(ticket => ({
-        ...ticket.events!,
-        attendees: ticket.events!.tickets[0]?.count || 0,
+        ...ticket.events,
+        attendees: ticket.events.tickets[0]?.count || 0,
         ticket_id: ticket.id,
-        organizer: ticket.events!.organizer_id ? profileMap.get(ticket.events!.organizer_id) : null,
+        organizer: ticket.events.organizer_id ? profileMap.get(ticket.events.organizer_id) : null,
+        organization: ticket.events.organization_id ? organizationMap.get(ticket.events.organization_id) : null,
     }));
 }
 
 
-async function getAllEvents(user: any): Promise<EventWithAttendees[]> {
+async function getAllEvents(currentUser: { id: string } | null): Promise<EventWithAttendees[]> {
   const supabase = createClient();
 
   const { data: events, error } = await supabase
@@ -122,7 +165,7 @@ async function getAllEvents(user: any): Promise<EventWithAttendees[]> {
     attendees: event.tickets[0]?.count || 0,
   }));
   
-  if (!user) {
+  if (!currentUser) {
     return eventsWithOrganizer;
   }
 
@@ -130,7 +173,7 @@ async function getAllEvents(user: any): Promise<EventWithAttendees[]> {
     .from('tickets')
     .select('event_id, id')
     .in('event_id', events.map(e => e.id))
-    .eq('user_id', user.id);
+    .eq('user_id', currentUser.id);
   
   if (ticketError) {
       console.error('Error fetching user tickets for all events:', ticketError);
@@ -157,9 +200,15 @@ async function getPastEvents(userId: string): Promise<EventWithAttendees[]> {
         console.error('Error fetching past attended events:', attendedError);
     }
     
-    const attendedEvents = (attendedTickets || [])
+    // Type assertion: events from !inner join is actually a single object, not an array
+    type TicketWithEvent = {
+        events: Record<string, unknown> & { date: string; tickets: { count: number }[] };
+    };
+    
+    const typedAttendedTickets = (attendedTickets || []) as unknown as TicketWithEvent[];
+    const attendedEvents = typedAttendedTickets
       .filter(t => t.events && new Date(t.events.date) < new Date())
-      .map(t => ({...t.events!, type: 'attended' as const, attendees: t.events!.tickets[0]?.count || 0 }));
+      .map(t => ({...t.events, type: 'attended' as const, attendees: t.events.tickets[0]?.count || 0 }));
 
 
     // Fetch events the user organized
@@ -224,7 +273,7 @@ function EventsLoadingSkeleton() {
 
 
 export default function EventsPage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ id: string } | null>(null);
   const [allEvents, setAllEvents] = useState<EventWithAttendees[]>([]);
   const [myEvents, setMyEvents] = useState<EventWithAttendees[]>([]);
   const [registeredEvents, setRegisteredEvents] = useState<EventWithAttendees[]>([]);
@@ -295,12 +344,17 @@ export default function EventsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
-          Events
-        </h1>
-        <div className="flex gap-4">
-          <Button asChild>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
+            Events
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Discover, create, and manage your events
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
             <Link href="/dashboard/organizer">
               Organizer Dashboard
             </Link>
@@ -314,39 +368,41 @@ export default function EventsPage() {
         </div>
       </div>
       
-       <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search events by title..." 
-            className="pl-10" 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      <Card className="p-4">
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Search events by title..." 
+              className="pl-10" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2">
+            <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger className="w-full md:w-[160px]">
+                <SelectValue placeholder="Filter by date" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Dates</SelectItem>
+                <SelectItem value="upcoming">Upcoming</SelectItem>
+                <SelectItem value="past">Past</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-full md:w-[140px]">
+                <SelectValue placeholder="Filter by type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="free">Free</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="flex gap-4">
-          <Select value={dateFilter} onValueChange={setDateFilter}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Filter by date" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Dates</SelectItem>
-              <SelectItem value="upcoming">Upcoming</SelectItem>
-              <SelectItem value="past">Past</SelectItem>
-            </SelectContent>
-          </Select>
-           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Filter by type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="free">Free</SelectItem>
-              <SelectItem value="paid">Paid</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      </Card>
 
       <Tabs defaultValue="all-events">
         <TabsList className="grid w-full grid-cols-4">

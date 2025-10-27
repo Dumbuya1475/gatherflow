@@ -1,8 +1,16 @@
 import { TicketView } from '@/components/tickets/ticket-view';
-import { Ticket } from '@/lib/types';
 
 // This is the React component that will be rendered to HTML for the email
-export const TicketEmail = ({ ticket }: { ticket: any }) => {
+interface TicketEmailProps {
+  ticket: {
+    events?: {
+      title?: string;
+    };
+    [key: string]: unknown;
+  };
+}
+
+export const TicketEmail = ({ ticket }: TicketEmailProps) => {
   const eventName = ticket.events?.title || 'our event';
 
   return (
@@ -52,7 +60,7 @@ export const TicketEmail = ({ ticket }: { ticket: any }) => {
           <div className="content">
             <p>Hello,</p>
             <p>Thank you for registering for <strong>{eventName}</strong>. Your ticket is attached below. Please have it ready for scanning at the event.</p>
-            <TicketView ticket={ticket} />
+            <TicketView ticket={ticket as never} />
           </div>
           <div className="footer">
             <p>This email was sent via GatherFlow. &copy; {new Date().getFullYear()}</p>

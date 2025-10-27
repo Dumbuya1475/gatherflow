@@ -13,7 +13,7 @@ import { Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 
-async function getAllPublicEvents(user: any) {
+async function getAllPublicEvents(user: { id: string } | null) {
   const supabase = createClient();
   const { data: events, error } = await supabase
     .from('events')
@@ -37,7 +37,7 @@ async function getAllPublicEvents(user: any) {
       console.error('Error fetching attendee counts:', countError);
   }
 
-  const countMap = new Map(counts?.map(c => [c.event_id_out, c.attendee_count]));
+  const countMap = new Map(counts?.map((c: { event_id_out: number; attendee_count: number }) => [c.event_id_out, c.attendee_count]));
 
   const eventsWithCounts = events.map(event => ({
       ...event,
@@ -60,9 +60,27 @@ async function getAllPublicEvents(user: any) {
 
   const profileMap = new Map(profiles?.map(p => [p.id, p]));
 
+  // Fetch organization data
+  const organizationIds = events.map(event => event.organization_id).filter(Boolean) as string[];
+  let organizationMap = new Map();
+
+  if (organizationIds.length > 0) {
+    const { data: organizations, error: orgError } = await supabase
+      .from('organizations')
+      .select('id, name, description')
+      .in('id', organizationIds);
+
+    if (orgError) {
+      console.error('Error fetching organizations:', orgError);
+    } else {
+      organizationMap = new Map(organizations?.map(o => [o.id, o]));
+    }
+  }
+
   const eventsWithOrganizer = eventsWithCounts.map(event => ({
     ...event,
     organizer: event.organizer_id ? profileMap.get(event.organizer_id) : null,
+    organization: event.organization_id ? organizationMap.get(event.organization_id) : null,
   }));
 
   if (!user) {
@@ -109,7 +127,7 @@ function EventsLoadingSkeleton() {
 
 export default function AllEventsPage() {
   const [allEvents, setAllEvents] = useState<EventWithAttendees[]>([]);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ id: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -123,7 +141,6 @@ export default function AllEventsPage() {
         setUser(currentUser);
 
         const eventsData = await getAllPublicEvents(currentUser);
-        console.log("All public events:", JSON.stringify(eventsData, null, 2));
         setAllEvents(eventsData);
         setIsLoading(false);
     }
@@ -210,7 +227,7 @@ export default function AllEventsPage() {
             ) : filteredEvents.length > 0 ? (
               <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-4 mt-12">
                 {filteredEvents.map((event) => (
-                  <EventCard key={event.id} event={event} isLoggedIn={!!user} isMyEvent={user ? event.organizer_id === user.id : false}/>
+                  <EventCard key={event.id} event={event} isLoggedIn={!!user} isMyEvent={false}/>
                 ))}
               </div>
             ) : (
@@ -221,7 +238,6 @@ export default function AllEventsPage() {
             )}
           </div>
         </section>
-        <pre>{JSON.stringify(allEvents, null, 2)}</pre>
       </main>
       <Footer />
     </div>

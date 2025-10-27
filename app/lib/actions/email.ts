@@ -25,7 +25,7 @@ function getResend() {
 
 export async function sendEmailAction(eventId: number, subject: string, message: string, recipientSegment: string) {
     try {
-        const cookieStore = cookies();
+        const cookieStore = await cookies();
         const supabase = createClient(cookieStore);
         const { data: { user } } = await supabase.auth.getUser();
 
@@ -53,7 +53,9 @@ export async function sendEmailAction(eventId: number, subject: string, message:
             return { success: false, error: 'Could not fetch recipients.' };
         }
 
-        const recipients = tickets.map(ticket => ticket.profiles?.email).filter(Boolean) as string[];
+        const recipients = tickets.flatMap((ticket: { profiles?: Array<{ email: string }> }) =>
+          (ticket.profiles ?? []).map((p: { email: string }) => p.email)
+        ).filter(Boolean) as string[];
 
         if (recipients.length === 0) {
             return { success: false, error: 'No recipients found for the selected segment.' };
@@ -67,9 +69,17 @@ export async function sendEmailAction(eventId: number, subject: string, message:
         });
 
         return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error in sendEmailAction:', error);
-        return { success: false, error: error.message || 'An unexpected error occurred.' };
+        let message = 'An unexpected error occurred.';
+        if (error instanceof Error && error.message) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        } else if (error && typeof error === 'object' && 'message' in error && typeof (error as { message: unknown }).message === 'string') {
+            message = (error as { message: string }).message;
+        }
+        return { success: false, error: message };
     }
 }
 

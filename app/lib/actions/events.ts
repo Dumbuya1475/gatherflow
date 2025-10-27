@@ -10,7 +10,7 @@ import { cookies } from 'next/headers';
 
 // 1. Create Event Action
 export async function createEventAction(formData: FormData) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServiceRoleClient(cookieStore);
   const { data: { user } } = await createClient(cookieStore).auth.getUser();
 
@@ -37,6 +37,7 @@ export async function createEventAction(formData: FormData) {
   const rawData = {
     title: formData.get('title') as string,
     description: formData.get('description') as string,
+    category: (formData.get('category') as string) || 'other',
     date: formData.get('date') as string,
     end_date: formData.get('end_date') as string,
     location: formData.get('location') as string,
@@ -46,6 +47,8 @@ export async function createEventAction(formData: FormData) {
     fee_bearer: formData.get('fee_bearer') as 'organizer' | 'buyer',
     is_public: formData.get('is_public') === 'true',
     requires_approval: formData.get('requires_approval') === 'true',
+    event_type: (formData.get('event_type') as string) || 'individual',
+    organization_id: formData.get('organization_id') as string | null,
     customFields: JSON.parse(formData.get('customFields') as string || '[]') as EventFormFieldWithOptions[],
     cover_image_file: formData.get('cover_image_file') as File,
   };
@@ -64,6 +67,7 @@ export async function createEventAction(formData: FormData) {
     .insert({
       title: rawData.title,
       description: rawData.description,
+      category: rawData.category,
       date: rawData.date,
       end_date: rawData.end_date,
       location: rawData.location,
@@ -73,6 +77,8 @@ export async function createEventAction(formData: FormData) {
       fee_bearer: rawData.fee_bearer,
       is_public: rawData.is_public,
       requires_approval: rawData.requires_approval,
+      event_type: rawData.event_type,
+      organization_id: rawData.organization_id || null,
       organizer_id: user.id,
       cover_image: coverImageUrl,
     })
@@ -85,7 +91,8 @@ export async function createEventAction(formData: FormData) {
   }
 
   if (rawData.customFields.length > 0) {
-    for (const [index, field] of rawData.customFields.entries()) {
+    for (const field of rawData.customFields) {
+        const fieldIndex = rawData.customFields.indexOf(field);
         const { data: newField, error: fieldError } = await supabase
             .from('event_form_fields')
             .insert({
@@ -93,7 +100,7 @@ export async function createEventAction(formData: FormData) {
                 field_name: field.field_name,
                 field_type: field.field_type,
                 is_required: field.is_required,
-                order: index,
+                order: fieldIndex,
             })
             .select('id')
             .single();
@@ -103,7 +110,7 @@ export async function createEventAction(formData: FormData) {
         }
 
         if (field.options && field.options.length > 0) {
-            const optionsToInsert = field.options.map(opt => ({
+            const optionsToInsert = field.options.map((opt: { value: string }) => ({
                 form_field_id: newField.id,
                 value: opt.value,
             }));
@@ -122,7 +129,7 @@ export async function createEventAction(formData: FormData) {
 
 // 2. Update Event Action (with redirect)
 export async function updateEventAction(eventId: number, formData: FormData) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServiceRoleClient(cookieStore);
   const { data: { user } } = await createClient(cookieStore).auth.getUser();
 
@@ -133,6 +140,7 @@ export async function updateEventAction(eventId: number, formData: FormData) {
   const rawData = {
     title: formData.get('title') as string,
     description: formData.get('description') as string,
+    category: (formData.get('category') as string) || 'other',
     date: formData.get('date') as string,
     end_date: formData.get('end_date') as string,
     location: formData.get('location') as string,
@@ -142,6 +150,8 @@ export async function updateEventAction(eventId: number, formData: FormData) {
     fee_bearer: formData.get('fee_bearer') as 'organizer' | 'buyer',
     is_public: formData.get('is_public') === 'true',
     requires_approval: formData.get('requires_approval') === 'true',
+    event_type: (formData.get('event_type') as string) || 'individual',
+    organization_id: formData.get('organization_id') as string | null,
     customFields: JSON.parse(formData.get('customFields') as string || '[]') as EventFormFieldWithOptions[],
     cover_image_file: formData.get('cover_image_file') as File,
     scanners: JSON.parse(formData.get('scanners') as string || '[]') as string[],
@@ -151,7 +161,7 @@ export async function updateEventAction(eventId: number, formData: FormData) {
   if (rawData.cover_image_file && rawData.cover_image_file.size > 0) {
     const { publicUrl, error: uploadError } = await uploadFile(rawData.cover_image_file, 'event-covers');
     if (uploadError) return { error: `Failed to upload cover image: ${uploadError.message}` };
-    coverImageUrl = publicUrl;
+    coverImageUrl = publicUrl ?? undefined;
   }
   
   const { error: eventUpdateError } = await supabase
@@ -159,6 +169,7 @@ export async function updateEventAction(eventId: number, formData: FormData) {
     .update({
       title: rawData.title,
       description: rawData.description,
+      category: rawData.category,
       date: rawData.date,
       end_date: rawData.end_date,
       location: rawData.location,
@@ -168,6 +179,8 @@ export async function updateEventAction(eventId: number, formData: FormData) {
       fee_bearer: rawData.fee_bearer,
       is_public: rawData.is_public,
       requires_approval: rawData.requires_approval,
+      event_type: rawData.event_type,
+      organization_id: rawData.organization_id || null,
       cover_image: coverImageUrl,
     })
     .eq('id', eventId)
@@ -179,18 +192,19 @@ export async function updateEventAction(eventId: number, formData: FormData) {
   if (deleteFieldsError) return { error: `Failed to update custom fields (step 1): ${deleteFieldsError.message}` };
 
   if (rawData.customFields.length > 0) {
-    for (const [index, field] of rawData.customFields.entries()) {
+    for (const field of rawData.customFields) {
+        const fieldIndex = rawData.customFields.indexOf(field);
         const { data: newField, error: fieldError } = await supabase
             .from('event_form_fields').insert({
                 event_id: eventId,
                 field_name: field.field_name,
                 field_type: field.field_type,
                 is_required: field.is_required,
-                order: index,
+                order: fieldIndex,
             }).select('id').single();
         if (fieldError) return { error: `Failed to update custom fields (step 2): ${fieldError.message}` };
         if (field.options && field.options.length > 0) {
-            const optionsToInsert = field.options.map(opt => ({ form_field_id: newField.id, value: opt.value }));
+            const optionsToInsert = field.options.map((opt: { value: string }) => ({ form_field_id: newField.id, value: opt.value }));
             const { error: optionsError } = await supabase.from('event_form_field_options').insert(optionsToInsert);
             if (optionsError) return { error: `Failed to update custom fields (step 3): ${optionsError.message}` };
         }
@@ -215,7 +229,7 @@ export async function updateEventAction(eventId: number, formData: FormData) {
 
 // 5. Update Ticket Appearance
 export async function updateTicketAppearance(eventId: number, formData: FormData) {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: 'You must be logged in.' };
@@ -230,7 +244,7 @@ export async function updateTicketAppearance(eventId: number, formData: FormData
         if (uploadError) {
             return { error: `Failed to upload logo: ${uploadError.message}` };
         }
-        logoUrl = publicUrl;
+        logoUrl = publicUrl ?? undefined;
     }
 
     const updates: { ticket_brand_color?: string, ticket_brand_logo?: string } = {};
@@ -257,7 +271,7 @@ export async function updateTicketAppearance(eventId: number, formData: FormData
 
 // 6. Get Event Attendees (Secure)
 export async function getEventAttendees(eventId: number) {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
     const { data, error } = await supabase.rpc('get_attendees_for_event', { event_id_param: eventId });
 
@@ -269,7 +283,7 @@ export async function getEventAttendees(eventId: number) {
 
 // 7. Delete Event Action
 export async function deleteEventAction(formData: FormData) {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createServiceRoleClient(cookieStore);
     const eventId = formData.get('eventId');
     const { data: { user } } = await createClient(cookieStore).auth.getUser();

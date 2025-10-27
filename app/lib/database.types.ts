@@ -1,4 +1,3 @@
-
 export type Json =
   | string
   | number
@@ -146,6 +145,132 @@ export type Database = {
           },
         ]
       }
+      followers: {
+        Row: {
+          id: string
+          created_at: string
+          follower_id: string
+          following_user_id: string | null
+          following_organization_id: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          follower_id: string
+          following_user_id?: string | null
+          following_organization_id?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          follower_id?: string
+          following_user_id?: string | null
+          following_organization_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "followers_follower_id_fkey"
+            columns: ["follower_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "followers_following_user_id_fkey"
+            columns: ["following_user_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "followers_following_organization_id_fkey"
+            columns: ["following_organization_id"]
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_members: {
+        Row: {
+          id: string
+          created_at: string
+          organization_id: string
+          user_id: string
+          role: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          organization_id: string
+          user_id: string
+          role?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          organization_id?: string
+          user_id?: string
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_members_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          id: string
+          created_at: string
+          name: string
+          description: string | null
+          logo_url: string | null
+          cover_image_url: string | null
+          website: string | null
+          location: string | null
+          owner_id: string
+          is_verified: boolean | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          name: string
+          description?: string | null
+          logo_url?: string | null
+          cover_image_url?: string | null
+          website?: string | null
+          location?: string | null
+          owner_id: string
+          is_verified?: boolean | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          name?: string
+          description?: string | null
+          logo_url?: string | null
+          cover_image_url?: string | null
+          website?: string | null
+          location?: string | null
+          owner_id?: string
+          is_verified?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizations_owner_id_fkey"
+            columns: ["owner_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           id: number
@@ -169,6 +294,9 @@ export type Database = {
           fee_bearer: string | null
           status: string | null
           payout_completed: boolean | null
+          category: string | null
+          organization_id: string | null
+          event_type: string | null
         }
         Insert: {
           id?: number
@@ -192,6 +320,9 @@ export type Database = {
           fee_bearer?: string | null
           status?: string | null
           payout_completed?: boolean | null
+          category?: string | null
+          organization_id?: string | null
+          event_type?: string | null
         }
         Update: {
           id?: number
@@ -214,13 +345,22 @@ export type Database = {
           ticket_background_image?: string | null
           fee_bearer?: string | null
           status?: string | null
-          payout_completed?: string | null
+          payout_completed?: boolean | null
+          category?: string | null
+          organization_id?: string | null
+          event_type?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "events_organizer_id_fkey"
             columns: ["organizer_id"]
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_organization_id_fkey"
+            columns: ["organization_id"]
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -463,9 +603,12 @@ export type Database = {
     }
   }
 }
+
+type PublicSchema = Database[Extract<keyof Database, "public">]
+
 export type Tables<
   PublicTableNameOrOptions extends
-    | keyof (Database["public"]["Tables"] & Database["public"]["Views"])
+    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
     | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
@@ -478,18 +621,19 @@ export type Tables<
     }
     ? R
     : never
-  : PublicTableNameOrOptions extends keyof (Database["public"]["Tables"] &
-        Database["public"]["Views"])
-    ? (Database["public"]["Tables"] &
-        Database["public"]["Views"])[PublicTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
+        PublicSchema["Views"])
+    ? (PublicSchema["Tables"] &
+        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
       : never
     : never
+
 export type TablesInsert<
   PublicTableNameOrOptions extends
-    | keyof Database["public"]["Tables"]
+    | keyof PublicSchema["Tables"]
     | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
@@ -500,16 +644,17 @@ export type TablesInsert<
     }
     ? I
     : never
-  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
-    ? Database["public"]["Tables"][PublicTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
       : never
     : never
+
 export type TablesUpdate<
   PublicTableNameOrOptions extends
-    | keyof Database["public"]["Tables"]
+    | keyof PublicSchema["Tables"]
     | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
@@ -520,28 +665,30 @@ export type TablesUpdate<
     }
     ? U
     : never
-  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
-    ? Database["public"]["Tables"][PublicTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
       : never
     : never
+
 export type Enums<
   PublicEnumNameOrOptions extends
-    | keyof Database["public"]["Enums"]
+    | keyof PublicSchema["Enums"]
     | { schema: keyof Database },
   EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = PublicEnumNameOrOptions extends { schema: keyof Database }
   ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : PublicEnumNameOrOptions extends keyof Database["public"]["Enums"]
-    ? Database["public"]["Enums"][PublicEnumNameOrOptions]
+  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
+    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
     : never
-export type Composites<
+
+export type CompositeTypes<
   PublicCompositeNameOrOptions extends
-    | keyof Database["public"]["CompositeTypes"]
+    | keyof PublicSchema["CompositeTypes"]
     | { schema: keyof Database },
   CompositeName extends PublicCompositeNameOrOptions extends {
     schema: keyof Database
@@ -550,380 +697,8 @@ export type Composites<
     : never = never,
 > = PublicCompositeNameOrOptions extends { schema: keyof Database }
   ? Database[PublicCompositeNameOrOptions["schema"]]["CompositeTypes"][CompositeName]
-  : PublicCompositeNameOrOptions extends keyof Database["public"]["CompositeTypes"]
-    ? Database["public"]["CompositeTypes"][PublicCompositeNameOrOptions]
-    : never
-    
-    // Note: The rest of the file is intentionally omitted for brevity in this example.
-    // The actual file would contain the full definitions for all tables and types.
-    
-    // ... (rest of the original file content)
-    
-    export const Constants = {
-      public: {
-        Enums: {
-          field_type: [
-            "text",
-            "number",
-            "date",
-            "boolean",
-            "multiple-choice",
-            "checkboxes",
-            "dropdown",
-          ],
-          ticket_status: ["pending", "approved", "rejected", "unpaid"],
-        },
-      },
-    } as const
-    
-    // The following types are manually added to reflect the schema until the types are regenerated.
-    
-    export type Event = Database['public']['Tables']['events']['Row']
-    export type Profile = Database['public']['Tables']['profiles']['Row']
-    export type Ticket = Database['public']['Tables']['tickets']['Row']
-    
-    export type EventWithAttendees = Event & {
-      attendees: number;
-    };
-    
-    export type Attendee = {
-        ticket_id: number;
-        checked_in: boolean;
-        checked_out: boolean;
-        first_name: string | null;
-        last_name: string | null;
-        email: string | null;
-        status: 'pending' | 'approved' | 'rejected' | 'checked_in' | 'checked_out' | 'unknown' | 'unpaid';
-        avatar_url: string | null;
-    }
-    
-    export type EventFormFieldOption = {
-      id: number;
-      value: string;
-    };
-    
-    export type EventFormField = Database['public']['Tables']['event_form_fields']['Row'] & {
-      options: EventFormFieldOption[] | null;
-    };
-    
-    export type EventFormFieldWithOptions = Omit<EventFormField, 'id' | 'event_id' | 'order' | 'options'> & {
-      options?: { value: string }[];
-    };
-    
-    
-    // ... (rest of the original file content)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
--   _initialSupabase: { PostgrestVersion: string }
-  public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      count_users: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      get_attendees_for_event: {
-        Args: { event_id_param: number }
-        Returns: {
-          avatar_url: string
-          checked_in: boolean
-          checked_out: boolean
-          email: string
-          first_name: string
-          form_responses: Json
-          last_name: string
-          status: Database["public"]["Enums"]["ticket_status"]
-          ticket_id: number
-        }[]
-      }
-      get_event_attendee_count: {
-        Args: { event_id_param: number }
-        Returns: number
-      }
-      get_event_attendee_counts: {
-        Args: { event_ids: number[] }
-        Returns: {
-          attendee_count: number
-          event_id_out: number
-        }[]
-      }
-    }
-    Enums: {
-      field_type:
-        | "text"
-        | "number"
-        | "date"
-        | "boolean"
-        | "multiple-choice"
-        | "checkboxes"
-        | "dropdown"
-      ticket_status: "pending" | "approved" | "rejected" | "checked_in" | "checked_out" | "expired" | "unpaid";
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
-
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
-
-export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
-    }
-    ? R
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
-
-export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
-
-export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
-
-export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : PublicCompositeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
+    ? PublicSchema["CompositeTypes"][PublicCompositeNameOrOptions]
     : never
 
 export const Constants = {
@@ -937,10 +712,49 @@ export const Constants = {
         "multiple-choice",
         "checkboxes",
         "dropdown",
-      ],
-      ticket_status: ["pending", "approved", "rejected", "unpaid"],
+      ] as const,
+      ticket_status: [
+        "pending",
+        "approved",
+        "rejected",
+        "expired",
+        "checked_in",
+        "checked_out",
+        "unpaid",
+      ] as const,
     },
   },
 } as const
 
-    
+// Custom types for application use
+export type Event = Database['public']['Tables']['events']['Row']
+export type Profile = Database['public']['Tables']['profiles']['Row']
+export type Ticket = Database['public']['Tables']['tickets']['Row']
+
+export type EventWithAttendees = Event & {
+  attendees: number
+}
+
+export type Attendee = {
+  ticket_id: number
+  checked_in: boolean
+  checked_out: boolean
+  first_name: string | null
+  last_name: string | null
+  email: string | null
+  status: Database["public"]["Enums"]["ticket_status"]
+  avatar_url: string | null
+}
+
+export type EventFormFieldOption = {
+  id: number
+  value: string
+}
+
+export type EventFormField = Database['public']['Tables']['event_form_fields']['Row'] & {
+  options: EventFormFieldOption[] | null
+}
+
+export type EventFormFieldWithOptions = Omit<EventFormField, 'id' | 'event_id' | 'order' | 'options'> & {
+  options?: { value: string }[]
+}

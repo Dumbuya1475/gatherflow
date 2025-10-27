@@ -24,7 +24,7 @@ import { Button } from '@/components/ui/button';
 import { cookies } from 'next/headers';
 
 async function getEventFinancialDetails(eventId: number) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const {
     data: { user },

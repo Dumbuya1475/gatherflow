@@ -3,7 +3,7 @@
 import { Bar, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
-export function RegistrationChart({ chartData }: { chartData: any[] }) {
+export function RegistrationChart({ chartData }: { chartData: Array<{ date: string; registrations: number }> }) {
     return (
         <ResponsiveContainer width="100%" height={350}>
             <RechartsBarChart data={chartData}>

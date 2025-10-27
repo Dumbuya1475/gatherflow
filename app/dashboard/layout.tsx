@@ -14,6 +14,7 @@ import {
   DollarSign,
   TrendingDown,
   Briefcase,
+  Building2,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -36,7 +37,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cookies } from 'next/headers';
 
 async function getActiveEventCount(userId: string) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const { count, error } = await supabase
     .from('events')
@@ -57,7 +58,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
   const activeEventCount = user ? await getActiveEventCount(user.id) : 0;
@@ -169,6 +170,15 @@ export default async function DashboardLayout({
                   Analytics
                 </SidebarGroupLabel>
                 <div className="space-y-1">
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Organizations" className="group relative overflow-hidden">
+                      <Link href="/dashboard/organizer/organizations">
+                        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
+                        <Building2 className="relative z-10" />
+                        <span className="relative z-10">Organizations</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild tooltip="Finances" className="group relative overflow-hidden">
                       <Link href="/dashboard/organizer">
