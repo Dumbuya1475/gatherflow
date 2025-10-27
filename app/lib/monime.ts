@@ -1,19 +1,4 @@
 
-<<<<<<< HEAD
-import { OpenAPI, PayoutService, ApiError } from '@@/lib/monime-client';
-import crypto from 'crypto';
-
-// Use MONIME_SECRET_KEY as the authentication token and allow configurable base URL.
-// The sandbox and production environments seem to use the same base URL.
-// The API key (test vs. live) determines the environment.
-OpenAPI.BASE = process.env.MONIME_API_BASE_URL || 'https://api.monime.io';
-OpenAPI.TOKEN = process.env.MONIME_SECRET_KEY;
-
-interface MonimeCheckoutParams {
-  metadata: Record<string, any>;
-  name: string;
-  lineItems: any;
-=======
 'use server';
 
 import { createClient } from 'monime-package';
@@ -22,11 +7,13 @@ import type { CreateCheckout, OneCheckout } from 'monime-package/dist/resources/
 
 interface MonimeCheckoutParams {
   name: string;
-  lineItems: { name: string; amount: number; quantity: number }[];
+  amount: number;
+  quantity: number;
   successUrl: string;
   cancelUrl: string;
+  description?: string;
+  financialAccountId?: string;
   metadata: Record<string, any>;
->>>>>>> 5b980ee66e2892a4a47e32296589f8dfeb9e3b9f
 }
 
 interface MonimeCheckoutResponse {
@@ -37,58 +24,6 @@ interface MonimeCheckoutResponse {
 export async function createMonimeCheckout(
   params: MonimeCheckoutParams
 ): Promise<MonimeCheckoutResponse> {
-<<<<<<< HEAD
-  try {
-    const token = process.env.MONIME_API_KEY!;
-    const spaceId = process.env.MONIME_SPACE_ID!;
-    const idempotencyKey = crypto.randomUUID();
-
-    const appUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
-    const successUrl = `${appUrl}/events/${params.metadata.event_id}/register/success?ticketId=${params.metadata.ticket_id}`;
-    const cancelUrl = `${appUrl}/events/${params.metadata.event_id}/register?payment_cancelled=true`;
-    
-    const response = await fetch('https://api.monime.io/v1/checkout-sessions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Monime-Space-Id': spaceId,
-          'Idempotency-Key': idempotencyKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-            name: params.name, 
-            successUrl, 
-            cancelUrl, 
-            lineItems: params.lineItems, 
-            metadata: params.metadata 
-        }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-        console.error("Monime API Error Details:", JSON.stringify(data, null, 2));
-        const errorMessage = data?.error?.message || 'Failed to create checkout session.';
-        throw new Error(`Monime API error: ${errorMessage}`);
-    }
-
-    if (data.result) {
-      return {
-        id: data.result.id!,
-        url: data.result.redirectUrl!,
-      };
-    } else {
-      throw new Error('Failed to create Monime checkout session: Invalid response structure.');
-    }
-  } catch (error) {
-    console.error("Monime API Error Details:", JSON.stringify(error, null, 2));
-    if (error instanceof ApiError) {
-      // Log the full error for better debugging, then throw a cleaner message.
-      const errorMessage = error.body?.message || error.body?.error?.message || 'Unknown error from Monime API.';
-      throw new Error(`Monime API error: ${errorMessage}`);
-    }
-    // Re-throw other errors, including the ones we create
-=======
   const accessToken = process.env.MONIME_ACCESS_TOKEN;
   if (!accessToken) {
     throw new Error('MONIME_ACCESS_TOKEN environment variable is not set.');
@@ -100,12 +35,16 @@ export async function createMonimeCheckout(
   });
 
   try {
-    console.log("Creating Monime checkout session with params:", JSON.stringify(params, null, 2));
     const checkout: Result<CreateCheckout> = await client.checkoutSession.create(
       params.name,
-      params.lineItems,
+      params.amount,
+      params.quantity,
       params.successUrl,
       params.cancelUrl,
+      params.description,
+      process.env.MONIME_FINANCIAL_ACCOUNT_ID, // Use dedicated financial account ID
+      undefined, // primaryColor
+      undefined, // images
       params.metadata
     );
 
@@ -115,16 +54,14 @@ export async function createMonimeCheckout(
         url: checkout.data.result.redirectUrl!,
       };
     } else {
-      const errorMessage = checkout.error?.message || 'Failed to create Monime checkout session using SDK.';
       console.error("Monime SDK Error:", checkout.error);
-      throw new Error(errorMessage);
+      throw new Error(checkout.error?.message || 'Failed to create Monime checkout session using SDK.');
     }
   } catch (error) {
-      if (error instanceof Error) {
-        console.error("Checkout Error in createMonimeCheckout:", error.message);
+    console.error("Checkout Error in createMonimeCheckout:", error);
+    if (error instanceof Error) {
         throw new Error(`Monime API error: ${error.message}`);
     }
->>>>>>> 5b980ee66e2892a4a47e32296589f8dfeb9e3b9f
     throw error;
   }
 }
@@ -137,72 +74,26 @@ interface MonimePayoutParams {
 }
 
 export async function createMonimePayout(
+  client: any, // Pass the initialized client
   params: MonimePayoutParams
 ): Promise<{ id: string }> {
-<<<<<<< HEAD
-  try {
-    const idempotencyKey = crypto.randomUUID();
-    const response = await PayoutService.createPayout(
-      idempotencyKey,
-      process.env.MONIME_SPACE_ID!,
-      null,
-      {
-        amount: {
-          currency: params.currency,
-          value: Math.round(params.amount * 100),
+    const payout = await client.payout.create(
+        params.amount,
+        {
+            type: "momo",
+            providerId: "m17", // Assuming Orange Money SL
+            phoneNumber: params.recipientPhone
         },
-        destination: {
-          type: 'momo',
-          providerId: 'm17', // Assuming Orange Money SL, this might need to be dynamic
-          phoneNumber: params.recipientPhone,
-        },
-        metadata: params.metadata,
-      }
+        undefined, // sourceFinancialAccountId
+        params.metadata
     );
 
-    if (response.result) {
-      return {
-        id: response.result.id!,
-      };
+    if (payout.success) {
+        return {
+            id: payout.data!.result.id!
+        };
     } else {
-      throw new Error('Failed to create Monime payout');
+        console.error('Monime Payout Error:', payout.error?.message);
+        throw new Error(payout.error?.message || 'Failed to create Monime payout');
     }
-  } catch (error) {
-    console.error("Monime Payout Error Details:", JSON.stringify(error, null, 2));
-    if (error instanceof ApiError) {
-      const errorMessage = error.body?.message || error.body?.error?.message || 'Unknown error from Monime API during payout.';
-      throw new Error(`Monime payout error: ${errorMessage}`);
-    }
-    throw error;
-=======
-  const accessToken = process.env.MONIME_ACCESS_TOKEN;
-  if (!accessToken) {
-    throw new Error('MONIME_API_KEY environment variable is not set.');
-  }
-
-  const client = createClient({
-    monimeSpaceId: process.env.MONIME_SPACE_ID!,
-    accessToken: accessToken,
-  });
-
-  const payout = await client.payout.create(
-      params.amount,
-      {
-          type: "momo",
-          providerId: "m17", // Assuming Orange Money SL
-          phoneNumber: params.recipientPhone
-      },
-      undefined, // sourceFinancialAccountId
-      params.metadata
-  );
-
-  if (payout.success) {
-      return {
-          id: payout.data!.result.id!
-      };
-  } else {
-      console.error('Monime Payout Error:', payout.error?.message);
-      throw new Error(payout.error?.message || 'Failed to create Monime payout');
->>>>>>> 5b980ee66e2892a4a47e32296589f8dfeb9e3b9f
-  }
 }
