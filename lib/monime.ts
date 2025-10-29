@@ -1,12 +1,13 @@
 
 import { createClient, type DestinationOption } from "monime-package";
 
-console.log('Monime Configuration:', {
-  hasAccessToken: !!process.env.MONIME_ACCESS_TOKEN,
-  hasSpaceId: !!process.env.MONIME_SPACE_ID,
-  spaceId: process.env.MONIME_SPACE_ID,
-  tokenPrefix: process.env.MONIME_ACCESS_TOKEN?.substring(0, 8)
-});
+// Only log configuration in development
+if (process.env.NODE_ENV === 'development') {
+  console.log('Monime Configuration:', {
+    hasAccessToken: !!process.env.MONIME_ACCESS_TOKEN,
+    hasSpaceId: !!process.env.MONIME_SPACE_ID,
+  });
+}
 
 const monime = createClient({
   accessToken: process.env.MONIME_ACCESS_TOKEN!,
@@ -14,7 +15,7 @@ const monime = createClient({
 });
 
 interface MonimeCheckoutParams {
-  metadata: Record<string, any>;
+  metadata: { financialAccountId?: string } & Record<string, unknown>;
   name: string;
   lineItems: Array<{ name: string; price: { currency: string; value: number }; quantity: number }>;
   successUrl: string;
@@ -33,16 +34,6 @@ export async function createMonimeCheckout(
 
   // Extract the first line item (we assume single ticket purchases for now)
   const item = lineItems[0];
-  
-  console.log('Creating Monime checkout with:', {
-    name,
-    amount: item.price.value,
-    quantity: item.quantity,
-    successUrl,
-    cancelUrl,
-    description: item.name,
-    metadata
-  });
 
   const response = await monime.checkoutSession.create(
     name,
@@ -56,21 +47,16 @@ export async function createMonimeCheckout(
     undefined  // images
   );
 
-  console.log('Monime response:', { success: response.success, error: response.error });
-
   if (response.success && response.data?.result) {
     return {
       id: response.data.result.id,
       url: response.data.result.redirectUrl,
     };
   } else {
-    // Log the full error details
-    console.error('Monime API Error Details:', {
-      message: response.error?.message,
-      error: response.error,
-      // @ts-ignore - accessing axios error details
-      axiosData: response.error?.response?.data
-    });
+    // Log errors in development only
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Monime API Error:', response.error?.message);
+    }
     throw new Error(
       `Failed to create Monime checkout session: ${response.error?.message || "Unknown error"}`
     );
@@ -81,7 +67,7 @@ interface MonimePayoutParams {
   amount: number;
   currency: string;
   recipientPhone: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 export async function createMonimePayout(

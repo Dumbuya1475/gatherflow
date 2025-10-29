@@ -10,9 +10,11 @@ import React from 'react';
 
 async function verifyMonimeSignature(req: NextRequest): Promise<{isValid: boolean, bodyText: string}> {
   const secret = process.env.MONIME_WEBHOOK_SECRET;
+  const isDev = process.env.NODE_ENV === 'development';
   
-  console.log("=== WEBHOOK VERIFICATION DEBUG ===");
-  console.log("Secret configured:", !!secret);
+  if (isDev) {
+    console.log("=== WEBHOOK VERIFICATION (DEV MODE) ===");
+  }
   
   if (!secret) {
     console.error("Monime Webhook Secret is not configured.");
@@ -22,7 +24,7 @@ async function verifyMonimeSignature(req: NextRequest): Promise<{isValid: boolea
   const signature = req.headers.get("monime-signature");
   
   if (!signature) {
-    console.warn("Webhook received without signature.");
+    if (isDev) console.warn("Webhook received without signature.");
     return {isValid: false, bodyText: ''};
   }
   
@@ -30,7 +32,6 @@ async function verifyMonimeSignature(req: NextRequest): Promise<{isValid: boolea
   
   try {
     // Monime sends timestamped signatures like: "t=TIMESTAMP,v1=BASE64_SIGNATURE"
-    // We'll support that format and also fall back to plain HMAC over the body
     let timestamp: string | null = null;
     let receivedSignature: string | null = null;
 
@@ -59,14 +60,14 @@ async function verifyMonimeSignature(req: NextRequest): Promise<{isValid: boolea
       // Small replay protection: timestamp should be within 5 minutes
       const tsNum = Number.parseInt(timestamp, 10);
       if (Number.isNaN(tsNum)) {
-        console.warn('Webhook signature timestamp is not a number');
+        if (isDev) console.warn('Webhook signature timestamp is not a number');
         return { isValid: false, bodyText };
       }
       const now = Math.floor(Date.now() / 1000);
       const skew = Math.abs(now - tsNum);
       const MAX_SKEW = 60 * 5; // 5 minutes
       if (skew > MAX_SKEW) {
-        console.warn('Webhook signature timestamp outside allowed window', { skew });
+        if (isDev) console.warn('Webhook signature timestamp outside allowed window', { skew });
         return { isValid: false, bodyText };
       }
 
@@ -90,40 +91,34 @@ async function verifyMonimeSignature(req: NextRequest): Promise<{isValid: boolea
       } else {
         // Fallback: compare hex encodings (some providers send hex)
         const expectedHex = expectedBuf.toString('hex');
-        // Received signature might contain additional metadata; strip non-hex
         const cleaned = receivedSignature.replace(/[^0-9a-fA-F]/g, '');
         if (cleaned && cleaned.length === expectedHex.length) {
           isValid = crypto.timingSafeEqual(Buffer.from(expectedHex, 'hex'), Buffer.from(cleaned, 'hex'));
         }
       }
 
-      console.log('HMAC verification (timestamped):', isValid ? '✅ PASSED' : '❌ FAILED');
-      console.log('Parsed timestamp:', timestamp);
-      console.log('Expected (hex):', expectedBuf.toString('hex'));
-      console.log('Received (raw):', receivedSignature);
-      console.log('=== END DEBUG ===');
+      if (isDev) {
+        console.log('HMAC verification (timestamped):', isValid ? '✅ PASSED' : '❌ FAILED');
+      }
 
       return { isValid, bodyText };
     }
 
-    // Fallback: single-value signature (plain HMAC over body) - try hex and base64
+    // Fallback: single-value signature (plain HMAC over body)
     const hmacBody = crypto.createHmac('sha256', secret);
     hmacBody.update(bodyText);
     const expectedHex = hmacBody.digest('hex');
     const expectedBase64 = Buffer.from(expectedHex, 'hex').toString('base64');
 
     let validFallback = false;
-    // signature may be given directly as hex or base64 or contain a scheme
     const sigVal = signature.replace(/^[^=]*=?/, '');
     if (signature === expectedHex || sigVal === expectedBase64) {
       validFallback = true;
     }
 
-    console.log('HMAC verification (fallback):', validFallback ? '✅ PASSED' : '❌ FAILED');
-    console.log('Expected (hex):', expectedHex);
-    console.log('Expected (base64):', expectedBase64);
-    console.log('Received (full):', signature);
-    console.log('=== END DEBUG ===');
+    if (isDev) {
+      console.log('HMAC verification (fallback):', validFallback ? '✅ PASSED' : '❌ FAILED');
+    }
 
     return { isValid: validFallback, bodyText };
 
@@ -135,18 +130,16 @@ async function verifyMonimeSignature(req: NextRequest): Promise<{isValid: boolea
 
 export async function POST(req: NextRequest) {
   const { isValid, bodyText } = await verifyMonimeSignature(req);
-
-  console.log("Webhook signature validation:", isValid);
+  const isDev = process.env.NODE_ENV === 'development';
   
   if (!isValid) {
-    console.warn("⚠️ Invalid webhook signature - but processing anyway for testing");
+    if (isDev) console.warn("⚠️ Invalid webhook signature - processing anyway for testing");
     // TODO: Re-enable strict verification once signature format is confirmed
     // return NextResponse.json({ error: "Invalid signature." }, { status: 403 });
   }
 
   let event;
   try {
-    // Use bodyText from verification (already read from request)
     event = JSON.parse(bodyText);
   } catch (err) {
     console.error("JSON parsing error:", err);
@@ -174,34 +167,67 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (ticketError || !ticket) {
-        console.error("Webhook Error: Ticket not found for checkout session:", checkoutSessionId, ticketError);
+        console.error("Webhook Error: Ticket not found for checkout session:", checkoutSessionId);
         return NextResponse.json({ error: "Ticket not found for this session." }, { status: 404 });
       }
 
       // Idempotency check: If ticket is already approved, do nothing.
       if (ticket.status === 'approved') {
-          console.log("Webhook Info: Ticket already approved for session:", checkoutSessionId);
           return NextResponse.json({ received: true, message: "Ticket already processed." });
       }
 
-      // 2. Mark ticket as 'approved' and generate QR token
-      console.log("Approving ticket:", ticket.id);
+      // 2. Get payment details from checkout session
+      // You'll need to fetch the checkout session details from Monime to get exact amounts
+      // For now, we'll calculate based on the ticket data
+      const { data: eventData } = await supabase
+        .from("events")
+        .select("price, fee_bearer")
+        .eq("id", ticket.event_id)
+        .single();
+
+      const ticketPrice = eventData?.price || 0;
+      const feeBearerType = eventData?.fee_bearer || 'buyer';
+      
+      // Calculate fees (adjust these based on your Monime fee structure)
+      const platformFeeRate = 0.05; // 5% platform fee
+      const processorFeeRate = 0.029; // 2.9% + $0.30 Monime fee
+      const processorFixedFee = 0.30;
+      
+      const platformFee = ticketPrice * platformFeeRate;
+      const processorFee = (ticketPrice * processorFeeRate) + processorFixedFee;
+      let amountPaid = ticketPrice;
+      let organizerAmount = ticketPrice;
+
+      if (feeBearerType === 'buyer') {
+        // Buyer pays fees
+        amountPaid = ticketPrice + platformFee + processorFee;
+      } else {
+        // Organizer pays fees (deducted from ticket price)
+        organizerAmount = ticketPrice - platformFee - processorFee;
+      }
+
+      // 3. Mark ticket as 'approved', save payment details, and generate QR token
       const { error: updateError } = await supabase
         .from("tickets")
         .update({ 
             status: "approved", 
-            qr_token: crypto.randomUUID()
+            qr_token: crypto.randomUUID(),
+            monime_payment_status: 'paid',
+            ticket_price: ticketPrice,
+            amount_paid: amountPaid,
+            platform_fee: platformFee,
+            payment_processor_fee: processorFee,
+            organizer_amount: organizerAmount,
+            fee_bearer: feeBearerType
           })
         .eq("id", ticket.id);
-      
-      console.log("Update result:", updateError ? `Error: ${updateError.message}` : "Success");
 
       if (updateError) {
         console.error("Webhook Error: Failed to update ticket status:", updateError);
         return NextResponse.json({ error: "Failed to update ticket status." }, { status: 500 });
       }
 
-      // 3. Send confirmation email with QR code
+      // 4. Send confirmation email with QR code
       const { data: ticketDetails } = await getTicketDetails(ticket.id);
       if (ticketDetails) {
         await sendTicketEmail(
@@ -211,7 +237,7 @@ export async function POST(req: NextRequest) {
         );
       }
       
-      // 4. Revalidate paths
+      // 5. Revalidate paths
       revalidatePath(`/events/${ticket.event_id}`);
       revalidatePath(`/dashboard/events/${ticket.event_id}/manage`);
 
@@ -221,8 +247,6 @@ export async function POST(req: NextRequest) {
     case "checkout_session.expired": {
       const session = event.data;
       const checkoutSessionId = session.id;
-      
-      console.log("Checkout session expired:", checkoutSessionId);
       
       // Find and mark ticket as expired
       const { data: ticket } = await supabase
@@ -240,8 +264,6 @@ export async function POST(req: NextRequest) {
             monime_payment_status: 'expired'
           })
           .eq("id", ticket.id);
-        
-        console.log("Ticket marked as expired:", ticket.id);
       }
 
       return NextResponse.json({ received: true });
@@ -250,8 +272,6 @@ export async function POST(req: NextRequest) {
     case "checkout_session.cancelled": {
       const session = event.data;
       const checkoutSessionId = session.id;
-      
-      console.log("Checkout session cancelled:", checkoutSessionId);
       
       // Find and update payment status to cancelled (keep ticket status as unpaid)
       const { data: ticket } = await supabase
@@ -268,8 +288,6 @@ export async function POST(req: NextRequest) {
             monime_payment_status: 'cancelled'
           })
           .eq("id", ticket.id);
-        
-        console.log("Ticket payment status updated to cancelled:", ticket.id);
       }
 
       return NextResponse.json({ received: true });
@@ -277,9 +295,6 @@ export async function POST(req: NextRequest) {
 
     case "payout.completed": {
       // TODO: Handle payout completion for event organizers
-      const payout = event.data;
-      console.log("Payout completed:", payout.id);
-      
       // You can add logic here to:
       // - Update payout status in your database
       // - Send notification to organizer
@@ -290,9 +305,6 @@ export async function POST(req: NextRequest) {
 
     case "payout.failed": {
       // TODO: Handle payout failure for event organizers
-      const payout = event.data;
-      console.log("Payout failed:", payout.id);
-      
       // You can add logic here to:
       // - Mark payout as failed
       // - Notify organizer

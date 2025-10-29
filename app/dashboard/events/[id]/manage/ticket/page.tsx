@@ -6,13 +6,11 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
 interface ManageTicketPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function ManageTicketPage({ params }: ManageTicketPageProps) {
-    // Explicitly await params as suggested by the error message, even if it's not a Promise.
-    // This is a workaround for a persistent Next.js static analysis issue.
-    const resolvedParams = await Promise.resolve(params);
+    const resolvedParams = await params;
     let eventId: number;
     try {
         eventId = parseInt(resolvedParams.id, 10);

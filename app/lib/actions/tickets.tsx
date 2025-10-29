@@ -85,7 +85,12 @@ export async function registerAndCreateTicket(
     
     const initialStatus = eventData.requires_approval ? 'pending' : 'approved';
     
-    const ticketData: any = {
+    const ticketData: {
+      event_id: number;
+      user_id: string;
+      status: string;
+      qr_token?: string;
+    } = {
       event_id: eventId,
       user_id: user.id,
       status: initialStatus,
@@ -241,7 +246,12 @@ export async function registerGuestForEvent(
 
   const initialStatus = eventData.requires_approval ? 'pending' : 'approved';
   
-  const ticketData: any = {
+  const ticketData: {
+    event_id: number;
+    user_id: string;
+    status: string;
+    qr_token?: string;
+  } = {
     event_id: eventId,
     user_id: profile.id,
     status: initialStatus,
@@ -535,7 +545,7 @@ export async function scanTicketAction(qrToken: string, eventId: number) {
     }
 
     // 4. Check permissions
-    const isOrganizer = ticket.events?.organizer_id === user.id;
+    const isOrganizer = ticket.events?.[0]?.organizer_id === user.id;
     let isScanner = false;
     if (!isOrganizer) {
       const { data: scannerData } = await supabase
@@ -552,7 +562,12 @@ export async function scanTicketAction(qrToken: string, eventId: number) {
     }
 
     // 5. Determine scan action
-    let updateData: any = {};
+    let updateData: {
+      checked_in?: boolean;
+      checked_in_at?: string;
+      checked_out?: boolean;
+      checked_out_at?: string;
+    } = {};
     let message = '';
     const now = new Date().toISOString();
 
@@ -634,7 +649,7 @@ export async function getScannableEvents() {
     }
     const organizedEventIds = (organizedEventsData || []).map(e => e.id);
 
-    const allScannableEventIds = [...new Set([...assignedEventIds, ...organizedEventIds])];
+    const allScannableEventIds = assignedEventIds.concat(organizedEventIds).filter((v, i, a) => a.indexOf(v) === i);
 
     if (allScannableEventIds.length === 0) {
         return { data: [], isLoggedIn: true, error: null };
@@ -698,7 +713,7 @@ export async function resendTicketLinkAction(
         const { TicketEmail } = await import('@/components/emails/ticket-email');
         await sendTicketEmail(
             email,
-            `Your ticket for ${ticket.events?.title}`,
+            `Your ticket for ${ticket.events?.[0]?.title}`,
             <TicketEmail ticket={ticketDetails} />
         );
     }

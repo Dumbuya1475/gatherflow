@@ -126,7 +126,7 @@ export function LandingPageClient({ recentEvents, featuredEvents, user }: Landin
                   </Button>
                 </div>
               </div>
-              <div className="mx-auto aspect-video overflow-hidden rounded-xl sm:w-full lg:order-last animate-in fade-in-0 slide-in-from-right-4 duration-1000 delay-200">
+              <div className="mx-auto w-full h-[400px] sm:h-[500px] lg:h-auto lg:aspect-video overflow-hidden rounded-xl lg:order-last animate-in fade-in-0 slide-in-from-right-4 duration-1000 delay-200">
                 <FeaturedEventsCarousel events={featuredEvents} />
               </div>
             </div>

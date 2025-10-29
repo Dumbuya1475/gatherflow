@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Camera, CameraOff, ChevronLeft, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import jsQR from 'jsqr';
-import { getScannableEvents, scanTicketAction } from '@/lib/actions/tickets.tsx';
+import { getScannableEvents, scanTicketAction } from '@/lib/actions/tickets';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { EventCard } from '@/components/event-card';
@@ -125,11 +125,11 @@ function ScannerView({ event, onBack }: { event: EventWithAttendees, onBack: () 
 
       console.log('✅ Scan successful:', result.message);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Scan failed:', error);
       setFlash('error');
       
-      const errorMessage = error?.message || 'Could not verify ticket.';
+      const errorMessage = error instanceof Error ? error.message : 'Could not verify ticket.';
       
       toast({
         variant: 'destructive',

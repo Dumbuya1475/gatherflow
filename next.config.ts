@@ -12,12 +12,6 @@ const withPWA = require('@ducanh2912/next-pwa').default({
 const nextConfig: NextConfig = {
   /* config options here */
   output: 'standalone',
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   images: {
     remotePatterns: [
       {
@@ -66,6 +60,12 @@ const nextConfig: NextConfig = {
         filename: 'static/videos/[name].[hash][ext]',
       },
     });
+
+    // Handle express critical dependency warning
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      express: false,
+    };
 
     return config;
   },

@@ -95,40 +95,40 @@ export function FeaturedEventsCarousel({ events }: FeaturedEventsCarouselProps) 
 
         {/* Event Information Overlay */}
         <div
-          className={`absolute bottom-0 left-0 right-0 p-6 transition-all duration-500 ${
+          className={`absolute bottom-0 left-0 right-0 p-4 sm:p-6 transition-all duration-500 ${
             isTransitioning ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
           }`}
         >
-          <div className="space-y-3">
-            <h3 className="text-2xl font-bold text-white line-clamp-2 group-hover:text-primary/90 transition-colors">
+          <div className="space-y-2 sm:space-y-3">
+            <h3 className="text-lg sm:text-2xl font-bold text-white line-clamp-2 group-hover:text-primary/90 transition-colors">
               {currentEvent.title}
             </h3>
 
-            <div className="flex flex-wrap gap-3 text-sm text-white/90">
+            <div className="flex flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm text-white/90">
               <div className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
+                <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span>{format(new Date(currentEvent.date), 'MMM d, yyyy')}</span>
               </div>
               {currentEvent.location && (
                 <div className="flex items-center gap-1">
-                  <MapPin className="h-4 w-4" />
+                  <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="line-clamp-1">{currentEvent.location}</span>
                 </div>
               )}
             </div>
-=
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-white">
+
+            <div className="flex items-center justify-between gap-2 sm:gap-4">
+              <div className="flex items-baseline gap-1 sm:gap-2">
+                <span className="text-xl sm:text-3xl font-bold text-white">
                   ${currentEvent.price?.toFixed(2) || '0.00'}
                 </span>
-                <span className="text-sm text-white/70">per ticket</span>
+                <span className="text-xs sm:text-sm text-white/70">per ticket</span>
               </div>
 
               <Button
                 asChild
                 size="sm"
-                className="bg-primary hover:bg-primary/90 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                className="bg-primary hover:bg-primary/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 text-xs sm:text-sm h-8 sm:h-9"
               >
                 <Link href={`/events/${currentEvent.id}`}>
                   View Event
@@ -161,15 +161,15 @@ export function FeaturedEventsCarousel({ events }: FeaturedEventsCarouselProps) 
 
       {/* Navigation Dots */}
       {events.length > 1 && (
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+        <div className="absolute bottom-16 sm:bottom-20 left-1/2 -translate-x-1/2 flex gap-2 z-10">
           {events.map((_, index) => (
             <button
               key={index}
               onClick={() => goToSlide(index)}
-              className={`h-2 rounded-full transition-all duration-300 ${
+              className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
                 index === currentIndex
-                  ? 'w-8 bg-white'
-                  : 'w-2 bg-white/50 hover:bg-white/70'
+                  ? 'w-6 sm:w-8 bg-white'
+                  : 'w-1.5 sm:w-2 bg-white/50 hover:bg-white/70'
               }`}
               aria-label={`Go to event ${index + 1}`}
             />

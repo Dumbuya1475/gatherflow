@@ -1,0 +1,43 @@
+{
+  "extends": [
+    "next/core-web-vitals",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "rules": {
+    "@typescript-eslint/no-unused-vars": ["warn", {
+      "argsIgnorePattern": "^_",
+      "varsIgnorePattern": "^_",
+      "ignoreRestSiblings": true
+    }],
+    "@typescript-eslint/consistent-type-imports": ["error", {
+      "prefer": "type-imports"
+    }],
+    "@typescript-eslint/no-explicit-any": ["warn", {
+      "ignoreRestArgs": true
+    }],
+    "@typescript-eslint/no-empty-interface": ["error", {
+      "allowSingleExtends": true
+    }],
+    "react-hooks/exhaustive-deps": "warn",
+    "@next/next/no-page-custom-font": "warn",
+    "react/no-unescaped-entities": ["error", {
+      "forbid": [{
+        "char": "'",
+        "alternatives": ["&apos;"]
+      }, {
+        "char": "\"",
+        "alternatives": ["&quot;"]
+      }, {
+        "char": ">",
+        "alternatives": ["&gt;"]
+      }, {
+        "char": "}",
+        "alternatives": ["&#125;"]
+      }]
+    }],
+    "prefer-const": "error",
+    "@next/next/no-img-element": "warn"
+  }
+}
