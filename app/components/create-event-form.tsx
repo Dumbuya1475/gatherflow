@@ -215,10 +215,9 @@ function CustomFieldOptions({ nestIndex, form }: { nestIndex: number, form: any 
           >
             <X className="h-4 w-4" />
           </Button>
-        </div>
-      ))}
-      <Button
-        type="button"
+                  </div>
+              )}
+            </div>
         variant="outline"
         size="sm"
         onClick={() => append({ value: '' })}
