@@ -1,33 +1,37 @@
-## Error Type
-Runtime Error
+✓ (pwa) Compiling for client (static)...
+ ○ (pwa) Service worker: C:\Users\Kadijatu T Bangura\Desktop\gatherflow\public\sw.js
+ ○ (pwa)   URL: /sw.js
+ ○ (pwa)   Scope: /
+Failed to compile.
 
-## Error Message
-Cannot read properties of undefined (reading 'call')
+./app/components/create-event-form.tsx
+Error:   × Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+     ╭─[C:\Users\Kadijatu T Bangura\Desktop\gatherflow\app\components\create-event-form.tsx:732:1]
+ 729 │                     )}
+ 730 │                   />
+ 731 │                   </div>
+ 732 │               )}
+     ·                ▲
+ 733 │             </div>
+     ╰────
+  × Expected '</', got 'div'
+     ╭─[C:\Users\Kadijatu T Bangura\Desktop\gatherflow\app\components\create-event-form.tsx:733:1]
+ 730 │                   />
+ 731 │                   </div>
+ 732 │               )}
+ 733 │             </div>
+     ·               ───
+     ╰────
 
-Next.js version: 15.5.6 (Webpack)
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/components/create-event-form.tsx
+./app/dashboard/events/create/page.tsx
 
 
-./app/lib/actions/server/ai.ts
- GET /manifest.json 200 in 7452ms
- POST /dashboard/events/create 200 in 18723ms
-Monime account creation failed: Error: Cannot find module '@/lib/monime/account'
-    at webpackMissingModule (app\lib\actions\events.ts:58:45)
-    at async createEventAction (app\lib\actions\events.ts:58:39)
-  56 |   if (rawData.is_paid) {
-  57 |     try {
-> 58 |       const { createMonimeAccount } = await import('@/lib/monime/account'
-);
-     |                                             ^
-  59 |       const account = await createMonimeAccount({
-  60 |         name: `${rawData.title} Event Account`,
-  61 |         currency: 'SLE', // or use rawData.currency if available {
-  code: 'MODULE_NOT_FOUND'
-}
-Event creation error: {
-  code: 'PGRST204',
-  details: null,
-  hint: null,
-  message: "Could not find the 'monime_account_id' column of 'events' in the sch
-ema cache"
-}
- POST /dashboard/events/create 200 in 15200ms
+> Build failed because of webpack errors
+
+Kadijatu T Bangura@ktbangura MINGW64 ~/Desktop/gatherflow (main)
+$
