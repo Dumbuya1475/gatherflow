@@ -1,14 +1,33 @@
-Deployment
-gatherflow-i6b58tom9-mohamed-super-dumbuyas-projects.vercel.app
-Domains
-gatherflow-mocha.vercel.app
-Status
-Ready
-Created
-Oct 24 by Dumbuya1475
+## Error Type
+Runtime Error
 
-github/Dumbuya1475
-Source
-main
-1a43dca
-fix: use monime_payment_status for cancelled payments instead of ticke…
+## Error Message
+Cannot read properties of undefined (reading 'call')
+
+Next.js version: 15.5.6 (Webpack)
+
+
+./app/lib/actions/server/ai.ts
+ GET /manifest.json 200 in 7452ms
+ POST /dashboard/events/create 200 in 18723ms
+Monime account creation failed: Error: Cannot find module '@/lib/monime/account'
+    at webpackMissingModule (app\lib\actions\events.ts:58:45)
+    at async createEventAction (app\lib\actions\events.ts:58:39)
+  56 |   if (rawData.is_paid) {
+  57 |     try {
+> 58 |       const { createMonimeAccount } = await import('@/lib/monime/account'
+);
+     |                                             ^
+  59 |       const account = await createMonimeAccount({
+  60 |         name: `${rawData.title} Event Account`,
+  61 |         currency: 'SLE', // or use rawData.currency if available {
+  code: 'MODULE_NOT_FOUND'
+}
+Event creation error: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'monime_account_id' column of 'events' in the sch
+ema cache"
+}
+ POST /dashboard/events/create 200 in 15200ms

@@ -1,6 +1,13 @@
 import type {NextConfig} from 'next';
 
-import withPWA from '@ducanh2912/next-pwa';
+const withPWA = require('@ducanh2912/next-pwa').default({
+  dest: 'public',
+  swcMinify: false,
+  exclude: [
+    /^\/icon0\.svg$/,
+    /^\/icon1\.png$/,
+  ],
+});
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -64,4 +71,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withPWA(nextConfig);
+module.exports = withPWA(nextConfig);

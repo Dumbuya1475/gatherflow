@@ -4,7 +4,29 @@ import { createServiceRoleClient } from '@/lib/supabase/server';
 import { createMonimePayout } from '@@/lib/monime';
 import { cookies } from 'next/headers';
 
-async function processEventPayout(event: any, supabaseAdmin: any) {
+interface Event {
+  id: string;
+  organizer_id: string;
+  price: number;
+  fee_bearer: string;
+  title: string;
+  end_date: string;
+  date: string;
+  event_date: string;
+  payout_completed: boolean;
+}
+
+interface Ticket {
+  id: number;
+  amount_paid: number;
+  platform_fee: number;
+  payment_processor_fee: number;
+  organizer_amount: number;
+}
+
+type SupabaseClient = ReturnType<typeof createServiceRoleClient>;
+
+async function processEventPayout(event: Event, supabaseAdmin: SupabaseClient) {
   // Get all paid tickets
   const { data: tickets } = await supabaseAdmin
     .from('tickets')
@@ -18,10 +40,10 @@ async function processEventPayout(event: any, supabaseAdmin: any) {
   }
 
   // Calculate total payout
-  const totalGrossAmount = tickets.reduce((sum: any, ticket: any) => sum + ticket.amount_paid, 0);
-  const totalPlatformFees = tickets.reduce((sum: any, ticket: any) => sum + ticket.platform_fee, 0);
-  const totalMonimeFees = tickets.reduce((sum: any, ticket: any) => sum + ticket.payment_processor_fee, 0);
-  const netPayout = tickets.reduce((sum: any, ticket: any) => sum + ticket.organizer_amount, 0);
+  const totalGrossAmount = tickets.reduce((sum: number, ticket: Ticket) => sum + ticket.amount_paid, 0);
+  const totalPlatformFees = tickets.reduce((sum: number, ticket: Ticket) => sum + ticket.platform_fee, 0);
+  const totalMonimeFees = tickets.reduce((sum: number, ticket: Ticket) => sum + ticket.payment_processor_fee, 0);
+  const netPayout = tickets.reduce((sum: number, ticket: Ticket) => sum + ticket.organizer_amount, 0);
 
   // Get organizer's profile to get phone number
   const { data: organizerProfile, error: profileError } = await supabaseAdmin
@@ -126,10 +148,11 @@ export async function GET(req: NextRequest) {
       processed: processedCount,
       total: events?.length || 0
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cron job error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: error.message },
+      { error: errorMessage },
       { status: 500 }
     );
   }

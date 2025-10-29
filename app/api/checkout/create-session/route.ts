@@ -4,6 +4,11 @@ import { cookies } from 'next/headers';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { createMonimeCheckout } from '@@/lib/monime';
 
+interface FormResponse {
+  form_field_id: number;
+  field_value: string;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const cookieStore = await cookies();
@@ -125,7 +130,7 @@ export async function POST(req: NextRequest) {
       
       // Save form responses only when creating a new ticket
       if (formResponses && formResponses.length > 0) {
-        const responsesToInsert = formResponses.map((response: any) => ({
+        const responsesToInsert = formResponses.map((response: FormResponse) => ({
           ticket_id: ticketId,
           form_field_id: response.form_field_id,
           field_value: response.field_value,
@@ -198,10 +203,11 @@ export async function POST(req: NextRequest) {
       checkoutUrl: checkoutSession.url,
       ticketId: ticketId,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Checkout Error: Unhandled exception in POST handler.', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
