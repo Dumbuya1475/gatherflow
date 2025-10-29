@@ -1,4 +1,3 @@
-
 'use server';
 
 import Link from 'next/link';
@@ -13,6 +12,31 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cookies } from 'next/headers';
 
+interface Event {
+  id: number;
+  title: string;
+  date: string;
+  location?: string;
+  created_at: string;
+  organizer_id: string;
+  [key: string]: any;
+}
+
+interface EventWithAttendeesCount extends Event {
+  attendees: number;
+}
+
+interface TicketWithEvent {
+  id: any;
+  user_id: string;
+  created_at: string;
+  events: Event | Event[];
+}
+
+interface UpcomingEventWithTicket extends Event {
+  ticket_id: any;
+  attendees: number;
+}
 
 async function getDashboardStats(user: any) {
   if (!user) {
@@ -60,10 +84,13 @@ async function getDashboardStats(user: any) {
         }
 
         if (counts) {
-            countsByEvent = counts.reduce((acc, { event_id_out, attendee_count }) => {
-                acc[event_id_out] = Number(attendee_count || 0);
+            countsByEvent = counts.reduce(
+              (acc: Record<number, number>, item: { event_id_out: number; attendee_count: number }) => {
+                acc[item.event_id_out] = Number(item.attendee_count || 0);
                 return acc;
-            }, {} as Record<number, number>);
+              },
+              {} as Record<number, number>
+            );
             totalAttendees = Object.values(countsByEvent).reduce((acc, count) => acc + count, 0);
         }
     }
@@ -80,7 +107,7 @@ async function getDashboardStats(user: any) {
 
     if (recentEventsError) throw recentEventsError;
 
-    const recentEvents = (recentEventsData || []).map(event => ({
+    const recentEvents: EventWithAttendeesCount[] = (recentEventsData || []).map((event: Event) => ({
       ...event,
       attendees: countsByEvent[event.id] || 0,
     }));
@@ -115,7 +142,11 @@ async function getAttendeeDashboardStats(user: any) {
     return { registeredEventsCount: 0, upcomingEvents: [], attendedEventsCount: 0 };
   }
 
-  const eventIds = tickets.map(t => t.events.id);
+  const eventIds = tickets.map((t: TicketWithEvent) => {
+    const events = t.events;
+    return Array.isArray(events) ? events[0]?.id : events?.id;
+  });
+  
   let countsByEvent: Record<number, number> = {};
 
   if (eventIds.length > 0) {
@@ -126,27 +157,52 @@ async function getAttendeeDashboardStats(user: any) {
     if (countError) {
         console.error('Error fetching attendee counts:', countError);
     } else if (counts) {
-      countsByEvent = counts.reduce((acc, { event_id_out, attendee_count }) => {
+      interface EventAttendeeCount {
+        event_id_out: number;
+        attendee_count: number;
+      }
+
+      countsByEvent = counts.reduce(
+        (acc: Record<number, number>, { event_id_out, attendee_count }: EventAttendeeCount) => {
           acc[event_id_out] = Number(attendee_count || 0);
           return acc;
-      }, {} as Record<number, number>);
+        },
+        {} as Record<number, number>
+      );
     }
   }
 
-  const ticketsWithCounts = tickets.map(ticket => ({
+  const ticketsWithCounts = tickets.map((ticket: TicketWithEvent) => {
+    const event = Array.isArray(ticket.events) ? ticket.events[0] : ticket.events;
+    return {
       ...ticket,
       events: {
-          ...ticket.events,
-          attendees: countsByEvent[ticket.events.id] || 0,
+        ...event,
+        attendees: countsByEvent[event.id] || 0,
       }
-  }));
+    };
+  });
 
   const registeredEventsCount = ticketsWithCounts.length;
-  const upcomingEvents = ticketsWithCounts
-    .filter(t => t.events && new Date(t.events.date) > new Date())
-    .map(t => ({...t.events!, ticket_id: t.id }))
+  
+  const upcomingEvents: UpcomingEventWithTicket[] = ticketsWithCounts
+    .filter((t: any) => {
+      const event = Array.isArray(t.events) ? t.events[0] : t.events;
+      return event && new Date(event.date) > new Date();
+    })
+    .map((t: any) => {
+      const event = Array.isArray(t.events) ? t.events[0] : t.events;
+      return {
+        ...event,
+        ticket_id: t.id
+      };
+    })
     .slice(0, 5);
-  const attendedEventsCount = ticketsWithCounts.filter(t => t.events && new Date(t.events.date) <= new Date()).length;
+    
+  const attendedEventsCount = ticketsWithCounts.filter((t: any) => {
+    const event = Array.isArray(t.events) ? t.events[0] : t.events;
+    return event && new Date(event.date) <= new Date();
+  }).length;
 
   return { registeredEventsCount, upcomingEvents, attendedEventsCount };
 }
@@ -226,7 +282,7 @@ export default async function DashboardPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in-0 duration-700">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-secondary text-center p-6">
       {/* Enhanced Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-700">
         <div className="space-y-1">

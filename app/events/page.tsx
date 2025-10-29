@@ -33,15 +33,19 @@ async function getAllPublicEvents(user: any) {
   const eventIds = events.map(event => event.id);
   const { data: counts, error: countError } = await supabase.rpc('get_event_attendee_counts', { event_ids: eventIds });
 
-  if (countError) {
-      console.error('Error fetching attendee counts:', countError);
+  if (countError || !Array.isArray(counts)) {
+    console.error('Error fetching attendee counts:', {
+      error: countError,
+      counts,
+      eventIds,
+    });
   }
 
-  const countMap = new Map(counts?.map(c => [c.event_id_out, c.attendee_count]));
+  const countMap = new Map((Array.isArray(counts) ? counts : []).map(c => [c.event_id_out, c.attendee_count]));
 
   const eventsWithCounts = events.map(event => ({
-      ...event,
-      attendees: countMap.get(event.id) || 0,
+    ...event,
+    attendees: countMap.get(event.id) || 0,
   }));
 
   const organizerIds = events.map(event => event.organizer_id).filter(Boolean) as string[];

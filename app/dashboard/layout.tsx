@@ -1,3 +1,6 @@
+// ============================================
+// layout.tsx - FULL CODE
+// ============================================
 
 'use server';
 
@@ -238,25 +241,25 @@ export default async function DashboardLayout({
         </Sidebar>
         
         {/* Enhanced Main Content Area */}
-        <div className="flex flex-1 flex-col min-w-0 bg-background/90">
+        <div className="w-full flex flex-1 flex-col min-w-0 bg-background/90">
           {/* Enhanced Header */}
-          <div className="sticky top-0 z-10 border-b border-border/40 bg-background/80 backdrop-blur-md">
+          <div className="sticky top-0 z-100 border-b border-border/40 bg-background/80 backdrop-blur-md">
             <DashboardHeader />
           </div>
           
-          {/* Main Content with better spacing and constraints */}
-          <main className="flex-1 relative">
+          {/* Main Content with better spacing and full width */}
+          <main className="flex-1 relative w-full">
             {/* Background decoration for large screens */}
             <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.02] via-transparent to-secondary/[0.02] pointer-events-none"></div>
             <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-primary/[0.03] to-secondary/[0.03] rounded-full blur-3xl opacity-50 pointer-events-none hidden xl:block"></div>
             <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-tl from-secondary/[0.02] to-primary/[0.02] rounded-full blur-3xl opacity-30 pointer-events-none hidden xl:block"></div>
             
             {/* Full-width Content Container */}
-            <div className="relative z-10 h-full">
-              <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+            <div className="relative z-10 h-full w-full">
+              <div className="w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
                 <div className="min-h-[calc(100vh-12rem)] flex flex-col">
                   {/* Content wrapper with full width */}
-                  <div className="flex-1">
+                  <div className="flex-1 w-full">
                     {children}
                   </div>
                   

@@ -51,6 +51,25 @@ export async function createEventAction(formData: FormData) {
     cover_image_file: formData.get('cover_image_file') as File,
   };
 
+  // Monime financial account integration for paid events
+  let monimeAccountId: string | null = null;
+  if (rawData.is_paid) {
+    try {
+      const { createMonimeAccount } = await import('@/lib/monime/account');
+      const account = await createMonimeAccount({
+        name: `${rawData.title} Event Account`,
+        currency: 'SLE', // or use rawData.currency if available
+        reference: undefined,
+        description: `Account for event: ${rawData.title}`,
+        metadata: { eventTitle: rawData.title, organizerId: user.id }
+      });
+      monimeAccountId = account.id;
+    } catch (err) {
+      console.error('Monime account creation failed:', err);
+      // Optionally, return error or continue without account
+    }
+  }
+
   let coverImageUrl: string | null = null;
   if (rawData.cover_image_file && rawData.cover_image_file.size > 0) {
     const { publicUrl, error: uploadError } = await uploadFile(rawData.cover_image_file, 'event-covers');
@@ -77,6 +96,7 @@ export async function createEventAction(formData: FormData) {
       requires_approval: rawData.requires_approval,
       organizer_id: user.id,
       cover_image: coverImageUrl,
+      monime_account_id: monimeAccountId, // Store Monime account ID
     })
     .select('id')
     .single();
