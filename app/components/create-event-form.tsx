@@ -3,6 +3,7 @@
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -22,7 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, PlusCircle, Sparkles, Upload, X } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/app/lib/utils';
+import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -33,7 +34,8 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { calculateEarlyBirdPricing, PricingResult } from '@/lib/pricing';
+import type { PricingResult } from '../../lib/pricing';
+// import { calculateEarlyBirdPricing, PricingResult } from '@/lib/pricing';
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
@@ -153,7 +155,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
   const [feeDetails, setFeeDetails] = useState<PricingResult | null>(null);
   const { toast } = useToast();
 
-  const form = useForm<EventFormValues>({
+  const form = useForm<EventFormValues, any, EventFormValues>({
     resolver: zodResolver(eventFormSchema),
     defaultValues: {
       ...defaultValues,
@@ -168,7 +170,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
       fee_bearer: defaultValues?.fee_bearer === 'organizer' ? 'organizer' : 'buyer',
       is_public: defaultValues?.is_public ?? true,
       requires_approval: defaultValues?.requires_approval || false,
-      current_cover_image: event?.cover_image,
+      current_cover_image: event?.cover_image ?? undefined,
     },
   });
 

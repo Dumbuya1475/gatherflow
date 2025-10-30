@@ -24,7 +24,8 @@ async function getOrganizationProfile(orgId: string) {
         avatar_url
       ),
       followers:followers (count),
-      members:organization_members (count)
+      members:organization_members (count),
+      events:events (count)
     `)
     .eq('id', orgId)
     .single();
@@ -162,7 +163,11 @@ export default async function OrganizationProfilePage({
               )}
               <div className="flex items-center gap-1">
                 <Users className="w-4 h-4" />
-                <span>{org._count?.followers || 0} followers</span>
+                <span>{org?._count?.followers || 0} followers</span>
+              </div>
+               <div className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                <span>{org?._count?.events || 0} events</span>
               </div>
             </div>
             {org.description && (

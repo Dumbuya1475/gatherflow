@@ -1,4 +1,6 @@
-npm run build
+
+Kadijatu T Bangura@ktbangura MINGW64 ~/Desktop/gatherflow (main)
+$ npm run build
 
 > nextn@0.1.0 build
 > next build
@@ -15,15 +17,239 @@ npm run build
  ○ (pwa) Service worker: C:\Users\Kadijatu T Bangura\Desktop\gatherflow\public\sw.js
  ○ (pwa)   URL: /sw.js
  ○ (pwa)   Scope: /
+
+warn - The class `duration-[3000ms]` is ambiguous and matches multiple utilities.
+warn - If this is content and not a class, replace it with `duration-&lsqb;3000ms&rsqb;` to silence this warning.
+
+warn - The class `duration-[4000ms]` is ambiguous and matches multiple utilities.
+warn - If this is content and not a class, replace it with `duration-&lsqb;4000ms&rsqb;` to silence this warning.
+ ⚠ Compiled with warnings in 2.3min
+
+./app/lib/actions/events.ts
+Module not found: Can't resolve '@/lib/monime/account' in 'C:\Users\Kadijatu T Bangura\Desktop\gatherflow\app\lib\actions'
+
+Import trace for requested module:
+./app/lib/actions/events.ts
+
+./app/lib/actions/events.ts
+Module not found: Can't resolve '@/lib/monime/account' in 'C:\Users\Kadijatu T Bangura\Desktop\gatherflow\app\lib\actions'
+
+Import trace for requested module:
+./app/lib/actions/events.ts
+./app/dashboard/events/[id]/manage/page.tsx
+
+
 Failed to compile.
 
+./app/api/checkout/create-session/route.ts
+7:11  Warning: 'FormResponse' is defined but never used.  @typescript-eslint/no-unused-vars      
+
+./app/api/webhooks/monime/route.ts
+53:16  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+84:16  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+
 ./app/components/create-event-form.tsx
-Module not found: Can't resolve '@/app/lib/utils'
+6:10  Warning: 'useRouter' is defined but never used.  @typescript-eslint/no-unused-vars
+97:77  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any      
+155:10  Warning: 'feeDetails' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+155:22  Warning: 'setFeeDetails' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+158:41  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any     
+237:9  Warning: 'current_cover_image' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+635:41  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
 
-https://nextjs.org/docs/messages/module-not-found
+./app/components/event-card.tsx
+6:10  Warning: 'useEffect' is defined but never used.  @typescript-eslint/no-unused-vars
+12:10  Warning: 'useToast' is defined but never used.  @typescript-eslint/no-unused-vars
+13:10  Warning: 'useRouter' is defined but never used.  @typescript-eslint/no-unused-vars        
+27:10  Warning: 'useFormState' is defined but never used.  @typescript-eslint/no-unused-vars     
+36:36  Warning: 'isLoggedIn' is defined but never used.  @typescript-eslint/no-unused-vars       
 
+./app/components/featured-events-carousel.tsx
+36:6  Warning: React Hook useEffect has a missing dependency: 'handleNext'. Either include it or 
+remove the dependency array.  react-hooks/exhaustive-deps
 
-> Build failed because of webpack errors
+./app/components/landing-page-client.tsx
+6:52  Warning: 'CardFooter' is defined but never used.  @typescript-eslint/no-unused-vars        
+7:10  Warning: 'Input' is defined but never used.  @typescript-eslint/no-unused-vars
+10:47  Warning: 'Check' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/components/organization-events.tsx
+6:28  Warning: 'Users' is defined but never used.  @typescript-eslint/no-unused-vars
+65:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/components/organization-form.tsx
+82:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/components/public-header.tsx
+14:10  Warning: 'isOpen' is assigned a value but never used.  @typescript-eslint/no-unused-vars  
+
+./app/components/tickets/ticket-view.tsx
+158:118  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./app/components/timeline-event-card.tsx
+5:52  Warning: 'CardDescription' is defined but never used.  @typescript-eslint/no-unused-vars   
+
+./app/components/ui/command.tsx
+26:11  Error: An interface declaring no members is equivalent to its supertype.  @typescript-eslint/no-empty-object-type
+26:11  Warning: 'CommandDialogProps' is defined but never used.  @typescript-eslint/no-unused-vars
+28:1  Warning: Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-empty-object-type').
+
+./app/dashboard/analytics/page.tsx
+7:10  Warning: 'BarChart' is defined but never used.  @typescript-eslint/no-unused-vars
+7:20  Warning: 'Users' is defined but never used.  @typescript-eslint/no-unused-vars
+7:27  Warning: 'TrendingUp' is defined but never used.  @typescript-eslint/no-unused-vars        
+8:26  Warning: 'ChartTooltip' is defined but never used.  @typescript-eslint/no-unused-vars      
+8:40  Warning: 'ChartTooltipContent' is defined but never used.  @typescript-eslint/no-unused-vars
+9:10  Warning: 'Bar' is defined but never used.  @typescript-eslint/no-unused-vars
+9:27  Warning: 'RechartsBarChart' is defined but never used.  @typescript-eslint/no-unused-vars  
+9:45  Warning: 'CartesianGrid' is defined but never used.  @typescript-eslint/no-unused-vars     
+9:60  Warning: 'XAxis' is defined but never used.  @typescript-eslint/no-unused-vars
+9:67  Warning: 'YAxis' is defined but never used.  @typescript-eslint/no-unused-vars
+9:74  Warning: 'Tooltip' is defined but never used.  @typescript-eslint/no-unused-vars
+9:83  Warning: 'Legend' is defined but never used.  @typescript-eslint/no-unused-vars
+9:91  Warning: 'ResponsiveContainer' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/dashboard/analytics/_components/registration-chart.tsx
+4:10  Warning: 'ChartContainer' is defined but never used.  @typescript-eslint/no-unused-vars    
+4:26  Warning: 'ChartTooltip' is defined but never used.  @typescript-eslint/no-unused-vars      
+
+./app/dashboard/events/page.tsx
+447:28  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./app/dashboard/events/[id]/manage/email/_components/email-form.tsx
+11:3  Warning: 'FormDescription' is defined but never used.  @typescript-eslint/no-unused-vars   
+
+./app/dashboard/events/[id]/manage/page.tsx
+7:10  Warning: 'cookies' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/dashboard/events/[id]/manage/_components/refresh-button.tsx
+8:33  Warning: 'eventId' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/dashboard/events/[id]/view/page.tsx
+7:29  Warning: 'CardDescription' is defined but never used.  @typescript-eslint/no-unused-vars   
+7:46  Warning: 'CardFooter' is defined but never used.  @typescript-eslint/no-unused-vars        
+8:43  Warning: 'ArrowLeft' is defined but never used.  @typescript-eslint/no-unused-vars
+8:54  Warning: 'Eye' is defined but never used.  @typescript-eslint/no-unused-vars
+8:71  Warning: 'Share2' is defined but never used.  @typescript-eslint/no-unused-vars
+12:10  Warning: 'EventWithAttendees' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/dashboard/layout.tsx
+18:3  Warning: 'TrendingDown' is defined but never used.  @typescript-eslint/no-unused-vars      
+
+./app/dashboard/organizer/organizations/page.tsx
+7:22  Warning: 'Users' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/dashboard/organizer/page.tsx
+26:3  Warning: 'Users' is defined but never used.  @typescript-eslint/no-unused-vars
+28:3  Warning: 'ArrowRight' is defined but never used.  @typescript-eslint/no-unused-vars        
+
+./app/dashboard/organizer/[id]/page.tsx
+20:10  Warning: 'Badge' is defined but never used.  @typescript-eslint/no-unused-vars
+21:42  Warning: 'Users' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/dashboard/page.tsx
+6:15  Warning: 'EventWithAttendees' is defined but never used.  @typescript-eslint/no-unused-vars22:18  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any      
+29:11  Warning: 'TicketWithEvent' is defined but never used.  @typescript-eslint/no-unused-vars  
+30:7  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any       
+37:14  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any      
+196:17  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any     
+200:14  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any     
+209:60  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any     
+290:19  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+398:50  Warning: 'index' is defined but never used.  @typescript-eslint/no-unused-vars
+542:52  Warning: 'index' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/dashboard/profile/page.tsx
+14:10  Warning: 'cookies' is defined but never used.  @typescript-eslint/no-unused-vars
+15:10  Warning: 'createClient' is defined but never used.  @typescript-eslint/no-unused-vars     
+34:31  Warning: 'statsError' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./app/dashboard/profile/_components/profile-form.tsx
+3:24  Warning: 'SubmitHandler' is defined but never used.  @typescript-eslint/no-unused-vars     
+9:29  Warning: 'CardDescription' is defined but never used.  @typescript-eslint/no-unused-vars   
+16:10  Warning: 'Select' is defined but never used.  @typescript-eslint/no-unused-vars
+16:18  Warning: 'SelectContent' is defined but never used.  @typescript-eslint/no-unused-vars    
+16:33  Warning: 'SelectItem' is defined but never used.  @typescript-eslint/no-unused-vars       
+16:45  Warning: 'SelectTrigger' is defined but never used.  @typescript-eslint/no-unused-vars    
+16:60  Warning: 'SelectValue' is defined but never used.  @typescript-eslint/no-unused-vars      
+
+./app/dashboard/scanner/page.tsx
+84:34  Warning: The ref value 'videoRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'videoRef.current' to a variable inside the effect, and use that variable in the cleanup function.  react-hooks/exhaustive-deps
+
+./app/dashboard/settings/page.tsx
+5:10  Warning: 'useTheme' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/events/[id]/page.tsx
+9:29  Warning: 'CardDescription' is defined but never used.  @typescript-eslint/no-unused-vars   
+9:46  Warning: 'CardFooter' is defined but never used.  @typescript-eslint/no-unused-vars        
+10:54  Warning: 'Eye' is defined but never used.  @typescript-eslint/no-unused-vars
+10:71  Warning: 'Share2' is defined but never used.  @typescript-eslint/no-unused-vars
+14:10  Warning: 'EventWithAttendees' is defined but never used.  @typescript-eslint/no-unused-vars
+21:16  Warning: 'getTicketId' is defined but never used.  @typescript-eslint/no-unused-vars      
+
+./app/events/[id]/register/page.tsx
+4:10  Warning: 'redirect' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/events/[id]/register/pending/page.tsx
+16:140  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./app/events/[id]/register/_components/register-event-form.tsx
+4:10  Warning: 'useActionState' is defined but never used.  @typescript-eslint/no-unused-vars    
+28:11  Warning: 'pending' is assigned a value but never used.  @typescript-eslint/no-unused-vars 
+
+./app/events/[id]/register/_components/resend-ticket-form.tsx
+29:62  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./app/hooks/use-mobile.tsx
+3:8  Warning: 'React' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/hooks/use-toast.ts
+21:7  Warning: 'actionTypes' is assigned a value but only used as a type.  @typescript-eslint/no-unused-vars
+
+./app/layout.tsx
+44:9  Warning: Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font  @next/next/no-page-custom-font
+
+./app/lib/actions/tickets.tsx
+11:6  Warning: 'TicketData' is defined but never used.  @typescript-eslint/no-unused-vars        
+
+./app/lib/supabase/middleware.ts
+38:13  Warning: 'user' is assigned a value but never used.  @typescript-eslint/no-unused-vars    
+
+./app/lib/supabase/server.ts
+17:20  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+26:20  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+49:20  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+58:20  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/lib/types.ts
+10:6  Warning: 'OrganizerProfile' is defined but never used.  @typescript-eslint/no-unused-vars  
+
+./app/not-found.tsx
+3:10  Warning: 'AppLogo' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/organizations/page.tsx
+5:10  Warning: 'Button' is defined but never used.  @typescript-eslint/no-unused-vars
+6:29  Warning: 'CardHeader' is defined but never used.  @typescript-eslint/no-unused-vars        
+6:41  Warning: 'CardTitle' is defined but never used.  @typescript-eslint/no-unused-vars
+138:28  Error: 'Calendar' is not defined.  react/jsx-no-undef
+
+./app/organizations/[id]/followers/page.tsx
+7:29  Warning: 'CardHeader' is defined but never used.  @typescript-eslint/no-unused-vars        
+7:41  Warning: 'CardTitle' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/organizations/[id]/page.tsx
+113:13  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+190:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+234:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/page.tsx
+5:15  Warning: 'EventWithAttendees' is defined but never used.  @typescript-eslint/no-unused-vars
+./app/test-email/page.tsx
+30:55  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+30:60  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./lib/monime.ts
+76:35  Warning: 'metadata' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
 
 Kadijatu T Bangura@ktbangura MINGW64 ~/Desktop/gatherflow (main)
-$

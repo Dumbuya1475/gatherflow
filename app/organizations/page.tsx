@@ -132,7 +132,11 @@ export default function OrganizationsPage() {
                         )}
                         <div className="flex items-center gap-1">
                           <Users className="h-4 w-4" />
-                          <span>{org._count.followers} followers</span>
+                          <span>{org?._count?.followers} followers</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          <span>{org?._count?.events} events</span>
                         </div>
                       </div>
                     </div>
