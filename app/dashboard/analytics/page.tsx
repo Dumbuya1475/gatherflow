@@ -83,7 +83,7 @@ export default async function AnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                     <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-                        <RegistrationChart chartData={chartData} />
+                        <RegistrationChart chartData={chartData ?? []} />
                     </ChartContainer>
                 </CardContent>
             </Card>
@@ -104,7 +104,7 @@ export default async function AnalyticsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {eventsPerformance.map(event => (
+                            {Array.isArray(eventsPerformance) && eventsPerformance.map(event => (
                                 <TableRow key={event.id}>
                                     <TableCell className="font-medium">{event.title}</TableCell>
                                     <TableCell className="text-center">{event.registrations}</TableCell>

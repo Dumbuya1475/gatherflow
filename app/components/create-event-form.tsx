@@ -2,179 +2,94 @@
 
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-
 import { z } from 'zod';
-
-import { useRouter } from 'next/navigation';
-
 import { useState, useEffect } from 'react';
-
 import Image from 'next/image';
-
 import Link from 'next/link';
 
-
-
 import { Button } from '@/components/ui/button';
-
 import {
-
   Form,
-
   FormControl,
-
   FormDescription,
-
   FormField,
-
   FormItem,
-
   FormLabel,
-
   FormMessage,
-
 } from '@/components/ui/form';
-
 import { Input } from '@/components/ui/input';
-
 import { Textarea } from '@/components/ui/textarea';
-
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-
 import { CalendarIcon, PlusCircle, Sparkles, Upload, X } from 'lucide-react';
-
 import { Calendar } from '@/components/ui/calendar';
-
-import { cn } from '@@/app/lib/utils';
-
+import { cn } from '@/app/lib/utils';
 import { format } from 'date-fns';
-
 import { Card, CardContent } from '@/components/ui/card';
-
 import { useToast } from '@/hooks/use-toast';
-
 import { createEventAction, updateEventAction } from '@/lib/actions/events';
-
 import type { Event } from '@/lib/types';
-
 import { generatePromotionAction } from '@/lib/actions/server/ai';
-
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
-
 import { Label } from './ui/label';
-
 import { Switch } from './ui/switch';
-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-
-
+import { calculateEarlyBirdPricing, PricingResult } from '@/lib/pricing';
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
-
-
 const eventFormSchema = z.object({
-
   title: z.string().min(2, {
-
     message: 'Event title must be at least 2 characters.',
-
   }),
-
   description: z.string().min(10, {
-
     message: 'Description must be at least 10 characters.',
-
   }),
   category: z.enum(['conference', 'workshop', 'festival', 'concert', 'seminar', 'networking', 'sports', 'community', 'other']).default('other'),
   date: z.date({
-
     required_error: 'A start date and time is required.',
-
   }),
-
   end_date: z.date().optional(),
-
   location: z.string().min(2, {
-
     message: 'Location must be at least 2 characters.',
-
   }),
-
   capacity: z.coerce.number().int().positive().optional(),
-
   scanners: z.array(z.object({ email: z.string().email({ message: "Please enter a valid email." }) })).optional(),
-
   targetAudience: z.string().min(2, {
-
     message: 'Target audience must be at least 2 characters.',
-
   }),
-
   cover_image_file: z
     .any()
     .refine((file) => file === undefined || file === null || (file instanceof File && ACCEPTED_IMAGE_TYPES.includes(file.type)), {
-
         message: "Only .jpg, .jpeg, .png and .webp formats are supported.",
-
     })
-
     .optional(),
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   current_cover_image: z.string().url().optional(),
-
   is_paid: z.boolean().default(false),
-
   price: z.coerce.number().nonnegative().optional(),
-
   fee_bearer: z.enum(['organizer', 'buyer']).default('buyer'),
-
   is_public: z.boolean().default(true),
-
   requires_approval: z.boolean().default(false),
-
   customFields: z.array(z.object({
-
     field_name: z.string().min(1, { message: "Field name is required." }),
-
     field_type: z.enum(['text', 'number', 'date', 'boolean', 'multiple-choice', 'checkboxes', 'dropdown']),
-
     is_required: z.boolean().default(false),
-
     options: z.array(z.object({ value: z.string().min(1, { message: "Option value is required." }) })).optional(),
-
   })).optional(),
-
 }).refine(data => {
-
     if (data.is_paid) {
-
         return data.price !== undefined && data.price > 0;
-
     }
-
     return true;
-
 }, {
-
     message: "Price must be a positive number for paid events.",
-
     path: ["price"],
-
 });
-
 
 type EventFormValues = z.infer<typeof eventFormSchema>;
 
-
-
 interface CreateEventFormProps {
-
     event?: Event;
-
     defaultValues?: Partial<EventFormValues>;
-
 }
 
 function CustomFieldOptions({ nestIndex, form }: { nestIndex: number, form: any }) {
@@ -215,9 +130,10 @@ function CustomFieldOptions({ nestIndex, form }: { nestIndex: number, form: any 
           >
             <X className="h-4 w-4" />
           </Button>
-                  </div>
-              )}
-            </div>
+        </div>
+      ))}
+      <Button
+        type="button"
         variant="outline"
         size="sm"
         onClick={() => append({ value: '' })}
@@ -228,12 +144,6 @@ function CustomFieldOptions({ nestIndex, form }: { nestIndex: number, form: any 
     </div>
   );
 }
-
-import { calculateEarlyBirdPricing, PricingResult } from '@@/lib/pricing';
-
-// ... (rest of the imports)
-
-// ... (rest of the component before the return statement)
 
 export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -326,25 +236,21 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
         ...restData 
     } = data;
   
-    // Append all form data safely
     Object.entries(restData).forEach(([key, value]) => {
       if (value === undefined || value === null) return;
   
       if (key === 'cover_image_file' && value instanceof File) {
         formData.append(key, value);
-      
       } else if (key === 'scanners' && Array.isArray(value)) {
-        const filtered = value.map(s => s.email).filter(Boolean); // remove empty emails
+        const filtered = value.map(s => s.email).filter(Boolean);
         formData.append(key, JSON.stringify(filtered));
       } else if (key === 'customFields' && Array.isArray(value)) {
         formData.append(key, JSON.stringify(value));
-    }
-     else if (key === 'is_paid' || key === 'is_public' || key === 'requires_approval') {
+      } else if (key === 'is_paid' || key === 'is_public' || key === 'requires_approval') {
         formData.append(key, value ? 'true' : 'false');
-      }else if (value instanceof Date && !isNaN(value.getTime())) {
+      } else if (value instanceof Date && !isNaN(value.getTime())) {
         formData.append(key, value.toISOString());
-    }
-     else {
+      } else {
         formData.append(key, String(value));
       }
     });
@@ -354,8 +260,6 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
     try {
       const result = await action(formData);
     
-      // If the action redirects, this client-side success toast will not be shown.
-      // The redirect itself indicates success.
       if (result?.error) {
         toast({
           variant: 'destructive',
@@ -370,11 +274,8 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
         title: event ? 'Update Failed' : 'Creation Failed',
         description: "An unexpected error occurred.",
       });
-    } finally {
-      // react-hook-form's handleSubmit usually manages isSubmitting, but this is a safeguard.
     }
   }
-  
 
   return (
     <Card>
@@ -503,8 +404,6 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
               )}
             />
 
-            
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <FormField
                 control={form.control}
@@ -547,8 +446,8 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                                     const time = e.target.value;
                                     const [hours, minutes] = time.split(':').map(Number);
                                     const baseDate = field.value instanceof Date ? field.value : new Date();
-                                    const newDate = new Date(baseDate); // make a new copy
-                                                                        newDate.setHours(hours);
+                                    const newDate = new Date(baseDate);
+                                    newDate.setHours(hours);
                                     newDate.setMinutes(minutes);
                                     field.onChange(newDate);
                                 }}
@@ -601,8 +500,8 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                                     const time = e.target.value;
                                     const [hours, minutes] = time.split(':').map(Number);
                                     const baseDate = field.value instanceof Date ? field.value : new Date();
-                                    const newDate = new Date(baseDate); // make a new copy
-                                                                        newDate.setHours(hours);
+                                    const newDate = new Date(baseDate);
+                                    newDate.setHours(hours);
                                     newDate.setMinutes(minutes);
                                     field.onChange(newDate);
                                 }}
@@ -642,6 +541,23 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
               />
             </div>
             
+            <FormField
+              control={form.control}
+              name="targetAudience"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Target Audience</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., Tech professionals, Students, General public" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Who is this event for? This helps with AI-generated content.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="space-y-4">
               <FormField
                 control={form.control}
@@ -678,55 +594,250 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                 <>
                   <div className="grid md:grid-cols-2 gap-8">
                     <FormField
-                    control={form.control}
-                    name="price"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Price (SLE)</FormLabel>
-                        <FormControl>
-                          <div className="flex items-center gap-2">
-                            <Input type="number" placeholder="e.g., 50" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} value={field.value ?? ''} />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="fee_bearer"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Service Fee</FormLabel>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="flex space-x-4 pt-2"
-                          >
-                            <FormItem className="flex items-center space-x-2">
-                              <FormControl>
-                                <RadioGroupItem value="buyer" />
-                              </FormControl>
-                              <Label htmlFor="is_paid-paid">Buyer pays fee</Label>
-                            </FormItem>
-                             <FormItem className="flex items-center space-x-2">
-                              <FormControl>
-                                <RadioGroupItem value="organizer" />
-                              </FormControl>
-                              <Label htmlFor="is_paid-paid">I'll pay fee</Label>
-                            </FormItem>
-                          </RadioGroup>
-                        </FormControl>
-                         <Button variant="link" asChild className="p-0 h-auto">
+                      control={form.control}
+                      name="price"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Price (SLE)</FormLabel>
+                          <FormControl>
+                            <div className="flex items-center gap-2">
+                              <Input type="number" placeholder="e.g., 50" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} value={field.value ?? ''} />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="fee_bearer"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Service Fee</FormLabel>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                              className="flex space-x-4 pt-2"
+                            >
+                              <FormItem className="flex items-center space-x-2">
+                                <FormControl>
+                                  <RadioGroupItem value="buyer" />
+                                </FormControl>
+                                <Label>Buyer pays fee</Label>
+                              </FormItem>
+                              <FormItem className="flex items-center space-x-2">
+                                <FormControl>
+                                  <RadioGroupItem value="organizer" />
+                                </FormControl>
+                                <Label>I'll pay fee</Label>
+                              </FormItem>
+                            </RadioGroup>
+                          </FormControl>
+                          <Button variant="link" asChild className="p-0 h-auto">
                             <Link href="/dashboard/pricing" target="_blank">
                               (Preview fee structure)
                             </Link>
                           </Button>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="is_public"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Public Event</FormLabel>
+                      <FormDescription>
+                        Make this event visible to everyone
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {!isPaid && (
+                <FormField
+                  control={form.control}
+                  name="requires_approval"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Require Approval</FormLabel>
+                        <FormDescription>
+                          Manually approve registrations
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <FormLabel>Event Scanners (Optional)</FormLabel>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => appendScanner({ email: '' })}
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add Scanner
+                </Button>
+              </div>
+              <FormDescription>
+                Add email addresses of people who can scan tickets at your event
+              </FormDescription>
+              {scannerFields.map((item, index) => (
+                <div key={item.id} className="flex items-center gap-2">
+                  <FormField
+                    control={form.control}
+                    name={`scanners.${index}.email`}
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormControl>
+                          <Input {...field} placeholder="scanner@example.com" type="email" />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  </div>
-              )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeScanner(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
             </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <FormLabel>Custom Registration Fields (Optional)</FormLabel>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => appendCustomField({ field_name: '', field_type: 'text', is_required: false })}
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add Field
+                </Button>
+              </div>
+              <FormDescription>
+                Collect additional information from attendees during registration
+              </FormDescription>
+              {customFields.map((item, index) => (
+                <Card key={item.id}>
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1 space-y-4">
+                        <FormField
+                          control={form.control}
+                          name={`customFields.${index}.field_name`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Field Name</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="e.g., Dietary Restrictions" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`customFields.${index}.field_type`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Field Type</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="text">Text</SelectItem>
+                                  <SelectItem value="number">Number</SelectItem>
+                                  <SelectItem value="date">Date</SelectItem>
+                                  <SelectItem value="boolean">Yes/No</SelectItem>
+                                  <SelectItem value="multiple-choice">Multiple Choice</SelectItem>
+                                  <SelectItem value="checkboxes">Checkboxes</SelectItem>
+                                  <SelectItem value="dropdown">Dropdown</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`customFields.${index}.is_required`}
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                              <FormLabel className="text-sm">Required Field</FormLabel>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <CustomFieldOptions nestIndex={index} form={form} />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeCustomField(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <div className="flex justify-end gap-4">
+              <Button type="button" variant="outline" asChild>
+                <Link href="/dashboard/events">Cancel</Link>
+              </Button>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? (event ? 'Updating...' : 'Creating...') : (event ? 'Update Event' : 'Create Event')}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
+  );
+}
