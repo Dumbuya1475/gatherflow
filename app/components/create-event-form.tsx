@@ -1,9 +1,8 @@
 'use client';
 
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -94,7 +93,7 @@ interface CreateEventFormProps {
     defaultValues?: Partial<EventFormValues>;
 }
 
-function CustomFieldOptions({ nestIndex, form }: { nestIndex: number, form: any }) {
+function CustomFieldOptions({ nestIndex, form }: { nestIndex: number, form: UseFormReturn<EventFormValues> }) {
   const { control, watch } = form;
   const fieldType = watch(`customFields.${nestIndex}.field_type`);
 
@@ -152,10 +151,9 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
   const [preview, setPreview] = useState<{[key: string]: string | null}>({
     cover_image: event?.cover_image || null,
   });
-  const [feeDetails, setFeeDetails] = useState<PricingResult | null>(null);
   const { toast } = useToast();
 
-  const form = useForm<EventFormValues, any, EventFormValues>({
+  const form = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
     defaultValues: {
       ...defaultValues,
@@ -234,7 +232,6 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
     const formData = new FormData();
 
     const { 
-        current_cover_image, 
         ...restData 
     } = data;
   
@@ -632,7 +629,7 @@ export function CreateEventForm({ event, defaultValues }: CreateEventFormProps) 
                                 <FormControl>
                                   <RadioGroupItem value="organizer" />
                                 </FormControl>
-                                <Label>I'll pay fee</Label>
+                                <Label>I&apos;ll pay fee</Label>
                               </FormItem>
                             </RadioGroup>
                           </FormControl>

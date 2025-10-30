@@ -26,7 +26,7 @@ export function ResendTicketForm({ eventId }: { eventId: number }) {
       <CardHeader>
         <CardTitle>Lost Your Ticket?</CardTitle>
         <CardDescription>
-          Enter the email address you used to register and we'll resend your ticket link.
+          Enter the email address you used to register and we&apos;ll resend your ticket link.
         </CardDescription>
       </CardHeader>
       <CardContent>

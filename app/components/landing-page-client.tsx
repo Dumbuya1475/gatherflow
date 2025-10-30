@@ -3,11 +3,10 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PublicHeader } from '@/components/public-header';
 import { Footer } from '@/components/footer';
-import { CalendarDays, QrCode, Sparkles, Zap, Check, ArrowRight, Star, Users, TrendingUp } from 'lucide-react';
+import { CalendarDays, QrCode, Sparkles, Zap, ArrowRight, Star, Users, TrendingUp } from 'lucide-react';
 import type { EventWithAttendees } from '@/lib/types';
 import { EventCard } from '@/components/event-card';
 import type { User } from '@supabase/supabase-js';

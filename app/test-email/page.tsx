@@ -27,7 +27,7 @@ export default function TestEmailPage() {
       <div className="text-center">
                 <h1 className="text-3xl font-bold">Test Email - Don&apos;t use in production</h1>
         <p className="mb-4">Click the button below to send a test email to <strong>dumbuya366@gmail.com</strong>.</p>
-        <p className="text-sm text-gray-500 mb-6">The 'from' address will be <strong>onboarding@resend.dev</strong> as required for testing.</p>
+        <p className="text-sm text-gray-500 mb-6">The &apos;from&apos; address will be <strong>onboarding@resend.dev</strong> as required for testing.</p>
         <Button onClick={handleSendTestEmail}>Send Test Email</Button>
       </div>
     </div>

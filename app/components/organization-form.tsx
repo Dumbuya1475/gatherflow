@@ -79,7 +79,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
         router.refresh();
       }
       // For create, redirect happens in action
-    } catch (error) {
+    } catch (_error) {
       toast({
         variant: 'destructive',
         title: 'Error',

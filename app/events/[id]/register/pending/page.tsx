@@ -13,7 +13,7 @@ export default function EventRegistrationPendingPage() {
                         <CheckCircle className="h-12 w-12 text-yellow-500" />
                     </div>
                     <CardTitle className="mt-4">Registration Pending</CardTitle>
-                    <CardDescription>Your registration is awaiting approval from the event organizer. You will be notified by email once it's confirmed.</CardDescription>
+                    <CardDescription>Your registration is awaiting approval from the event organizer. You will be notified by email once it&apos;s confirmed.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Button asChild className="w-full">

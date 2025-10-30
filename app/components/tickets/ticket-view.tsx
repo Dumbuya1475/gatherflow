@@ -155,7 +155,7 @@ export function TicketView({ ticket }: { ticket: TicketWithEvent }) {
                     <Clock className="h-12 w-12 text-yellow-500 dark:text-yellow-400 mb-4" />
                     <h3 className="text-xl font-semibold text-yellow-800 dark:text-yellow-200">Registration Pending</h3>
                     <p className="text-yellow-600 dark:text-yellow-300 mt-2">
-                        Your registration is awaiting approval from the event organizer. You will be notified once it's confirmed.
+                        Your registration is awaiting approval from the event organizer. You will be notified once it&apos;s confirmed.
                     </p>
                     <p className="text-sm text-yellow-600 dark:text-yellow-300 mt-4">
                         Your QR code will appear here once approved.

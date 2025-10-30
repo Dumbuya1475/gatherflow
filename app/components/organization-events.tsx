@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Users } from 'lucide-react';
+import { Calendar, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface OrganizationEventsProps {
@@ -61,11 +62,13 @@ export async function OrganizationEvents({ organizationId }: OrganizationEventsP
           <Link key={event.id} href={`/events/${event.id}`}>
             <Card className="h-full hover:border-primary transition-colors cursor-pointer">
               {event.cover_image && (
-                <div className="w-full h-48 overflow-hidden rounded-t-lg">
-                  <img
+                <div className="w-full h-48 overflow-hidden rounded-t-lg relative">
+                  <Image
                     src={event.cover_image}
                     alt={event.title}
-                    className="w-full h-full object-cover"
+                    layout="fill"
+                    objectFit="cover"
+                    unoptimized={!!event.cover_image?.includes('supabase.co')}
                   />
                 </div>
               )}

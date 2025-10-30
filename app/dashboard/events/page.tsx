@@ -444,7 +444,7 @@ export default function EventsPage() {
             ) : (
               <div className="mt-6 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
                 <h3 className="text-xl font-semibold tracking-tight">
-                  You haven't created any events yet
+                  You haven&apos;t created any events yet
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   Get started by creating your first event.

@@ -4,10 +4,6 @@ import { cookies } from 'next/headers';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { createMonimeCheckout } from '@@/lib/monime';
 
-interface FormResponse {
-  form_field_id: number;
-  field_value: string;
-}
 
 export async function POST(req: NextRequest) {
   try {

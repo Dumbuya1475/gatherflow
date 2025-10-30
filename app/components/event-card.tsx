@@ -3,14 +3,12 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Users, Ticket as TicketIcon, ScanEye, Eye, Pencil, DollarSign, Timer, User, X, Clock, Building2 } from 'lucide-react';
 import type { EventWithAttendees } from '@/lib/types';
 import { unregisterForEventAction } from '@/lib/actions/tickets';
-import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
 import { Badge } from './ui/badge';
 import { differenceInDays, isPast, isToday } from 'date-fns';
 import {
@@ -24,16 +22,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useFormState } from 'react-dom';
 
 interface EventCardProps {
   event: EventWithAttendees;
-  isLoggedIn: boolean;
   isScannerMode?: boolean;
   isMyEvent?: boolean;
 }
 
-export function EventCard({ event, isLoggedIn, isScannerMode = false, isMyEvent = false }: EventCardProps) {
+export function EventCard({ event, isScannerMode = false, isMyEvent = false }: EventCardProps) {
     const daysLeft = useMemo(() => {
       const eventDate = new Date(event.date);
       if (isPast(eventDate) && !isToday(eventDate)) return null;

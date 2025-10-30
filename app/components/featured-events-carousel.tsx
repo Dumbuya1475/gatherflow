@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,13 @@ export function FeaturedEventsCarousel({ events }: FeaturedEventsCarouselProps) 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  const handleNext = useCallback(() => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setCurrentIndex((prev) => (prev + 1) % events.length);
+    setTimeout(() => setIsTransitioning(false), 500);
+  }, [isTransitioning, events.length]);
+
   // Auto-rotate every 5 seconds
   useEffect(() => {
     if (events.length <= 1) return;
@@ -33,14 +40,7 @@ export function FeaturedEventsCarousel({ events }: FeaturedEventsCarouselProps) 
     }, 5000);
 
     return () => clearInterval(timer);
-  }, [currentIndex, events.length]);
-
-  const handleNext = () => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
-    setCurrentIndex((prev) => (prev + 1) % events.length);
-    setTimeout(() => setIsTransitioning(false), 500);
-  };
+  }, [events.length, handleNext]);
 
   const handlePrev = () => {
     if (isTransitioning) return;

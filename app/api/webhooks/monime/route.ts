@@ -50,7 +50,7 @@ async function verifyMonimeSignature(req: NextRequest): Promise<{isValid: boolea
       if (a.length !== b.length) return false;
       try {
         return crypto.timingSafeEqual(a, b);
-      } catch (e) {
+      } catch (_e) {
         return false;
       }
     };
@@ -81,7 +81,7 @@ async function verifyMonimeSignature(req: NextRequest): Promise<{isValid: boolea
       let receivedBuf: Buffer | null = null;
       try {
         receivedBuf = Buffer.from(receivedSignature, 'base64');
-      } catch (e) {
+      } catch (_e) {
         receivedBuf = null;
       }
 
