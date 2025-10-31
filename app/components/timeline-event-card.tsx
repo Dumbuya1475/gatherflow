@@ -2,7 +2,7 @@
 
 import { EventWithAttendees } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { format } from "date-fns";
 import { CheckCircle, GitCommitHorizontal, Users, MapPin } from "lucide-react";
 import Link from 'next/link';

@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Users, Calendar } from 'lucide-react';
+import { PlusCircle, Calendar } from 'lucide-react';
 
 export default async function OrganizationsPage() {
   const cookieStore = await cookies();

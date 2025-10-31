@@ -11,7 +11,7 @@ export const navLinks = [
 ]
 
 export function PublicHeader() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [_isOpen, setIsOpen] = useState(false);
 
   return <Header navLinks={navLinks} onMobileLinkClick={() => setIsOpen(false)} />;
 }

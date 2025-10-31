@@ -1,7 +1,7 @@
 'use client';
 
 import { Bar, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { ChartTooltipContent } from "@/components/ui/chart";
 
 export function RegistrationChart({ chartData }: { chartData: Array<{ date: string; registrations: number }> }) {
     return (

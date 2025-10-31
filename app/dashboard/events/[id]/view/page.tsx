@@ -4,12 +4,12 @@ import React from 'react';
 import { getEventDetails } from "@/lib/server/queries/events";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, MapPin, Users, Ticket, ArrowLeft, Eye, DollarSign, Share2, Globe, Lock } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar, MapPin, Users, Ticket, DollarSign, Globe, Lock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { format } from 'date-fns';
-import { EventWithAttendees } from "@/lib/types";
+
 import { ShareButton } from "../../../../events/[id]/_components/share-button";
 import { ResendTicketForm } from "../../../../events/[id]/_components/resend-ticket-form";
 import { cookies } from 'next/headers';

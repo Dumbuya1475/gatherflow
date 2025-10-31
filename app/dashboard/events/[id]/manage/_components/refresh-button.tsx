@@ -5,7 +5,7 @@ import { RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 
-export function RefreshButton({ eventId }: { eventId: number }) {
+export function RefreshButton() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 

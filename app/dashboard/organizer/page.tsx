@@ -23,9 +23,7 @@ import {
   DollarSign,
   TrendingUp,
   Ticket,
-  Users,
   Eye,
-  ArrowRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cookies } from 'next/headers';

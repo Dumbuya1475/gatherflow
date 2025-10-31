@@ -17,8 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { DollarSign, TrendingUp, Ticket, Users, ArrowLeft } from 'lucide-react';
+
+import { DollarSign, TrendingUp, Ticket, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { cookies } from 'next/headers';

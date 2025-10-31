@@ -15,7 +15,6 @@ import {
   BarChart,
   Calendar,
   DollarSign,
-  TrendingDown,
   Briefcase,
   Building2,
 } from 'lucide-react';

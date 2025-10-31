@@ -4,9 +4,8 @@ import { getAnalytics } from '@/lib/actions/analytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { BarChart, Users, TrendingUp, Calendar, Ticket, CheckCircle, Percent } from 'lucide-react';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { Bar, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { Calendar, Ticket, CheckCircle, Percent } from 'lucide-react';
+import { ChartContainer } from "@/components/ui/chart"
 
 import { RegistrationChart } from './_components/registration-chart';
 

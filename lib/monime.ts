@@ -9,7 +9,7 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
-const monime = createClient({
+export const monime = createClient({
   accessToken: process.env.MONIME_ACCESS_TOKEN!,
   monimeSpaceId: process.env.MONIME_SPACE_ID!,
 });

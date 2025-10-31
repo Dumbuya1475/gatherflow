@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, ArrowRight, Users, CalendarCheck, Activity, Calendar as CalendarIcon, TrendingUp, Clock, MapPin, Ticket, Info } from 'lucide-react';
-import type { EventWithAttendees } from '@/lib/types';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,7 +18,6 @@ interface Event {
   location?: string;
   created_at: string;
   organizer_id: string;
-  [key: string]: any;
 }
 
 interface EventWithAttendeesCount extends Event {
@@ -27,14 +25,14 @@ interface EventWithAttendeesCount extends Event {
 }
 
 interface TicketWithEvent {
-  id: any;
+  id: number;
   user_id: string;
   created_at: string;
   events: Event | Event[];
 }
 
 interface UpcomingEventWithTicket extends Event {
-  ticket_id: any;
+  ticket_id: number;
   attendees: number;
 }
 
@@ -132,6 +130,11 @@ async function getDashboardStats(user: { id: string } | null) {
   }
 }
 
+type TicketWithEventAndAttendees = {
+  id: number;
+  events: Event & { attendees: number };
+};
+
 async function getAttendeeDashboardStats(user: { id: string }) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
@@ -145,19 +148,12 @@ async function getAttendeeDashboardStats(user: { id: string }) {
     return { registeredEventsCount: 0, upcomingEvents: [], attendedEventsCount: 0 };
   }
 
-  // Supabase can return the joined relation as an object or as an array depending on the query/relationship.
-  // Normalize ticket.events to always be an object to avoid "property 'id' does not exist on type".
-  interface Ticket {
-    events: { id: number; date: string; title: string; location?: string } | Array<{ id: number; date: string; title: string; location?: string }>;
-    id: string;
-  }
-
-  const normalizedTickets = tickets.map((t: Ticket) => {
+  const normalizedTickets = (tickets as unknown as TicketWithEvent[]).map((t) => {
     const evt = Array.isArray(t.events) ? t.events[0] : t.events;
     return { ...t, events: evt };
   });
 
-  const eventIds = normalizedTickets.map(t => t.events?.id).filter(Boolean) as number[];
+  const eventIds = normalizedTickets.map(t => t.events?.id).filter(Boolean);
   let countsByEvent: Record<number, number> = {};
 
   if (eventIds.length > 0) {
@@ -178,8 +174,8 @@ async function getAttendeeDashboardStats(user: { id: string }) {
     }
   }
 
-  const ticketsWithCounts = normalizedTickets.map(ticket => {
-      const evt = ticket.events || {};
+  const ticketsWithCounts: TicketWithEventAndAttendees[] = normalizedTickets.map(ticket => {
+      const evt = ticket.events;
       return {
           ...ticket,
           events: {
@@ -187,18 +183,17 @@ async function getAttendeeDashboardStats(user: { id: string }) {
               attendees: countsByEvent[evt.id] || 0,
           }
       };
-
   });
 
   const registeredEventsCount = ticketsWithCounts.length;
-  
+
   const upcomingEvents: UpcomingEventWithTicket[] = ticketsWithCounts
-    .filter((t: any) => {
-      const event = Array.isArray(t.events) ? t.events[0] : t.events;
+    .filter((t) => {
+      const event = t.events;
       return event && new Date(event.date) > new Date();
     })
-    .map((t: any) => {
-      const event = Array.isArray(t.events) ? t.events[0] : t.events;
+    .map((t) => {
+      const event = t.events;
       return {
         ...event,
         ticket_id: t.id
@@ -206,8 +201,8 @@ async function getAttendeeDashboardStats(user: { id: string }) {
     })
     .slice(0, 5);
     
-  const attendedEventsCount = ticketsWithCounts.filter((t: any) => {
-    const event = Array.isArray(t.events) ? t.events[0] : t.events;
+  const attendedEventsCount = ticketsWithCounts.filter((t) => {
+    const event = t.events;
     return event && new Date(event.date) <= new Date();
   }).length;
 
