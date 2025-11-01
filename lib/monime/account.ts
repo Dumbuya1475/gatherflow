@@ -1,8 +1,13 @@
-import { monime } from '../monime';
+import { createClient } from 'monime-package';
+
+const client = createClient({
+  monimeSpaceId: process.env.MONIME_SPACE_ID!,
+  accessToken: process.env.MONIME_ACCESS_TOKEN!,
+});
 
 interface CreateAccountParams {
   name: string;
-  currency: string;
+  currency?: string;
   reference?: string;
   description?: string;
   metadata?: Record<string, unknown>;
@@ -12,12 +17,16 @@ interface MonimeAccount {
   id: string;
   name: string;
   currency: string;
-  balance: number;
+  balance: {
+    available: {
+      currency: string;
+      value: number;
+    };
+  };
   reference?: string;
   description?: string;
-  metadata?: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
+  createTime: string;
+  updateTime: string;
 }
 
 /**
@@ -25,15 +34,13 @@ interface MonimeAccount {
  */
 export async function createMonimeAccount(params: CreateAccountParams): Promise<MonimeAccount> {
   try {
-    const response = await monime.accounts.create({
-      name: params.name,
-      currency: params.currency,
-      reference: params.reference,
-      description: params.description,
-      metadata: params.metadata,
-    });
+    const response = await client.financialAccount.create(params.name);
 
-    return response;
+    if (!response.success || !response.data) {
+      throw new Error(response.error?.message || 'Failed to create payment account');
+    }
+
+    return response.data.result;
   } catch (error) {
     console.error('Failed to create Monime account:', error);
     throw new Error('Failed to create payment account');
@@ -45,8 +52,13 @@ export async function createMonimeAccount(params: CreateAccountParams): Promise<
  */
 export async function getMonimeAccount(accountId: string): Promise<MonimeAccount> {
   try {
-    const response = await monime.accounts.get(accountId);
-    return response;
+    const response = await client.financialAccount.get(accountId);
+    
+    if (!response.success || !response.data) {
+      throw new Error(response.error?.message || 'Failed to retrieve payment account');
+    }
+
+    return response.data.result;
   } catch (error) {
     console.error('Failed to get Monime account:', error);
     throw new Error('Failed to retrieve payment account');
@@ -59,7 +71,7 @@ export async function getMonimeAccount(accountId: string): Promise<MonimeAccount
 export async function getAccountBalance(accountId: string): Promise<number> {
   try {
     const account = await getMonimeAccount(accountId);
-    return account.balance;
+    return account.balance.available.value;
   } catch (error) {
     console.error('Failed to get account balance:', error);
     throw new Error('Failed to retrieve account balance');

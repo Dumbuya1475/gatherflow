@@ -1,4 +1,3 @@
-
 import { getEventDetails, getEventFormFields } from '@/lib/server/queries/events';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
@@ -7,14 +6,14 @@ import { EventDetailsCard } from './_components/event-details-card';
 import { cookies } from 'next/headers';
 
 interface RegisterForEventPageProps {
-    params: { id: string };
-    searchParams?: { payment_cancelled?: string };
+    params: Promise<{ id: string }>;
+    searchParams?: Promise<{ payment_cancelled?: string }>;
 }
 
 export default async function RegisterForEventPage({ params, searchParams }: RegisterForEventPageProps) {
     // Await both params and searchParams for Next.js 15 compatibility
-    const resolvedParams = await Promise.resolve(params);
-    const resolvedSearchParams = await Promise.resolve(searchParams);
+    const resolvedParams = await params;
+    const resolvedSearchParams = await searchParams;
     const eventId = parseInt(resolvedParams.id, 10);
     const { data: event, error } = await getEventDetails(eventId);
     const { data: formFields } = await getEventFormFields(eventId);

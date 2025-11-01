@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -23,7 +22,40 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { cookies } from 'next/headers';
 
-async function getEventFinancialDetails(eventId: number) {
+type Profile = {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+};
+
+type TicketType = {
+  id: number;
+  ticket_price?: number;
+  platform_fee?: number;
+  payment_processor_fee?: number;
+  monime_payment_status?: string;
+  profiles?: Profile | Profile[];
+};
+
+type EventType = {
+  id: number;
+  title: string;
+  price?: number;
+  status?: string;
+  organizer_id: string;
+};
+
+type FinancialStats = {
+  event: EventType;
+  revenue: number;
+  platformFees: number;
+  monimeFees: number;
+  netRevenue: number;
+  tickets: TicketType[];
+  error?: string;
+};
+
+async function getEventFinancialDetails(eventId: number): Promise<FinancialStats | { error: string }> {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const {
@@ -49,14 +81,14 @@ async function getEventFinancialDetails(eventId: number) {
 
   const { data: tickets, error: ticketsError } = await supabase
     .from('tickets')
-    .select('id, ticket_price, platform_fee, payment_processor_fee, monime_payment_status, profiles(first_name, last_name, email)')
+    .select('id, ticket_price, platform_fee, payment_processor_fee, monime_payment_status, profiles!tickets_profile_id_fkey(first_name, last_name, email)')
     .eq('event_id', eventId);
 
   if (ticketsError) {
     return { error: 'Could not fetch ticket data' };
   }
 
-  const paidTickets = tickets.filter(t => t.monime_payment_status === 'paid');
+  const paidTickets = (tickets || []).filter(t => t.monime_payment_status === 'paid');
   const revenue = paidTickets.reduce((acc, t) => acc + (t.ticket_price || 0) + (t.platform_fee || 0), 0);
   const platformFees = paidTickets.reduce((acc, t) => acc + (t.platform_fee || 0), 0);
   const monimeFees = paidTickets.reduce((acc, t) => acc + (t.payment_processor_fee || 0), 0);
@@ -72,11 +104,16 @@ async function getEventFinancialDetails(eventId: number) {
   };
 }
 
-export default async function EventFinancialsPage({ params }: { params: { id: string } }) {
-  const eventId = parseInt(params.id, 10);
+export default async function EventFinancialsPage({ 
+  params 
+}: { 
+  params: Promise<{ id: string }> 
+}) {
+  const { id } = await params;
+  const eventId = parseInt(id, 10);
   const stats = await getEventFinancialDetails(eventId);
 
-  if (stats.error) {
+  if ('error' in stats) {
     return <p className="text-destructive">{stats.error}</p>;
   }
 
@@ -95,7 +132,9 @@ export default async function EventFinancialsPage({ params }: { params: { id: st
                 Back to Finances
             </Link>
         </Button>
-        <h1 className="text-3xl font-bold">Financials for: {event.title}</h1>
+        <h1 className="text-3xl font-bold">
+          Financials for: {event.title}
+        </h1>
         <p className="text-muted-foreground">
           A detailed financial breakdown of your event.
         </p>
@@ -159,8 +198,16 @@ export default async function EventFinancialsPage({ params }: { params: { id: st
               {tickets.map(ticket => (
                 <TableRow key={ticket.id}>
                   <TableCell className="font-mono text-xs">{ticket.id}</TableCell>
-                  <TableCell>{ticket.profiles?.first_name} {ticket.profiles?.last_name}</TableCell>
-                  <TableCell>{ticket.profiles?.email}</TableCell>
+                  <TableCell>
+                    {Array.isArray(ticket.profiles)
+                      ? `${ticket.profiles[0]?.first_name ?? ''} ${ticket.profiles[0]?.last_name ?? ''}`
+                      : `${ticket.profiles?.first_name ?? ''} ${ticket.profiles?.last_name ?? ''}`}
+                  </TableCell>
+                  <TableCell>
+                    {Array.isArray(ticket.profiles)
+                      ? ticket.profiles[0]?.email ?? ''
+                      : ticket.profiles?.email ?? ''}
+                  </TableCell>
                   <TableCell className="text-right">{formatCurrency((ticket.ticket_price || 0) + (ticket.platform_fee || 0))}</TableCell>
                 </TableRow>
               ))}

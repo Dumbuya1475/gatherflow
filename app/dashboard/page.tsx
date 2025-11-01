@@ -282,7 +282,7 @@ export default async function DashboardPage() {
             <div tabIndex={0}>{button}</div>
           </TooltipTrigger>
           <TooltipContent>
-            <p>You've reached your free event limit. Upgrade to create more.</p>
+            <p>You&apos;ve reached your free event limit. Upgrade to create more.</p>
           </TooltipContent>
         </Tooltip>
       );

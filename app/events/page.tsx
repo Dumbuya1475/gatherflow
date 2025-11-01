@@ -231,7 +231,7 @@ export default function AllEventsPage() {
             ) : filteredEvents.length > 0 ? (
               <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-4 mt-12">
                 {filteredEvents.map((event) => (
-                  <EventCard key={event.id} event={event} isLoggedIn={!!user} isMyEvent={false}/>
+                  <EventCard key={event.id} event={event} isMyEvent={false}/>
                 ))}
               </div>
             ) : (
